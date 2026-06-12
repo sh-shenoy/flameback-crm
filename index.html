@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flameback CRM — Demo Wireframe v1</title>
+<style>
+  :root{
+    --navy:#0f2742;
+    --navy-2:#163556;
+    --teal:#1f8a8a;
+    --gold:#c9a24b;
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --line:#e2e7ee;
+    --ink:#1b2533;
+    --muted:#6b7787;
+    --hot:#e0533d;
+    --warm:#e09b3d;
+    --cold:#5b7aa8;
+    --green:#2f9e6b;
+    --shadow:0 1px 3px rgba(15,39,66,.08),0 8px 24px rgba(15,39,66,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:14px}
+
+  /* layout */
+  .app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+  .sidebar{background:var(--navy);color:#cdd8e6;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .brand .logo{display:flex;align-items:center;gap:10px;font-weight:700;color:#fff;font-size:16px;letter-spacing:.3px}
+  .brand .flame{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--gold),var(--teal));display:grid;place-items:center;color:#0f2742;font-weight:800}
+  .brand .sub{font-size:11px;color:#7c93ad;margin-top:6px}
+  .badge-demo{display:inline-block;margin-top:8px;font-size:10px;background:rgba(201,162,75,.18);color:var(--gold);padding:2px 8px;border-radius:20px;border:1px solid rgba(201,162,75,.35)}
+  .nav{padding:12px 10px;flex:1}
+  .nav button{width:100%;text-align:left;background:none;border:none;color:#b7c4d6;padding:10px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;font-size:14px;margin-bottom:2px}
+  .nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav button.active{background:var(--teal);color:#fff;font-weight:600}
+  .nav .count{margin-left:auto;font-size:11px;background:rgba(255,255,255,.14);padding:1px 8px;border-radius:20px}
+  .nav .ico{width:18px;text-align:center}
+  .side-foot{padding:14px 18px;font-size:11px;color:#6f86a0;border-top:1px solid rgba(255,255,255,.08)}
+
+  .main{padding:26px 32px 60px}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+  .page-head h1{font-size:22px;color:var(--navy);font-weight:700}
+  .page-head p{color:var(--muted);font-size:13px;margin-top:3px}
+
+  .btn{background:var(--teal);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{background:#1a7878}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
+  .btn.ghost:hover{background:#f0f3f7}
+  .btn.gold{background:var(--gold);color:#1b2533}
+  .btn.gold:hover{background:#b78f38}
+  .btn.danger{background:var(--hot)}
+  .btn.sm{padding:6px 11px;font-size:12px}
+
+  /* cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+  .card .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .card .v{font-size:30px;font-weight:700;color:var(--navy);margin-top:8px}
+  .card .meta{font-size:12px;color:var(--muted);margin-top:4px}
+  .card .bar{height:5px;border-radius:4px;margin-top:12px;background:var(--line);overflow:hidden}
+  .card .bar > i{display:block;height:100%;border-radius:4px}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .panel-head h2{font-size:15px;color:var(--navy)}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .search{position:relative}
+  .search input{padding:8px 12px 8px 32px;border:1px solid var(--line);border-radius:8px;width:230px;background:#fbfcfe}
+  .search:before{content:"🔍";position:absolute;left:10px;top:7px;font-size:13px;opacity:.5}
+  select.filter{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe}
+
+  /* table */
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:11px 14px;border-bottom:1px solid var(--line);background:#fafbfd;font-weight:600;white-space:nowrap}
+  td{padding:12px 14px;border-bottom:1px solid #eef1f5;vertical-align:middle}
+  tr.lead-row:hover{background:#f7faff;cursor:pointer}
+  .lead-name{font-weight:600;color:var(--navy)}
+  .lead-sub{font-size:12px;color:var(--muted)}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .src{background:#eef2f7;color:#46566b;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:600}
+
+  .stage-tag{font-size:12px;font-weight:600;padding:3px 9px;border-radius:6px}
+  .stage-L1{background:#eaf0f8;color:#3a5a86}
+  .stage-L2{background:#fdeede;color:#a96a16}
+  .stage-L3{background:#e3f3eb;color:#1f7a4f}
+  .stage-L4{background:#e7eefb;color:#2f54a8}
+
+  /* strike tracker */
+  .strikes{display:inline-flex;gap:4px;align-items:center}
+  .strike{width:14px;height:14px;border-radius:50%;border:1.5px solid #cdd6e2;display:inline-block}
+  .strike.on{background:var(--warm);border-color:var(--warm)}
+  .strike.max{background:var(--hot);border-color:var(--hot)}
+  .strike-warn{color:var(--hot);font-size:11px;font-weight:700;margin-left:6px}
+
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:rgba(15,39,66,.45);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:480px;max-width:94vw;background:#fff;box-shadow:-10px 0 40px rgba(15,39,66,.2);transform:translateX(100%);transition:.25s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .drawer-head{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between}
+  .drawer-head h2{font-size:18px;color:var(--navy)}
+  .drawer-head .x{background:none;border:none;font-size:22px;color:var(--muted);line-height:1}
+  .drawer-body{padding:20px 22px;overflow-y:auto;flex:1}
+  .drawer-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:#fafbfd}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;color:var(--ink)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal);background:#fff}
+  .field textarea{min-height:72px;resize:vertical}
+  .field .editmark{float:right;font-size:10px;color:var(--teal);text-transform:none;letter-spacing:0;font-weight:600}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  .section-h{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);font-weight:700;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+
+  .interlog{background:#f6f9fc;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .interlog .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .interlog .big{font-size:34px;font-weight:800;color:var(--navy);line-height:1}
+  .quicklog{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .quicklog button{flex:1;min-width:90px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px;font-size:12px;font-weight:600;color:var(--navy);display:flex;flex-direction:column;align-items:center;gap:3px}
+  .quicklog button:hover{border-color:var(--teal);background:#f0fbfb}
+  .quicklog .ic{font-size:17px}
+
+  .stage-help{font-size:12px;color:var(--muted);margin-top:8px;background:#fbfcfe;border:1px dashed var(--line);border-radius:8px;padding:10px}
+  .rule-alert{background:#fdeceA;background:#fdeae6;border:1px solid #f3b8ab;border-radius:10px;padding:14px;margin-top:14px;display:none}
+  .rule-alert.show{display:block}
+  .rule-alert h4{color:var(--hot);font-size:13px;margin-bottom:5px}
+  .rule-alert p{font-size:12px;color:#7a3326}
+
+  /* timeline */
+  .tl{list-style:none;margin-top:6px}
+  .tl li{position:relative;padding:0 0 14px 22px;font-size:13px}
+  .tl li:before{content:"";position:absolute;left:4px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--teal)}
+  .tl li:after{content:"";position:absolute;left:8px;top:13px;bottom:0;width:1px;background:var(--line)}
+  .tl li:last-child:after{display:none}
+  .tl .when{color:var(--muted);font-size:11px}
+
+  /* suggestions */
+  .sugg-grid{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
+  .sugg-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;gap:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .vote{display:flex;flex-direction:column;align-items:center;border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-width:56px;background:#fbfcfe}
+  .vote:hover{border-color:var(--teal);background:#f0fbfb}
+  .vote .up{font-size:14px;color:var(--teal)}
+  .vote .n{font-size:18px;font-weight:800;color:var(--navy)}
+  .sugg-body h3{font-size:15px;color:var(--navy);margin-bottom:4px}
+  .sugg-body p{font-size:13px;color:#4a5666;margin-bottom:8px}
+  .sugg-meta{font-size:12px;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .status-sel{padding:4px 8px;border-radius:6px;border:1px solid var(--line);font-size:12px;font-weight:600}
+  .st-Requested{background:#eef2f7;color:#46566b}
+  .st-Planned{background:#fdeede;color:#a96a16}
+  .st-InProgress{background:#e7eefb;color:#2f54a8}
+  .st-Shipped{background:#e3f3eb;color:#1f7a4f}
+  .form-box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow);position:sticky;top:20px}
+  .form-box h3{font-size:14px;color:var(--navy);margin-bottom:4px}
+  .form-box .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
+
+  .empty{padding:50px;text-align:center;color:var(--muted)}
+  .hidden{display:none!important}
+  .filterbar{display:flex;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:80;box-shadow:var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+
+  /* client id link */
+  .cid{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--teal);cursor:pointer}
+  .cid:hover{text-decoration:underline}
+  .phone-link{color:var(--teal);font-weight:600;cursor:pointer}
+  .phone-link:hover{text-decoration:underline}
+  .sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;background:#eef6f6;color:var(--teal);border:1px solid #cfe7e7;padding:2px 8px;border-radius:20px;font-weight:600;text-transform:none;letter-spacing:0}
+
+  /* progress stepper */
+  .stepper{display:flex;align-items:flex-start;padding:8px 4px;margin:4px 0 8px}
+  .step{flex:1;text-align:center;position:relative}
+  .step .ball{width:32px;height:32px;border-radius:50%;background:#e6ebf2;color:#8b97a8;display:grid;place-items:center;margin:0 auto 8px;font-weight:700;border:2px solid #e6ebf2;z-index:2;position:relative;font-size:13px}
+  .step .lbl{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.3}
+  .step:before{content:"";position:absolute;top:16px;left:-50%;width:100%;height:3px;background:#e6ebf2;z-index:1}
+  .step:first-child:before{display:none}
+  .step.done .ball{background:var(--green);border-color:var(--green);color:#fff}
+  .step.done:before{background:var(--green)}
+  .step.current .ball{background:#fff;border-color:var(--teal);color:var(--teal);box-shadow:0 0 0 4px rgba(31,138,138,.15)}
+  .step.current:before{background:var(--green)}
+  .step.current .lbl{color:var(--navy);font-weight:700}
+  .nextstep{background:#fff7e8;border:1px solid #f0dcae;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;color:#7a5c14}
+  .nextstep b{color:var(--navy)}
+
+  /* profile layout */
+  .profile-top{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+  .avatar{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;display:grid;place-items:center;font-size:22px;font-weight:700}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:18px 0 0;flex-wrap:wrap}
+  .tabs button{background:none;border:none;padding:11px 16px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tabs button:hover{color:var(--navy)}
+  .tabs button.active{color:var(--teal);border-bottom-color:var(--teal)}
+  .tab-pane{display:none;padding-top:18px}
+  .tab-pane.active{display:block}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+
+  .kv{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+  .kv .kv-h{padding:13px 16px;border-bottom:1px solid var(--line);font-size:13px;font-weight:700;color:var(--navy);display:flex;align-items:center;justify-content:space-between;background:#fafbfd}
+  .kv-row{display:flex;padding:9px 16px;border-bottom:1px solid #f0f3f7;font-size:13px;gap:12px}
+  .kv-row:last-child{border-bottom:none}
+  .kv-row .lab{color:var(--muted);width:46%;flex-shrink:0}
+  .kv-row .val{color:var(--ink);font-weight:600;width:54%}
+  .kv-row input,.kv-row select{width:54%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:#fbfcfe;font-size:13px}
+  .yes{color:var(--green);font-weight:700}.no{color:var(--hot);font-weight:700}
+  .tag-done{background:#e3f3eb;color:#1f7a4f;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
+  .tag-pend{background:#fdeede;color:#a96a16;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
+
+  .strat-chip{display:inline-flex;align-items:center;gap:6px;background:#e7eefb;color:#2f54a8;padding:5px 12px;border-radius:8px;font-size:13px;font-weight:600;margin:0 6px 6px 0}
+  .doc-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:#fff}
+  .doc-row .nm{font-weight:600;color:var(--navy)}
+  .doc-row .meta{font-size:12px;color:var(--muted)}
+  .metric{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+  .metric .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600}
+  .metric .v{font-size:24px;font-weight:800;color:var(--navy);margin-top:6px}
+  .metric .v.pos{color:var(--green)}.metric .v.neg{color:var(--hot)}
+  .suspense-alert{background:#fdeae6;border:1px solid #f3b8ab;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .suspense-alert .t{font-size:13px;color:#7a3326}.suspense-alert h4{color:var(--hot);font-size:13px;margin-bottom:3px}
+  .back-link{background:none;border:none;color:var(--teal);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:14px;padding:0}
+  .back-link:hover{text-decoration:underline}
+  .callsync{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:13px;background:#fff}
+  .callsync .dt{font-weight:700;color:var(--navy);min-width:140px}
+  .callsync .src-cal{margin-left:auto;font-size:11px;color:var(--teal);background:#eef6f6;padding:2px 8px;border-radius:20px;font-weight:600}
+
+  /* role switcher */
+  .role-switch{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .role-switch label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#7c93ad;margin-bottom:5px;font-weight:600}
+  .role-switch select{width:100%;background:rgba(255,255,255,.07);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600}
+  .role-switch select option{color:#1b2533}
+
+  /* team / priority pills */
+  .team{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .team-RM{background:#e7eefb;color:#2f54a8}
+  .team-Compliance{background:#fdeede;color:#a96a16}
+  .team-Operations{background:#eae6fb;color:#5b3aa8}
+  .team-Investment{background:#e3f3eb;color:#1f7a4f}
+  .pri{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+  .pri i{width:8px;height:8px;border-radius:50%}
+  .pri-High i{background:var(--hot)}.pri-High{color:var(--hot)}
+  .pri-Medium i{background:var(--warm)}.pri-Medium{color:#a96a16}
+  .pri-Low i{background:var(--cold)}.pri-Low{color:var(--cold)}
+  .st-sel{padding:4px 8px;border-radius:6px;border:1px solid var(--line);font-size:12px;font-weight:600;background:#fbfcfe}
+  .stt-Open{color:#46566b}.stt-InProgress{color:#2f54a8}.stt-Done{color:#1f7a4f}.stt-Blocked{color:var(--hot)}
+  .arrow{color:var(--muted);margin:0 4px}
+
+  /* checklist */
+  .chk{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+  .chk-h{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fafbfd}
+  .chk-h .who{font-weight:700;color:var(--navy)}
+  .chk-item{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid #f0f3f7;font-size:13px}
+  .chk-item:last-child{border-bottom:none}
+  .chk-ico{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex-shrink:0;font-weight:700}
+  .chk-ok{background:#e3f3eb;color:var(--green)}
+  .chk-bad{background:#fdeae6;color:var(--hot)}
+  .chk-pend{background:#fdeede;color:#a96a16}
+  .chk-item .lab{font-weight:600;color:var(--navy);width:200px}
+  .chk-item .cmp{color:var(--muted);font-size:12.5px}
+  .chk-item .cmp b{color:var(--ink)}
+  .mismatch{color:var(--hot);font-weight:700}
+  .verdict{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+  .v-Verified{background:#e3f3eb;color:#1f7a4f}
+  .v-Pending{background:#fdeede;color:#a96a16}
+  .v-Flagged{background:#fdeae6;color:var(--hot)}
+
+  /* modal */
+  .modal-scrim{position:fixed;inset:0;background:rgba(15,39,66,.45);display:none;z-index:60;align-items:flex-start;justify-content:center;padding:48px 16px;overflow-y:auto}
+  .modal-scrim.open{display:flex}
+  .modal{background:#fff;border-radius:14px;width:560px;max-width:96vw;box-shadow:0 20px 60px rgba(15,39,66,.35)}
+  .modal-h{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .modal-h h2{font-size:17px;color:var(--navy)}
+  .modal-b{padding:20px 22px;max-height:62vh;overflow-y:auto}
+  .modal-f{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:#fafbfd}
+  .thread{margin-top:6px}
+  .msg{background:#f6f9fc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+  .msg .by{font-weight:700;color:var(--navy);font-size:12px}
+  .msg .when{color:var(--muted);font-size:11px;float:right}
+
+  /* onboarding flow diagram */
+  .flow{max-width:560px;margin:0 auto}
+  .fbox{background:#fdf6ef;border:1.5px solid #e8d4bf;border-radius:12px;padding:13px 18px;text-align:center;position:relative}
+  .fbox .t{font-weight:700;color:var(--navy);font-size:14px}
+  .fbox .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .fbox.start{background:var(--rust,#a8472a);background:#a8472a;border-color:#a8472a;color:#fff}
+  .fbox.start .t{color:#fff}
+  .fbox.end{background:#8a3a22;border-color:#8a3a22}.fbox.end .t{color:#fff}
+  .fbox.client-only{border-color:var(--gold);border-width:2px;background:#fbf3e3}
+  .fbox.client-only:after{content:"client does this";position:absolute;right:10px;top:-9px;font-size:9px;background:var(--gold);color:#1b2533;padding:1px 7px;border-radius:10px;font-weight:700}
+  .fconn{width:2px;height:20px;background:#cbb89f;margin:0 auto}
+  .fconn.arrow:after{content:"▼";color:#cbb89f;font-size:10px;position:relative;top:8px;left:-4px}
+  .fdiamond{width:200px;margin:0 auto;background:#fff;border:1.5px solid var(--hot);transform:rotate(45deg);aspect-ratio:1;max-height:120px;display:grid;place-items:center;border-radius:10px}
+  .fdiamond > div{transform:rotate(-45deg);text-align:center;font-weight:700;color:var(--navy);font-size:13px}
+  .fbranch{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin:8px 0}
+  .fbranch .lblL{text-align:right;font-size:11px;color:var(--muted);font-style:italic}
+  .fbranch .lblR{text-align:left;font-size:11px;color:var(--muted);font-style:italic}
+  .fswitch{font-size:10px;color:var(--teal);text-align:center;font-weight:700;border:1px dashed var(--teal);border-radius:8px;padding:4px 6px}
+  .frecovery{font-size:11px;color:var(--cold);font-style:italic;text-align:center;border:1px dashed var(--cold);border-radius:8px;padding:6px;margin:8px auto;max-width:420px}
+  .flegend{font-size:11px;color:var(--muted);margin-top:14px;text-align:center;line-height:1.7}
+
+  /* funnel */
+  .funnel{display:flex;flex-direction:column;gap:6px}
+  .frow{display:flex;align-items:center;gap:12px}
+  .frow .fname{width:180px;font-size:12.5px;color:var(--navy);font-weight:600;text-align:right;flex-shrink:0}
+  .frow .fbar{flex:1;height:26px;background:#eef2f7;border-radius:6px;overflow:hidden;position:relative}
+  .frow .fbar > i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),#39a0a0);border-radius:6px}
+  .frow .fbar > span{position:absolute;left:10px;top:4px;font-size:12px;font-weight:700;color:#fff;mix-blend-mode:difference}
+
+  /* flow chips */
+  .flowchip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+  .flow-self{background:#e7eefb;color:#2f54a8}
+  .flow-rm{background:#fdeede;color:#a96a16}
+  .flow-none{background:#eef2f7;color:#8b97a8}
+
+  /* calendar / meetings */
+  .cal-day{margin-bottom:18px}
+  .cal-day-h{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .mtg{display:flex;gap:14px;padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:10px;margin-bottom:10px;background:#fff;align-items:flex-start}
+  .mtg.conflict{border-left-color:var(--hot);background:#fefaf9}
+  .mtg.done{opacity:.6;border-left-color:#9aa6b4}
+  .mtg .time{min-width:130px;font-weight:700;color:var(--navy);font-size:13px}
+  .mtg .time .dur{display:block;font-size:11px;color:var(--muted);font-weight:400}
+  .mtg .body{flex:1}
+  .mtg .body h4{font-size:14px;color:var(--navy)}
+  .mtg .body .who{font-size:12px;color:var(--muted);margin-top:3px}
+  .attendees{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .att{font-size:11px;background:#f0f3f7;border-radius:20px;padding:2px 9px;color:#46566b;font-weight:600}
+  .att.rm-att{background:#e7eefb;color:#2f54a8}
+  .meet-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#1a73e8;background:#e8f0fe;border:1px solid #c6dafc;border-radius:8px;padding:6px 12px;text-decoration:none;margin-top:8px}
+  .meet-link:hover{background:#d7e6fd}
+  .conflict-tag{font-size:11px;font-weight:700;color:var(--hot);background:#fdeae6;border-radius:20px;padding:2px 9px}
+  .cal-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#1a73e8;background:#e8f0fe;border:1px solid #c6dafc;padding:3px 10px;border-radius:20px;font-weight:600}
+
+  /* gmail badge */
+  .gmail-foot{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:11px;color:#9fb3c8}
+  .gmail-dot{width:7px;height:7px;border-radius:50%;background:#34a853;box-shadow:0 0 0 3px rgba(52,168,83,.2)}
+
+  /* reminder banner */
+  .reminder-banner{background:linear-gradient(90deg,#fff7e8,#fef0f0);border:1px solid #f0dcae;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .reminder-banner .bell{font-size:22px}
+  .reminder-banner .txt{flex:1;font-size:13px;color:#7a5c14}
+  .reminder-banner .txt b{color:var(--navy)}
+  .rev-sec-h{font-size:13px;font-weight:700;color:var(--navy);margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .auto-note{font-size:11.5px;color:var(--muted);background:#f0fbfb;border:1px dashed #bfe3e3;border-radius:8px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px}
+
+  /* IPS document */
+  .ips-doc{font-size:13px;color:var(--ink)}
+  .ips-doc .doc-title{text-align:center;border-bottom:2px solid var(--navy);padding-bottom:14px;margin-bottom:18px}
+  .ips-doc .doc-title h2{font-size:18px;color:var(--navy)}
+  .ips-doc .doc-title .meta{font-size:12px;color:var(--muted);margin-top:5px}
+  .ips-sec{margin-bottom:18px}
+  .ips-sec h3{font-size:13px;color:var(--teal);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:10px}
+  .ips-sec p{font-size:13px;line-height:1.55;color:#3a4656}
+  .alloc-bar{display:flex;height:30px;border-radius:7px;overflow:hidden;margin:10px 0 6px;border:1px solid var(--line)}
+  .alloc-bar > div{display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+  .alloc-eq{background:#2f54a8}.alloc-debt{background:#1f8a8a}.alloc-cash{background:#c9a24b}
+  .ips-kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px}
+  .ips-kv .r{display:flex;justify-content:space-between;border-bottom:1px dotted #e2e7ee;padding:5px 0;font-size:13px}
+  .ips-kv .r .l{color:var(--muted)}
+  .ips-kv .r .v{font-weight:600;color:var(--navy)}
+  .sig-row{display:flex;justify-content:space-between;margin-top:24px;gap:30px}
+  .sig{flex:1;border-top:1px solid var(--ink);padding-top:6px;font-size:12px;color:var(--muted);text-align:center}
+
+  /* email composer */
+  .gmail-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#202124;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .gmail-head .g{color:#ea4335}.gmail-head .m{color:#4285f4}
+  .em-row{display:flex;align-items:center;gap:10px;border-bottom:1px solid #eef1f5;padding:8px 0;font-size:13px}
+  .em-row label{width:60px;color:var(--muted);font-weight:600}
+  .em-row input,.em-row select{flex:1;border:none;background:none;font-size:13px;color:var(--ink);outline:none}
+  .em-body{width:100%;border:none;outline:none;font-size:13px;min-height:150px;resize:vertical;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><span class="flame">F</span> Flameback CRM</div>
+      <div class="sub">Wealth Management Platform</div>
+      <span class="badge-demo">DEMO WIREFRAME · v1</span>
+    </div>
+    <div class="role-switch">
+      <label>Viewing as</label>
+      <select id="roleSel" onchange="switchRole(this.value)">
+        <option value="RM">RM — Relationship Manager</option>
+        <option value="Qualifier">Qualifier — Lead Desk</option>
+        <option value="Compliance">Compliance Team</option>
+        <option value="Operations">Operations Team</option>
+        <option value="Investment">Investment Team</option>
+      </select>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="dashboard" class="active"><span class="ico">▦</span> Dashboard</button>
+      <button data-view="leads"><span class="ico">👥</span> Leads <span class="count" id="navLeads">0</span></button>
+      <button data-view="assignment"><span class="ico">🎯</span> Assignment Queue <span class="count" id="navAssign">0</span></button>
+      <button data-view="onboarding"><span class="ico">🧭</span> Onboarding <span class="count" id="navOnb">0</span></button>
+      <button data-view="calendar"><span class="ico">📅</span> Calendar <span class="count" id="navCal">0</span></button>
+      <button data-view="reminders"><span class="ico">🔔</span> Reviews & Reminders <span class="count" id="navRem">0</span></button>
+      <button data-view="clients"><span class="ico">💼</span> Clients <span class="count" id="navClients">0</span></button>
+      <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
+      <button data-view="verification"><span class="ico">✅</span> Verification <span class="count" id="navVerif">0</span></button>
+      <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
+      <button data-view="out"><span class="ico">⛔</span> Out List <span class="count" id="navOut">0</span></button>
+      <button data-view="suggestions"><span class="ico">💡</span> Feature Suggestions <span class="count" id="navSugg">0</span></button>
+    </nav>
+    <div class="side-foot">
+      Logged in as<br><strong style="color:#cdd8e6" id="roleName">Shashank</strong><br>
+      <span style="opacity:.6" id="roleLabel">Relationship Manager</span>
+      <div class="gmail-foot"><span class="gmail-dot"></span> Gmail connected · <span id="roleEmail">shashank@…</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard">
+      <div class="page-head">
+        <div><h1 id="dashTitle">Dashboard</h1><p id="dashSub">Pipeline snapshot</p></div>
+        <div id="dashAction"></div>
+      </div>
+      <div class="cards" id="dashCards"></div>
+      <div id="dashPanel"></div>
+    </section>
+
+    <!-- LEADS -->
+    <section id="view-leads" class="hidden">
+      <div class="page-head">
+        <div><h1>Leads</h1><p>Sales / Lead information — every field is editable</p></div>
+        <button class="btn" onclick="openLead(null)">+ Add Lead</button>
+      </div>
+      <div class="panel">
+        <div class="filterbar">
+          <div class="search"><input id="searchBox" placeholder="Search name, RM, comment…" oninput="renderLeads()"></div>
+          <select class="filter" id="fStage" onchange="renderLeads()">
+            <option value="">All stages</option>
+            <option value="L1">L1 — Cold</option>
+            <option value="L2">L2 — Hot / Holding</option>
+            <option value="L3">L3 — Onboarding</option>
+            <option value="L4">L4 — Pre Investment</option>
+          </select>
+          <select class="filter" id="fStatus" onchange="renderLeads()">
+            <option value="">All statuses</option>
+            <option>New</option><option>Cold</option><option>Hot</option>
+            <option>Potential</option><option>Onboarding</option><option>Not Interested</option>
+          </select>
+          <select class="filter" id="fSource" onchange="renderLeads()">
+            <option value="">All sources</option>
+            <option>Meta</option><option>Google</option><option>LinkedIn</option><option>Search</option>
+            <option>Tools</option><option>Direct</option><option>Referral</option>
+          </select>
+          <div style="margin-left:auto" class="legend">
+            <span><i class="dot" style="background:var(--hot)"></i> Hot</span>
+            <span><i class="dot" style="background:var(--warm)"></i> Potential</span>
+            <span><i class="dot" style="background:var(--cold)"></i> Cold/New</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Lead</th><th>Source</th><th>Status</th><th>Stage</th>
+            <th>RM</th><th>Interaction</th><th>Count</th><th>Five-Strike</th><th>Follow-up</th>
+          </tr></thead>
+          <tbody id="leadsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- OUT LIST -->
+    <section id="view-out" class="hidden">
+      <div class="page-head">
+        <div><h1>Out List</h1><p>Leads exited via the Five-Strike Rule (5 outreach attempts at L1, no response) or marked Not Interested</p></div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Lead</th><th>Source</th><th>RM</th><th>Interactions</th><th>Reason</th><th>Last touch</th><th></th></tr></thead>
+          <tbody id="outBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CLIENTS (ACTIVE) -->
+    <section id="view-clients" class="hidden">
+      <div class="page-head">
+        <div><h1>Clients — Active</h1><p>Unique Client ID is mapped to the registered contact number. Click a contact number to open the full profile.</p></div>
+        <span class="sync-badge">⟳ Synced from FBC-Admin</span>
+      </div>
+      <div class="panel">
+        <div class="filterbar">
+          <div class="search"><input id="cSearch" placeholder="Search name, Client ID, phone, RM…" oninput="renderClients()"></div>
+          <select class="filter" id="cPlan" onchange="renderClients()">
+            <option value="">All billing cycles</option><option>Monthly</option><option>Quarterly</option><option>Yearly</option>
+          </select>
+          <select class="filter" id="cStageF" onchange="renderClients()">
+            <option value="">All onboarding stages</option>
+            <option>Sign-up</option><option>Questionnaire</option><option>Agreement</option><option>KYC</option><option>Invested</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Client ID</th><th>Client</th><th>Contact No.</th><th>RM</th>
+            <th>Billing</th><th>Onboarding stage</th><th>Invested</th><th>Current value</th><th>Gain</th>
+          </tr></thead>
+          <tbody id="clientsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CLIENT PROFILE -->
+    <section id="view-clientProfile" class="hidden">
+      <button class="back-link" onclick="go('clients')">← Back to clients</button>
+      <div class="profile-top">
+        <div class="avatar" id="cpAvatar">—</div>
+        <div style="flex:1">
+          <div class="page-head" style="margin:0">
+            <div>
+              <h1 id="cpName" style="font-size:20px">Client</h1>
+              <p id="cpSub">—</p>
+            </div>
+            <span class="sync-badge">⟳ Synced from FBC-Admin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- progress -->
+      <div class="panel" style="padding:18px 20px 16px;margin:14px 0 18px">
+        <div class="stepper" id="cpStepper"></div>
+        <div class="nextstep" id="cpNext"></div>
+      </div>
+
+      <div class="tabs" id="cpTabs">
+        <button class="active" data-tab="overview">Overview</button>
+        <button data-tab="investment">Investment & SIP</button>
+        <button data-tab="docs">Risk Profile & Agreement</button>
+        <button data-tab="strategies">Strategies</button>
+        <button data-tab="kyc">KYC</button>
+        <button data-tab="portfolio">Portfolio</button>
+        <button data-tab="invoices">Invoices</button>
+        <button data-tab="calls">Call Sync</button>
+      </div>
+
+      <div class="tab-pane active" id="tab-overview"></div>
+      <div class="tab-pane" id="tab-investment"></div>
+      <div class="tab-pane" id="tab-docs"></div>
+      <div class="tab-pane" id="tab-strategies"></div>
+      <div class="tab-pane" id="tab-kyc"></div>
+      <div class="tab-pane" id="tab-portfolio"></div>
+      <div class="tab-pane" id="tab-invoices"></div>
+      <div class="tab-pane" id="tab-calls"></div>
+    </section>
+
+    <!-- TASKS & REQUESTS -->
+    <section id="view-tasks" class="hidden">
+      <div class="page-head">
+        <div><h1 id="tasksTitle">Tasks & Requests</h1><p id="tasksSub">Hand work across teams — raise a request and assign it to Compliance, Operations, Investment or an RM.</p></div>
+        <button class="btn" onclick="openTask(null)">+ New request</button>
+      </div>
+      <div class="panel">
+        <div class="filterbar">
+          <select class="filter" id="tInbox" onchange="renderTasks()">
+            <option value="mine">My team's inbox</option>
+            <option value="raised">Raised by me</option>
+            <option value="all">All tasks</option>
+          </select>
+          <select class="filter" id="tStatus" onchange="renderTasks()">
+            <option value="">All statuses</option><option>Open</option><option>In Progress</option><option>Blocked</option><option>Done</option>
+          </select>
+          <select class="filter" id="tPri" onchange="renderTasks()">
+            <option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option>
+          </select>
+          <div class="search" style="margin-left:auto"><input id="tSearch" placeholder="Search tasks…" oninput="renderTasks()"></div>
+        </div>
+        <table>
+          <thead><tr><th>Priority</th><th>Task</th><th>Client</th><th>From → To</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead>
+          <tbody id="tasksBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VERIFICATION (COMPLIANCE) -->
+    <section id="view-verification" class="hidden">
+      <div class="page-head">
+        <div><h1>Verification Checklist</h1><p>Compliance check — confirm Name, PAN & DOB match the uploaded documents, then verify or flag a discrepancy.</p></div>
+      </div>
+      <div id="verifList"></div>
+    </section>
+
+    <!-- PORTFOLIOS & IPS (INVESTMENT) -->
+    <section id="view-ips" class="hidden">
+      <div class="page-head">
+        <div><h1>Portfolios & IPS</h1><p>Review client portfolios and Investment Policy Statements, raise tasks to Operations, and schedule reviews.</p></div>
+        <span class="sync-badge">⟳ Holdings synced from FBC-Admin</span>
+      </div>
+      <div class="cards" id="ipsCards"></div>
+      <div class="panel">
+        <div class="panel-head"><h2>Client portfolios</h2></div>
+        <table>
+          <thead><tr><th>Client</th><th>Risk band</th><th>Current value</th><th>Return</th><th>Target eq.</th><th>Annual IPS review</th><th>Quarterly review</th><th>Actions</th></tr></thead>
+          <tbody id="ipsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ASSIGNMENT QUEUE (QUALIFIER) -->
+    <section id="view-assignment" class="hidden">
+      <div class="page-head">
+        <div><h1>Assignment Queue</h1><p>New app sign-ups awaiting qualification. Call the lead, pick the best-fit RM, then assign — the RM is auto-added to the Google Meet invite.</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Unassigned leads from the app</h2><span class="cal-badge">⟳ Synced from onboarding app</span></div>
+        <table>
+          <thead><tr><th>Lead</th><th>Captured details</th><th>Source</th><th>Flow chosen</th><th>Recommended RM</th><th>Stage</th><th></th></tr></thead>
+          <tbody id="assignBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ONBOARDING JOURNEY -->
+    <section id="view-onboarding" class="hidden">
+      <div class="page-head">
+        <div><h1>Onboarding Journey</h1><p>The client-facing flow from the app — Self-serve or RM-assisted, switchable any time, advisory-first.</p></div>
+      </div>
+      <div class="two-col" style="grid-template-columns:1fr 1fr;align-items:start">
+        <div class="panel" style="padding:22px 18px">
+          <h2 style="font-size:14px;color:var(--navy);margin-bottom:16px">Client onboarding flow</h2>
+          <div class="flow">
+            <div class="fbox start"><div class="t">Ad click / website visit</div></div>
+            <div class="fconn arrow"></div>
+            <div class="fbox"><div class="t">Capture details</div><div class="s">name · number · email</div></div>
+            <div class="fconn arrow"></div>
+            <div class="fbox"><div class="t">Authenticate &amp; verify</div></div>
+            <div class="fconn arrow"></div>
+            <div class="fdiamond"><div>Self-serve or<br>RM-assisted?</div></div>
+            <div class="fconn"></div>
+            <div class="fbranch">
+              <div class="lblL">Do it myself</div>
+              <div class="fswitch">switch<br>anytime ⇄</div>
+              <div class="lblR">Help me out</div>
+            </div>
+            <div class="fbranch" style="grid-template-columns:1fr 1fr;gap:14px">
+              <div class="fbox"><div class="t">Self-serve</div><div class="s">client proceeds on their own</div></div>
+              <div class="fbox"><div class="t">RM-assisted</div><div class="s">an advisor walks them through</div></div>
+            </div>
+            <div class="frecovery">⟲ Abandon onboarding → RM calls to finish</div>
+            <div class="fconn arrow"></div>
+            <div class="fbox"><div class="t">Advisory-first routing</div><div class="s">understand the goal first, then recommend the right tool — advisory, PMS, or whatever the client needs</div></div>
+            <div class="fconn arrow"></div>
+            <div class="fbox client-only"><div class="t">Sign agreement in-app</div></div>
+            <div class="fconn arrow"></div>
+            <div class="fbox client-only"><div class="t">Fund broker account</div></div>
+            <div class="fconn arrow"></div>
+            <div class="fbox end"><div class="t">Onboarded · wealth managed</div></div>
+            <div class="flegend">Highlighted steps = the only two things the client must do themselves.<br>The RM can drive everything else and switch paths at any time.</div>
+          </div>
+        </div>
+        <div>
+          <div class="panel" style="padding:18px 20px;margin-bottom:18px">
+            <h2 style="font-size:14px;color:var(--navy);margin-bottom:14px">Funnel — where leads are right now</h2>
+            <div class="funnel" id="onbFunnel"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Leads in onboarding</h2></div>
+            <table>
+              <thead><tr><th>Lead</th><th>Flow</th><th>Current step</th><th>RM</th></tr></thead>
+              <tbody id="onbBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section id="view-calendar" class="hidden">
+      <div class="page-head">
+        <div><h1 id="calTitle">Calendar</h1><p>Integrated calendar with meeting invites & Google Meet links. Conflicts are flagged — call the client to reschedule.</p></div>
+        <span class="cal-badge">⟳ Google Calendar connected</span>
+      </div>
+      <div id="calBody"></div>
+    </section>
+
+    <!-- REVIEWS & REMINDERS -->
+    <section id="view-reminders" class="hidden">
+      <div class="page-head">
+        <div><h1>Reviews & Reminders</h1><p>Who's up for review this week — annual IPS reviews and quarterly portfolio reviews.</p></div>
+      </div>
+      <div class="reminder-banner">
+        <span class="bell">🔔</span>
+        <div class="txt" id="remBanner"></div>
+      </div>
+      <div class="auto-note">⟳ Reminders run automatically every Monday — the RM gets an email & in-app nudge for each client due that week.</div>
+      <div class="panel" style="margin-bottom:18px">
+        <div class="panel-head"><h2>📅 Annual IPS reviews due this week</h2><span class="lead-sub">Yearly review call</span></div>
+        <table>
+          <thead><tr><th>Client</th><th>RM</th><th>Last review</th><th>Due</th><th>Actions</th></tr></thead>
+          <tbody id="remAnnual"></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>📊 Quarterly portfolio reviews due this week</h2><span class="lead-sub">Every quarter</span></div>
+        <table>
+          <thead><tr><th>Client</th><th>RM</th><th>Last review</th><th>Due</th><th>Actions</th></tr></thead>
+          <tbody id="remQuarterly"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SUGGESTIONS -->
+    <section id="view-suggestions" class="hidden">
+      <div class="page-head">
+        <div><h1>Feature Suggestions</h1><p>Tell us what to build next. The team prioritises by votes and ships in batches.</p></div>
+      </div>
+      <div class="sugg-grid">
+        <div id="suggList"></div>
+        <div class="form-box">
+          <h3>Suggest a feature</h3>
+          <div class="hint">Future users of this CRM — drop your idea, we build the roadmap from it.</div>
+          <div class="field"><label>Your name / desk</label><input id="sName" placeholder="e.g. Priya — Bangalore desk"></div>
+          <div class="field"><label>Feature title</label><input id="sTitle" placeholder="e.g. Auto-reminder on WhatsApp"></div>
+          <div class="field"><label>What should it do?</label><textarea id="sDesc" placeholder="Describe the problem and the feature you'd like…"></textarea></div>
+          <div class="field"><label>Category</label>
+            <select id="sCat"><option>Leads & Pipeline</option><option>Interactions</option><option>Reporting</option><option>Automation</option><option>Integrations</option><option>Other</option></select>
+          </div>
+          <button class="btn gold" style="width:100%" onclick="addSuggestion()">Submit suggestion</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- LEAD DRAWER -->
+<div class="scrim" id="scrim" onclick="closeLead()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <h2 id="dTitle">New Lead</h2>
+      <div class="lead-sub" id="dSub">Add to pipeline</div>
+    </div>
+    <button class="x" onclick="closeLead()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field"><label>Lead name / company</label><input id="fName" placeholder="Full name or entity"></div>
+
+    <div class="grid2">
+      <div class="field"><label>Lead Source <span class="editmark">editable</span></label>
+        <select id="fSourceEdit">
+          <option>Meta</option><option>Google</option><option>LinkedIn</option><option>Search</option>
+          <option>Tools</option><option>Direct</option><option>Referral</option>
+        </select>
+      </div>
+      <div class="field"><label>RM <span class="editmark">editable</span></label>
+        <select id="fRM"></select>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label>Lead Status <span class="editmark">editable</span></label>
+        <select id="fStatusEdit">
+          <option>New</option><option>Cold</option><option>Hot</option>
+          <option>Potential</option><option>Onboarding</option><option>Not Interested</option>
+        </select>
+      </div>
+      <div class="field"><label>Follow-up date & time <span class="editmark">editable</span></label>
+        <input type="datetime-local" id="fFollow">
+      </div>
+    </div>
+
+    <div class="field"><label>Lead Stage — RM selects <span class="editmark">editable</span></label>
+      <select id="fStageEdit" onchange="stageHelp()">
+        <option value="L1">L1 — Cold</option>
+        <option value="L2">L2 — Hot or Holding</option>
+        <option value="L3">L3 — Proceeded to Onboarding</option>
+        <option value="L4">L4 — Pre Investment (Onboarding done, first trades not deployed)</option>
+      </select>
+      <div class="stage-help" id="stageHelp"></div>
+    </div>
+
+    <div class="section-h">Interactions</div>
+    <div class="interlog">
+      <div class="row">
+        <div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Count — total interactions</div>
+          <div class="lead-sub">Calls & meetings logged with this lead</div>
+        </div>
+        <div class="big" id="iCount">0</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Log an interaction (also sets "Type of Interaction"):</div>
+      <div class="quicklog">
+        <button onclick="logInteraction('Call')"><span class="ic">📞</span>Call</button>
+        <button onclick="logInteraction('Email')"><span class="ic">✉️</span>Email</button>
+        <button onclick="logInteraction('Meeting')"><span class="ic">🤝</span>Meeting</button>
+        <button onclick="logInteraction('WhatsApp')"><span class="ic">💬</span>WhatsApp</button>
+      </div>
+
+      <div style="margin-top:14px">
+        <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px">Five-Strike Rule (L1 only)</div>
+        <div class="strikes" id="strikeTrack"></div>
+        <div class="lead-sub" style="margin-top:6px" id="strikeNote"></div>
+      </div>
+
+      <div class="rule-alert" id="ruleAlert">
+        <h4>⚠ Five-Strike threshold reached</h4>
+        <p>This L1 lead has had 5 outreach attempts with no response or expressed interest. Per the Five-Strike Rule they should move to the Out list.</p>
+        <button class="btn danger sm" style="margin-top:8px" onclick="moveToOut()">Move to Out list</button>
+        <button class="btn ghost sm" style="margin-top:8px" onclick="dismissRule()">Keep — lead responded</button>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:16px"><label>Type of Interaction (latest)</label>
+      <select id="fType"><option>Call</option><option>Email</option><option>Meeting</option><option>WhatsApp</option></select>
+    </div>
+
+    <div class="field"><label>Comments <span class="editmark">editable</span></label>
+      <textarea id="fComments" placeholder="Notes from the last conversation…"></textarea>
+    </div>
+
+    <div id="histWrap" class="hidden">
+      <div class="section-h">Interaction history</div>
+      <ul class="tl" id="histList"></ul>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn ghost" id="delBtn" onclick="deleteLead()" style="margin-right:auto">Delete</button>
+    <button class="btn ghost" onclick="closeLead()">Cancel</button>
+    <button class="btn" onclick="saveLead()">Save lead</button>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-scrim" id="taskScrim">
+  <div class="modal">
+    <div class="modal-h"><h2 id="tmTitle">New request</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeTask()">×</button></div>
+    <div class="modal-b">
+      <div class="field"><label>What needs to be done?</label><input id="tmTitleInput" placeholder="e.g. Open Zerodha account for new client"></div>
+      <div class="grid2">
+        <div class="field"><label>Assign to team</label>
+          <select id="tmTeam" onchange="tmTypes()">
+            <option value="Compliance">Compliance</option>
+            <option value="Operations">Operations</option>
+            <option value="Investment">Investment</option>
+            <option value="RM">RM</option>
+          </select>
+        </div>
+        <div class="field"><label>Task type</label><select id="tmType"></select></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Link client (optional)</label><select id="tmClient"></select></div>
+        <div class="field"><label>Priority</label><select id="tmPri"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+      </div>
+      <div class="field"><label>Due date</label><input type="date" id="tmDue"></div>
+      <div class="field"><label>Notes / context</label><textarea id="tmNotes" placeholder="Add details the other team needs…"></textarea></div>
+      <div id="tmThreadWrap" class="hidden">
+        <div class="section-h">Conversation</div>
+        <div class="thread" id="tmThread"></div>
+        <div class="field" style="margin-top:8px"><textarea id="tmReply" placeholder="Add a comment…"></textarea></div>
+        <button class="btn ghost sm" onclick="addComment()">Post comment</button>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeTask()">Cancel</button>
+      <button class="btn" id="tmSave" onclick="saveTask()">Raise request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ASSIGNMENT / SCHEDULE MODAL -->
+<div class="modal-scrim" id="asgnScrim">
+  <div class="modal">
+    <div class="modal-h"><h2>Qualify &amp; assign RM</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeAsgn()">×</button></div>
+    <div class="modal-b">
+      <div id="asgnLead" style="background:#f6f9fc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px"></div>
+      <div class="field"><label>Assign to RM (best fit)</label><select id="asgnRM" onchange="asgnPreview()"></select>
+        <div class="lead-sub" id="asgnReason" style="margin-top:6px"></div></div>
+      <div class="grid2">
+        <div class="field"><label>Meeting date</label><input type="date" id="asgnDate" onchange="asgnPreview()"></div>
+        <div class="field"><label>Time</label><input type="time" id="asgnTime" value="15:00" onchange="asgnPreview()"></div>
+      </div>
+      <div class="section-h">Google Meet invite</div>
+      <div style="background:#e8f0fe;border:1px solid #c6dafc;border-radius:10px;padding:14px 16px">
+        <a class="meet-link" id="asgnMeet" href="#" onclick="return false">🎥 <span>meet.google.com/—</span></a>
+        <div style="margin-top:10px;font-size:12px;color:#46566b">Attendees auto-added to the invite:</div>
+        <div class="attendees" id="asgnAtt" style="margin-top:6px"></div>
+        <div class="lead-sub" style="margin-top:8px">A calendar invite with this link goes to the client and the assigned RM. The RM joins from their calendar.</div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeAsgn()">Cancel</button>
+      <button class="btn" onclick="confirmAssign()">Assign RM &amp; send invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- IPS DOCUMENT MODAL -->
+<div class="modal-scrim" id="ipsScrim">
+  <div class="modal" style="width:640px">
+    <div class="modal-h"><h2>Investment Policy Statement</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn ghost sm" onclick="toast('Downloading IPS as PDF…')">⬇ Download</button>
+        <button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeIps()">×</button>
+      </div>
+    </div>
+    <div class="modal-b" id="ipsDocBody"></div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeIps()">Close</button>
+      <button class="btn" id="ipsEmailBtn">✉ Email IPS to client</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL COMPOSER MODAL -->
+<div class="modal-scrim" id="emailScrim">
+  <div class="modal" style="width:560px">
+    <div class="modal-h"><h2>Compose email</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeEmail()">×</button></div>
+    <div class="modal-b">
+      <div class="gmail-head"><span class="g">G</span><span class="m">M</span> Sending via connected Gmail</div>
+      <div class="em-row"><label>From</label><select id="emFrom"></select></div>
+      <div class="em-row"><label>To</label><input id="emTo"></div>
+      <div class="em-row"><label>Subject</label><input id="emSubject"></div>
+      <textarea class="em-body" id="emBody"></textarea>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeEmail()">Discard</button>
+      <button class="btn" onclick="sendEmail()">Send from Gmail</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- storage ---------- */
+const KEY='flameback_crm_v1';
+const RMS=['Shashank','Priya Nair','Arjun Mehta','Divya Rao','Karan Shah'];
+const SOURCE_COLORS={Hot:'var(--hot)',Potential:'var(--warm)',Cold:'var(--cold)',New:'var(--cold)',Onboarding:'var(--green)','Not Interested':'#9aa6b4'};
+
+function seed(){
+  return {
+    leads:[
+      {id:1,name:'Rajesh Kumar',source:'Referral',status:'Hot',stage:'L2',rm:'Priya Nair',type:'Meeting',count:3,comments:'Wants to deploy ₹2.5cr. Reviewing PMS proposal.',follow:nextDays(1),hist:[h('Call',-9),h('Meeting',-4),h('Meeting',-1)],out:false},
+      {id:2,name:'Suneet Verma (Verma Exports)',source:'LinkedIn',status:'Potential',stage:'L1',rm:'Shashank',type:'Call',count:2,comments:'Interested but travelling. Reconnect next week.',follow:nextDays(3),hist:[h('Call',-6),h('Call',-2)],out:false},
+      {id:3,name:'Anita Desai',source:'Meta',status:'Cold',stage:'L1',rm:'Arjun Mehta',type:'Call',count:5,comments:'No response after multiple attempts.',follow:nextDays(-1),hist:[h('Call',-20),h('Call',-16),h('Call',-12),h('WhatsApp',-8),h('Call',-3)],out:false},
+      {id:4,name:'Mohan Iyer',source:'Google',status:'Onboarding',stage:'L3',rm:'Divya Rao',type:'Meeting',count:6,comments:'KYC submitted. Awaiting demat activation.',follow:nextDays(2),hist:[h('Meeting',-30),h('Call',-22),h('Meeting',-15),h('Email',-10),h('Meeting',-5),h('Call',-1)],out:false},
+      {id:5,name:'Fatima Sheikh',source:'Direct',status:'Hot',stage:'L4',rm:'Karan Shah',type:'Meeting',count:7,comments:'Onboarding complete. First trades to be deployed this week.',follow:nextDays(0),hist:[h('Meeting',-40),h('Meeting',-30),h('Email',-20),h('Meeting',-12),h('Call',-7),h('Meeting',-3),h('Call',0)],out:false},
+      {id:6,name:'Vikram Singh',source:'Search',status:'New',stage:'L1',rm:'Shashank',type:'Call',count:1,comments:'Fresh inbound from website calculator tool.',follow:nextDays(1),hist:[h('Call',0)],out:false},
+      {id:7,name:'Pooja Reddy',source:'Tools',status:'Not Interested',stage:'L1',rm:'Priya Nair',type:'Call',count:4,comments:'Said not looking right now.',follow:'',hist:[h('Call',-14),h('Call',-10),h('WhatsApp',-7),h('Call',-3)],out:true,outReason:'Not Interested'}
+    ],
+    suggestions:[
+      {id:1,name:'Priya — Bangalore',title:'Auto-reminder on WhatsApp for follow-ups',desc:'When a follow-up date hits, ping the RM and optionally send a templated WhatsApp to the lead.',cat:'Automation',status:'Planned',votes:14,you:false},
+      {id:2,name:'Arjun',title:'Bulk import leads from CSV / Meta ads',desc:'Pull leads straight from Meta & Google ad forms into the pipeline without manual entry.',cat:'Integrations',status:'In Progress',votes:11,you:false},
+      {id:3,name:'Divya',title:'RM performance leaderboard',desc:'Weekly view of conversions L1→L4 per RM, with strike-rate on the Five-Strike rule.',cat:'Reporting',status:'Requested',votes:8,you:false},
+      {id:4,name:'Karan',title:'Document vault per lead',desc:'Attach KYC, agreements and proposals to each lead record.',cat:'Leads & Pipeline',status:'Requested',votes:6,you:false}
+    ],
+    nextId:8,nextSug:5
+  };
+}
+function h(type,offset){return {type,when:dayStr(offset)};}
+function nextDays(n){const d=new Date();d.setDate(d.getDate()+n);d.setHours(11,0,0,0);return d.toISOString().slice(0,16);}
+function dayStr(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+
+const STRATEGIES=['Flameback Multicap','Flameback Momentum','Flameback Dividend Yield','Flameback Bluechip','Flameback Small-Cap Alpha'];
+function seedClients(){
+  return [
+    {cid:'FBC-1001',contact:'+91 98200 11223',whatsapp:'+91 98200 11223',sameWa:true,signup:dayStr(-95),first:'Fatima',last:'Sheikh',email:'fatima.sheikh@email.com',country:'India',postal:'400050',source:'Direct',zerodha:'Yes',
+     questionnaire:'Done',agreement:'Done',signed:true,plan:'Yearly',goal:'Capital appreciation',rm:'Karan Shah',
+     sip:'Yes',sipDetails:{investment:'Flameback Multicap',frequency:'Monthly',start:'Jul 2025',amount:50000},
+     strategies:['Flameback Multicap','Flameback Bluechip'],
+     kyc:{namePan:'Fatima A Sheikh',pan:'ABCPS1234F',gender:'Female',address:'12 Carter Road, Bandra W',city:'Mumbai',dob:'1985-03-14',profession:'Business Owner',marital:'Married',pep:'No',kra:'Verified',ckyc:'14-digit · Done'},
+     portfolio:{invested:2500000,current:2787500,absReturn:11.5,irr:14.2,holdings:[['Reliance Industries',420000,468000],['HDFC Bank',380000,402000],['Infosys',310000,341000],['TCS',290000,318500],['Larsen & Toubro',250000,289000]],suspense:[]},
+     invoices:[inv(-90,'Annual subscription 2025-26',47200,'Paid'),inv(-2,'Performance fee Q1',18600,'Due')],
+     funded:true,calls:[call(-30,'Quarterly review — discussed adding small-cap'),call(2,'Confirm first-trade deployment')]},
+
+    {cid:'FBC-1002',contact:'+91 99300 44556',whatsapp:'+91 99300 44556',sameWa:true,signup:dayStr(-40),first:'Mohan',last:'Iyer',email:'mohan.iyer@email.com',country:'India',postal:'600040',source:'Google',zerodha:'Yes',
+     questionnaire:'Done',agreement:'Done',signed:true,plan:'Quarterly',goal:'Income Generation',rm:'Divya Rao',
+     sip:'No',sipDetails:null,strategies:['Flameback Dividend Yield'],
+     kyc:{namePan:'Mohan R Iyer',pan:'AAAPI9876K',gender:'Male',address:'5 Anna Nagar East',city:'Chennai',dob:'1972-11-02',profession:'Doctor',marital:'Married',pep:'No',kra:'Verified',ckyc:'Pending'},
+     portfolio:{invested:1500000,current:1542000,absReturn:2.8,irr:9.1,holdings:[['ITC',300000,318000],['Power Grid',260000,271000],['Coal India',240000,236000],['NTPC',220000,231000]],suspense:[['HDFC Bank',45000,'Corporate action — bonus unreconciled']]},
+     invoices:[inv(-35,'Quarterly subscription Q2',12000,'Paid')],
+     funded:true,calls:[call(5,'Review dividend payout schedule')]},
+
+    {cid:'FBC-1003',contact:'+91 90040 77889',whatsapp:'',sameWa:false,signup:dayStr(-12),first:'Sneha',last:'Kulkarni',email:'sneha.k@email.com',country:'India',postal:'411004',source:'Referral',zerodha:'No',
+     questionnaire:'Done',agreement:'Pending',signed:false,plan:'Monthly',goal:'Future Goal',rm:'Shashank',
+     sip:'Yes',sipDetails:{investment:'Flameback Momentum',frequency:'Monthly',start:'Aug 2026',amount:25000},
+     strategies:['Flameback Momentum'],
+     kyc:{namePan:'Sneha V Kulkarni',pan:'BNZPK4567L',gender:'Female',address:'Plot 22, Kothrud',city:'Pune',dob:'1990-07-21',profession:'Software Engineer',marital:'Single',pep:'No',kra:'Pending',ckyc:'Pending'},
+     portfolio:{invested:0,current:0,absReturn:0,irr:0,holdings:[],suspense:[]},
+     invoices:[],funded:false,calls:[call(1,'Send agreement for e-sign'),call(4,'Follow up on Zerodha account opening')]}
+  ];
+}
+function inv(off,desc,amt,status){return {date:dayStr(off),desc,amount:amt,status};}
+function call(off,note){const d=new Date();d.setDate(d.getDate()+off);d.setHours(15,30,0,0);return {when:d.toISOString().slice(0,16),note,source:'Calendar sync'};}
+
+/* roles */
+const ROLES={
+  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','tasks','out','suggestions']},
+  Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','onboarding','calendar','tasks','suggestions']},
+  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions']},
+  Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions']},
+  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','tasks','clients','suggestions']}
+};
+let currentRole='RM';
+const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
+function emailOf(name){return RM_EMAILS[name]||(ROLES[currentRole]&&Object.values(ROLES).find(r=>r.name===name)?Object.values(ROLES).find(r=>r.name===name).email:(name||'user').split(' ')[0].toLowerCase()+'@flamebackcapital.com');}
+const ONB_STEPS=['Captured details','Authenticated','Choosing path','In progress','Advisory routing','Sign agreement','Fund account','Onboarded'];
+const TASK_TYPES={
+  Compliance:['KYC document verification','PAN–Name mismatch review','Re-KYC','AML screening','PEP review'],
+  Operations:['Open bank account','Demat / Zerodha activation','Cheque collection','Address / detail change','Resolve login issue','Statement request'],
+  Investment:['Portfolio review','Rebalance portfolio','IPS review','Strategy change','Suspense reconciliation'],
+  RM:['Schedule meeting','Quarterly review','Yearly review','Follow up','Collect document']
+};
+function seedTasks(){
+  return [
+    tk('Open Zerodha (demat) account','Operations','Demat / Zerodha activation','FBC-1003','Shashank · RM','High','Open',2,'New client has no Zerodha account yet. Please initiate account opening so we can fund the SIP.'),
+    tk('Verify KYC documents — DOB mismatch','Compliance','KYC document verification','FBC-1003','Shashank · RM','High','In Progress',1,'Please confirm DOB on PAN vs uploaded proof before we proceed to agreement.',[{by:'Neha · Compliance',text:'Uploaded proof shows DOB 1991-07-21 but KYC entry says 1990-07-21. Flagging back to RM to correct.',when:dayStr(0)}]),
+    tk('Quarterly portfolio review','Investment','Portfolio review','FBC-1002','Divya · RM','Medium','Open',-3,'Q review is due. Please assess allocation vs IPS and share notes for the client call.'),
+    tk('Reconcile suspense holding — HDFC bonus','Operations','Cheque collection','FBC-1002','Anjali · Investment','Medium','Open',4,'Corporate-action bonus units sitting in suspense. Please reconcile with the custodian.'),
+    tk('Collect signed agreement','RM','Collect document','FBC-1003','Neha · Compliance','Medium','Open',3,'Agreement still pending signature — please chase the client.'),
+    tk('Rebalance to target equity 60%','Investment','Rebalance portfolio','FBC-1001','Anjali · Investment','Low','Done',-10,'Drifted above target after rally. Rebalanced on last review.'),
+    tk('Cheque collection from client','Operations','Cheque collection','FBC-1001','Karan · RM','Low','Done',-5,'Top-up cheque collected and deposited.'),
+    tk('Yearly review meeting','RM','Yearly review','FBC-1001','Karan · RM','Medium','Open',20,'Schedule the annual review and send the performance pack.')
+  ];
+}
+function tk(title,team,type,cid,from,priority,status,dueOff,notes,thread){return {id:0,title,team,type,cid,from,priority,status,due:dayStr(dueOff),notes,created:dayStr(-3),thread:thread||[]};}
+function ensureClientExtras(c){
+  if(!c.uploaded){c.uploaded={namePan:c.kyc.namePan,pan:c.kyc.pan,dob:c.kyc.dob};if(c.cid==='FBC-1003')c.uploaded.dob='1991-07-21';}
+  if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
+  if(!c.ips){const band=c.goal==='Income Generation'?'Conservative':c.goal==='Capital appreciation'?'Aggressive':'Moderate';
+    c.ips={riskBand:band,targetEquity:band==='Conservative'?40:band==='Aggressive'?80:60,lastReview:c.funded?dayStr(-60):'',nextReview:c.funded?dayStr(c.cid==='FBC-1002'?-3:25):dayStr(40),notes:''};}
+  if(c.ips.nextAnnualReview===undefined){
+    if(c.funded){
+      c.ips.nextAnnualReview=c.cid==='FBC-1001'?dayStr(2):dayStr(140);
+      c.ips.lastAnnualReview=c.cid==='FBC-1001'?dayStr(-363):dayStr(-225);
+      c.ips.nextQuarterlyReview=c.cid==='FBC-1002'?dayStr(4):dayStr(55);
+      c.ips.lastQuarterlyReview=dayStr(c.cid==='FBC-1002'?-88:-35);
+    }else{c.ips.nextAnnualReview='';c.ips.lastAnnualReview='';c.ips.nextQuarterlyReview='';c.ips.lastQuarterlyReview='';}
+  }
+}
+
+function seedAppLeads(){
+  return [
+    al('Aarti Joshi','Meta','RM-assisted',2,'+91 98111 22334','aarti.joshi@email.com','App sign-up — requested an advisor. Goal: retirement corpus.','Priya Nair','Speaks Marathi · Mumbai region · strong on retirement goals',false),
+    al('Rohit Bansal','Google','Self-serve',3,'+91 99888 17263','rohit.b@email.com','Started self-serve, stalled at the risk-profile step.','Shashank','High-intent inbound · has free capacity this week',true),
+    al('Meera Pillai','Referral','RM-assisted',2,'+91 90021 55890','meera.pillai@email.com','Referral from existing client Fatima Sheikh.','Karan Shah','Already manages the referrer (Fatima Sheikh) · continuity')
+  ];
+}
+function al(name,source,flow,onbStep,phone,email,comments,rec,recReason,abandoned){
+  return {id:0,name,source,status:'New',stage:'L1',rm:'',type:'Call',count:0,comments,follow:nextDays(1),hist:[],out:false,
+    appUser:true,flow,qualified:false,onbStep,phone,email,rec,recReason,abandoned:!!abandoned,assignedRM:'',meetLink:''};
+}
+function ensureLeadExtras(l){
+  if(l.appUser===undefined){l.appUser=false;l.flow=null;l.qualified=true;l.assignedRM=l.rm;l.meetLink='';
+    l.onbStep=l.stage==='L4'?6:l.stage==='L3'?4:l.stage==='L2'?3:2;}
+}
+function seedMeetings(){
+  return [
+    mtg(1,'Discovery call — Rohit Bansal','Shashank',0,11,0,30,[a('Rohit Bansal','Client'),a('Shashank','RM'),a('Maya Sharma','Qualifier')]),
+    mtg(2,'Quarterly review — Suneet Verma','Shashank',0,11,15,45,[a('Suneet Verma','Client'),a('Shashank','RM')]),
+    mtg(3,'Onboarding walkthrough — Sneha Kulkarni','Shashank',0,16,0,30,[a('Sneha Kulkarni','Client'),a('Shashank','RM')]),
+    mtg(4,'Portfolio review — Mohan Iyer','Divya Rao',1,10,0,30,[a('Mohan Iyer','Client'),a('Divya Rao','RM'),a('Anjali Rao','Investment')]),
+    mtg(5,'Annual review — Fatima Sheikh','Karan Shah',2,15,0,60,[a('Fatima Sheikh','Client'),a('Karan Shah','RM')]),
+    mtg(6,'Intro call — Vikram Singh','Shashank',-1,14,0,30,[a('Vikram Singh','Client'),a('Shashank','RM')],'Done')
+  ];
+}
+function mtg(id,title,rm,dayOff,h,m,dur,attendees,status){const d=new Date();d.setDate(d.getDate()+dayOff);d.setHours(h,m,0,0);
+  return {id,title,rm,when:d.toISOString().slice(0,16),dur,attendees,meet:genMeet(),status:status||'Scheduled'};}
+function a(n,role){return {n,role};}
+function genMeet(){const c='abcdefghijkmnopqrstuvwxyz';const p=n=>Array.from({length:n},()=>c[Math.floor(Math.random()*c.length)]).join('');return 'meet.google.com/'+p(3)+'-'+p(4)+'-'+p(3);}
+
+let DB=load();
+migrate();
+function load(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}const d=seed();localStorage.setItem(KEY,JSON.stringify(d));return d;}
+function migrate(){
+  if(!DB.clients)DB.clients=seedClients();
+  if(!DB.tasks){DB.tasks=seedTasks();DB.nextTask=DB.tasks.length+1;DB.tasks.forEach((t,i)=>t.id=i+1);}
+  DB.clients.forEach(ensureClientExtras);
+  DB.leads.forEach(ensureLeadExtras);
+  if(!DB.appLeadsSeeded){const apps=seedAppLeads();apps.forEach(a=>a.id=DB.nextId++);DB.leads.push(...apps);DB.appLeadsSeeded=true;}
+  if(!DB.meetings){DB.meetings=seedMeetings();DB.nextMtg=DB.meetings.length+1;}
+  save();
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
+function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.first+' '+c.last:'';}
+
+/* ---------- nav ---------- */
+function go(v){
+  const navMap={clientProfile:'clients'};
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
+  ['dashboard','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','tasks','verification','ips','out','suggestions'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  if(v==='dashboard')renderDash();
+  if(v==='leads')renderLeads();
+  if(v==='assignment')renderAssignment();
+  if(v==='onboarding')renderOnboarding();
+  if(v==='calendar')renderCalendar();
+  if(v==='reminders')renderReminders();
+  if(v==='clients')renderClients();
+  if(v==='tasks')renderTasks();
+  if(v==='verification')renderVerification();
+  if(v==='ips')renderIps();
+  if(v==='out')renderOut();
+  if(v==='suggestions')renderSugg();
+}
+function switchRole(r){currentRole=r;applyRole();go('dashboard');}
+function applyRole(){
+  const R=ROLES[currentRole];
+  document.getElementById('roleName').textContent=R.name;
+  document.getElementById('roleLabel').textContent=R.label;
+  document.getElementById('roleEmail').textContent=R.email;
+  document.getElementById('roleSel').value=currentRole;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('hidden',!R.nav.includes(b.dataset.view)));
+}
+document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.view);});
+
+/* ---------- helpers ---------- */
+const STAGE_LABEL={L1:'L1 — Cold',L2:'L2 — Hot / Holding',L3:'L3 — Onboarding',L4:'L4 — Pre Investment'};
+function statusPill(s){const c=SOURCE_COLORS[s]||'#9aa6b4';return `<span class="pill" style="background:${hexa(c)};color:${c}"><i class="dot" style="background:${c}"></i>${s}</span>`;}
+function hexa(c){return c.startsWith('var')?'#eef2f7':c+'22';}
+function fmtDate(s){if(!s)return '<span style="color:#aab2bd">—</span>';const d=new Date(s);const today=new Date();today.setHours(0,0,0,0);const dd=new Date(d);dd.setHours(0,0,0,0);
+  const diff=Math.round((dd-today)/86400000);let tag='';let col='var(--muted)';
+  if(diff<0){tag=' · overdue';col='var(--hot)';}else if(diff===0){tag=' · today';col='var(--warm)';}else if(diff===1){tag=' · tomorrow';}
+  return `<span style="color:${col}">${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}, ${d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}${tag}</span>`;}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+function active(){return DB.leads.filter(l=>!l.out);}
+function counts(){const a=active();return{total:a.length,L1:a.filter(l=>l.stage==='L1').length,L2:a.filter(l=>l.stage==='L2').length,L3:a.filter(l=>l.stage==='L3').length,L4:a.filter(l=>l.stage==='L4').length,hot:a.filter(l=>l.status==='Hot').length,out:DB.leads.filter(l=>l.out).length};}
+
+/* ---------- dashboard ---------- */
+function teamTasks(team){return DB.tasks.filter(t=>t.team===team);}
+function renderDash(){
+  const T=document.getElementById('dashTitle'),S=document.getElementById('dashSub'),A=document.getElementById('dashAction'),C=document.getElementById('dashCards'),P=document.getElementById('dashPanel');
+  A.innerHTML='';
+  if(currentRole==='RM'){
+    const c=counts();
+    const due=active().filter(l=>l.follow).filter(l=>{const d=new Date(l.follow);d.setHours(0,0,0,0);const t=new Date();t.setHours(0,0,0,0);return d<=t;});
+    T.textContent='RM Dashboard';S.textContent='Your pipeline & client follow-ups';
+    A.innerHTML='<button class="btn" onclick="openLead(null)">+ Add Lead</button>';
+    const revDue=DB.clients.filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
+    C.innerHTML=`${dcard('Active leads',c.total,'In pipeline','var(--teal)',100)}
+      ${dcard('Hot leads',c.hot,'Status = Hot','var(--hot)',c.total?c.hot/c.total*100:0)}
+      ${dcard('Onboarding +',c.L3+c.L4,'L3 & L4 stages','var(--green)',c.total?(c.L3+c.L4)/c.total*100:0)}
+      ${dcard('Follow-ups due',due.length,'Today & overdue','var(--warm)',0)}
+      ${dcard('Reviews due this week',revDue,'Annual + quarterly','#5b3aa8',0)}`;
+    P.innerHTML=panelTable('Follow-ups due today & overdue','View all leads →',"go('leads')",
+      ['Lead','RM','Stage','Status','Interaction','Follow-up'],
+      due.length?due.map(l=>`<tr class="lead-row" onclick="openLead(${l.id})"><td class="lead-name">${l.name}</td><td>${l.rm}</td><td><span class="stage-tag stage-${l.stage}">${STAGE_LABEL[l.stage]}</span></td><td>${statusPill(l.status)}</td><td>${l.type}</td><td>${fmtDate(l.follow)}</td></tr>`).join(''):`<tr><td colspan="6" class="empty">🎉 No follow-ups due.</td></tr>`);
+  }
+  else if(currentRole==='Qualifier'){
+    const unq=DB.leads.filter(l=>l.appUser&&!l.qualified);
+    const aband=unq.filter(l=>l.abandoned);
+    const todayMtgs=DB.meetings.filter(m=>sameDay(m.when,0)&&m.status!=='Done');
+    T.textContent='Qualifier Dashboard';S.textContent='Qualify new app leads and route them to the right RM';
+    C.innerHTML=`${dcard('Awaiting qualification',unq.length,'New from the app','var(--warm)',0)}
+      ${dcard('Recovery (abandoned)',aband.length,'Self-serve drop-offs','var(--hot)',0)}
+      ${dcard('Meetings today',todayMtgs.length,'Across all RMs','var(--teal)',0)}
+      ${dcard('RMs available',5,'Relationship managers','var(--green)',100)}`;
+    P.innerHTML=panelTable('Leads awaiting assignment','Open queue →',"go('assignment')",
+      ['Lead','Source','Flow','Recommended RM',''],
+      unq.length?unq.map(l=>`<tr><td class="lead-name">${l.name}${l.abandoned?' <span class="conflict-tag">recovery</span>':''}</td><td><span class="src">${l.source}</span></td><td>${flowChip(l.flow)}</td><td>${l.rec}</td><td><button class="btn sm" onclick="openAsgn(${l.id})">Qualify &amp; assign</button></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Queue is clear.</td></tr>`);
+  }
+  else if(currentRole==='Compliance'){
+    const cl=DB.clients;const pend=cl.filter(c=>c.compliance.status==='Pending'),flag=cl.filter(c=>c.compliance.status==='Flagged'),ver=cl.filter(c=>c.compliance.status==='Verified');
+    const mine=teamTasks('Compliance').filter(t=>t.status!=='Done');
+    T.textContent='Compliance Dashboard';S.textContent='Verification queue & compliance requests';
+    C.innerHTML=`${dcard('Pending verification',pend.length,'Awaiting review','var(--warm)',0)}
+      ${dcard('Flagged',flag.length,'Discrepancies found','var(--hot)',0)}
+      ${dcard('Verified',ver.length,'Cleared','var(--green)',0)}
+      ${dcard('Open tasks',mine.length,'Assigned to Compliance','#a96a16',0)}`;
+    const rows=[...flag,...pend];
+    P.innerHTML=panelTable('Clients needing verification','Open checklist →',"go('verification')",
+      ['Client','Client ID','PAN','Status'],
+      rows.length?rows.map(c=>`<tr class="lead-row" onclick="go('verification')"><td class="lead-name">${c.first} ${c.last}</td><td><span class="cid">${c.cid}</span></td><td>${c.kyc.pan}</td><td><span class="verdict v-${c.compliance.status}">${c.compliance.status}</span></td></tr>`).join(''):`<tr><td colspan="4" class="empty">All clients verified.</td></tr>`);
+  }
+  else if(currentRole==='Operations'){
+    const mine=teamTasks('Operations');const open=mine.filter(t=>t.status==='Open'),prog=mine.filter(t=>t.status==='In Progress'),blk=mine.filter(t=>t.status==='Blocked'),done=mine.filter(t=>t.status==='Done');
+    T.textContent='Operations Dashboard';S.textContent='Tasks assigned to the Operations team';
+    C.innerHTML=`${dcard('Open',open.length,'To be picked up','var(--warm)',0)}
+      ${dcard('In progress',prog.length,'Being worked','#2f54a8',0)}
+      ${dcard('Blocked',blk.length,'Need input','var(--hot)',0)}
+      ${dcard('Completed',done.length,'Closed','var(--green)',0)}`;
+    P.innerHTML=panelTable('My operations queue','Open full queue →',"go('tasks')",
+      ['Priority','Task','Client','From','Due','Status'],
+      mine.filter(t=>t.status!=='Done').length?mine.filter(t=>t.status!=='Done').map(t=>taskRow(t)).join(''):`<tr><td colspan="6" class="empty">No open operations tasks.</td></tr>`);
+  }
+  else if(currentRole==='Investment'){
+    const funded=DB.clients.filter(c=>c.funded);const aum=funded.reduce((s,c)=>s+c.portfolio.current,0);
+    const due=funded.filter(c=>weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview));
+    const mine=teamTasks('Investment').filter(t=>t.status!=='Done');
+    T.textContent='Investment Dashboard';S.textContent='Portfolios, IPS reviews & investment tasks';
+    C.innerHTML=`${dcard('Portfolios',funded.length,'Funded clients','var(--teal)',100)}
+      ${dcard('AUM',fmtINR(aum),'Current value','var(--navy)',100)}
+      ${dcard('Reviews due this week',due.length,'Annual + quarterly','var(--warm)',0)}
+      ${dcard('Open tasks',mine.length,'Assigned to Investment','var(--green)',0)}`;
+    P.innerHTML=panelTable('Reviews due this week','Open reminders →',"go('reminders')",
+      ['Client','Risk band','Annual review','Quarterly review'],
+      due.length?due.map(c=>`<tr class="lead-row" onclick="go('reminders')"><td class="lead-name">${c.first} ${c.last}</td><td>${c.ips.riskBand}</td><td>${fmtDue(c.ips.nextAnnualReview)}</td><td>${fmtDue(c.ips.nextQuarterlyReview)}</td></tr>`).join(''):`<tr><td colspan="4" class="empty">No reviews due.</td></tr>`);
+  }
+  badges();
+}
+function panelTable(title,linkTxt,linkFn,heads,body){
+  return `<div class="panel"><div class="panel-head"><h2>${title}</h2>${linkTxt?`<button class="btn ghost sm" onclick="${linkFn}">${linkTxt}</button>`:''}</div>
+    <table><thead><tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function dcard(k,v,meta,col,pct){return `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="meta">${meta}</div><div class="bar"><i style="width:${Math.min(100,pct)}%;background:${col}"></i></div></div>`;}
+
+/* ---------- leads table ---------- */
+function renderLeads(){
+  const q=(document.getElementById('searchBox').value||'').toLowerCase();
+  const fst=document.getElementById('fStage').value, fss=document.getElementById('fStatus').value, fsr=document.getElementById('fSource').value;
+  let rows=active().filter(l=>!(l.appUser&&!l.qualified)).filter(l=>
+    (!q||(l.name+l.rm+l.comments).toLowerCase().includes(q)) &&
+    (!fst||l.stage===fst)&&(!fss||l.status===fss)&&(!fsr||l.source===fsr));
+  const tb=document.getElementById('leadsBody');
+  tb.innerHTML = rows.length? rows.map(l=>`<tr class="lead-row" onclick="openLead(${l.id})">
+    <td><div class="lead-name">${l.name}</div><div class="lead-sub">${l.comments?l.comments.slice(0,42)+(l.comments.length>42?'…':''):'—'}</div></td>
+    <td><span class="src">${l.source}</span></td>
+    <td>${statusPill(l.status)}</td>
+    <td><span class="stage-tag stage-${l.stage}">${STAGE_LABEL[l.stage]}</span></td>
+    <td>${l.rm}</td>
+    <td>${l.type}</td>
+    <td style="font-weight:700;color:var(--navy)">${l.count}</td>
+    <td>${strikeMini(l)}</td>
+    <td>${fmtDate(l.follow)}</td></tr>`).join('')
+    : `<tr><td colspan="9" class="empty">No leads match your filters.</td></tr>`;
+  badges();
+}
+function strikeMini(l){
+  if(l.stage!=='L1')return '<span class="lead-sub">n/a</span>';
+  let s='<span class="strikes">';
+  for(let i=1;i<=5;i++)s+=`<i class="strike ${i<=l.count?(l.count>=5?'max':'on'):''}"></i>`;
+  s+='</span>';
+  if(l.count>=5)s+='<span class="strike-warn">OUT?</span>';
+  return s;
+}
+
+/* ---------- out list ---------- */
+function renderOut(){
+  const rows=DB.leads.filter(l=>l.out);
+  document.getElementById('outBody').innerHTML = rows.length? rows.map(l=>`<tr>
+    <td class="lead-name">${l.name}</td><td><span class="src">${l.source}</span></td><td>${l.rm}</td>
+    <td style="font-weight:700">${l.count}</td>
+    <td><span class="pill" style="background:#fdeae6;color:var(--hot)">${l.outReason||'Five-Strike Rule'}</span></td>
+    <td>${l.hist&&l.hist.length?new Date(l.hist[l.hist.length-1].when).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—'}</td>
+    <td><button class="btn ghost sm" onclick="restore(${l.id})">Restore</button></td></tr>`).join('')
+    : `<tr><td colspan="7" class="empty">No leads in the Out list.</td></tr>`;
+  badges();
+}
+function restore(id){const l=DB.leads.find(x=>x.id===id);l.out=false;l.outReason='';if(l.status==='Not Interested')l.status='Cold';save();renderOut();toast('Lead restored to pipeline');}
+
+/* ---------- suggestions ---------- */
+function renderSugg(){
+  const order={'In Progress':0,'Planned':1,'Requested':2,'Shipped':3};
+  const rows=[...DB.suggestions].sort((a,b)=>(order[a.status]-order[b.status])||(b.votes-a.votes));
+  document.getElementById('suggList').innerHTML = rows.map(s=>`<div class="sugg-card">
+    <div class="vote" onclick="vote(${s.id})"><span class="up">▲</span><span class="n">${s.votes}</span><span style="font-size:10px;color:var(--muted)">${s.you?'voted':'vote'}</span></div>
+    <div class="sugg-body" style="flex:1">
+      <h3>${s.title}</h3><p>${s.desc}</p>
+      <div class="sugg-meta">
+        <span class="src">${s.cat}</span>
+        <span>by ${s.name}</span>
+        <select class="status-sel st-${s.status.replace(' ','')}" onchange="setStatus(${s.id},this.value)">
+          ${['Requested','Planned','In Progress','Shipped'].map(o=>`<option ${o===s.status?'selected':''}>${o}</option>`).join('')}
+        </select>
+      </div>
+    </div></div>`).join('');
+  badges();
+}
+function vote(id){const s=DB.suggestions.find(x=>x.id===id);s.votes+=s.you?-1:1;s.you=!s.you;save();renderSugg();}
+function setStatus(id,v){DB.suggestions.find(x=>x.id===id).status=v;save();renderSugg();toast('Status updated → '+v);}
+function addSuggestion(){
+  const title=document.getElementById('sTitle').value.trim();
+  if(!title){toast('Add a feature title first');return;}
+  DB.suggestions.push({id:DB.nextSug++,name:document.getElementById('sName').value.trim()||'Anonymous',title,desc:document.getElementById('sDesc').value.trim()||'—',cat:document.getElementById('sCat').value,status:'Requested',votes:1,you:true});
+  save();['sName','sTitle','sDesc'].forEach(i=>document.getElementById(i).value='');renderSugg();toast('Thanks! Suggestion added to the board');
+}
+
+/* ---------- lead drawer ---------- */
+let editing=null;
+function openLead(id){
+  editing = id? JSON.parse(JSON.stringify(DB.leads.find(l=>l.id===id))) : {id:null,name:'',source:'Referral',status:'New',stage:'L1',rm:RMS[0],type:'Call',count:0,comments:'',follow:'',hist:[],out:false,_dismissed:false};
+  const isNew=!id;
+  document.getElementById('dTitle').textContent=isNew?'New Lead':editing.name;
+  document.getElementById('dSub').textContent=isNew?'Add to pipeline':`${editing.source} · ${editing.rm}`;
+  document.getElementById('delBtn').style.display=isNew?'none':'inline-flex';
+  document.getElementById('fRM').innerHTML=RMS.map(r=>`<option ${r===editing.rm?'selected':''}>${r}</option>`).join('');
+  document.getElementById('fName').value=editing.name;
+  document.getElementById('fSourceEdit').value=editing.source;
+  document.getElementById('fStatusEdit').value=editing.status;
+  document.getElementById('fStageEdit').value=editing.stage;
+  document.getElementById('fType').value=editing.type;
+  document.getElementById('fComments').value=editing.comments;
+  document.getElementById('fFollow').value=editing.follow||'';
+  refreshInteractions();
+  stageHelp();
+  renderHist();
+  document.getElementById('scrim').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeLead(){document.getElementById('scrim').classList.remove('open');document.getElementById('drawer').classList.remove('open');editing=null;}
+function refreshInteractions(){
+  document.getElementById('iCount').textContent=editing.count;
+  const t=document.getElementById('strikeTrack');t.innerHTML='';
+  const isL1=document.getElementById('fStageEdit').value==='L1';
+  for(let i=1;i<=5;i++){const d=document.createElement('i');d.className='strike '+(i<=editing.count&&isL1?(editing.count>=5?'max':'on'):'');t.appendChild(d);}
+  const note=document.getElementById('strikeNote');
+  if(!isL1){note.textContent='Five-Strike Rule applies at L1 only. This lead has progressed beyond L1.';}
+  else{const left=Math.max(0,5-editing.count);note.textContent=left>0?`${editing.count} of 5 attempts used · ${left} before five-strike review.`:'5 attempts reached — five-strike review triggered.';}
+  const showAlert=isL1&&editing.count>=5&&!editing._dismissed;
+  document.getElementById('ruleAlert').classList.toggle('show',showAlert);
+}
+function logInteraction(type){
+  editing.count++;editing.type=type;
+  editing.hist=editing.hist||[];editing.hist.push({type,when:new Date().toISOString().slice(0,10)});
+  document.getElementById('fType').value=type;
+  editing._dismissed=false;
+  refreshInteractions();renderHist();
+  toast(type+' logged · count = '+editing.count);
+}
+function renderHist(){
+  const w=document.getElementById('histWrap');const list=document.getElementById('histList');
+  if(editing.hist&&editing.hist.length){w.classList.remove('hidden');
+    list.innerHTML=[...editing.hist].reverse().map(x=>`<li><strong>${x.type}</strong><div class="when">${new Date(x.when).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div></li>`).join('');
+  }else w.classList.add('hidden');
+}
+function stageHelp(){
+  const v=document.getElementById('fStageEdit').value;
+  const map={
+    L1:'<strong>L1 — Cold.</strong> Initial outreach. <strong>Five-Strike Rule:</strong> after 5 attempts with no response/interest, the lead moves to the Out list.',
+    L2:'<strong>L2 — Hot or Holding.</strong> Lead has shown interest or is in active consideration.',
+    L3:'<strong>L3 — Proceeded to Onboarding.</strong> KYC / paperwork in progress.',
+    L4:'<strong>L4 — Pre Investment.</strong> Onboarding completed but first trades not yet deployed.'
+  };
+  document.getElementById('stageHelp').innerHTML=map[v];
+  refreshInteractions();
+}
+function dismissRule(){editing._dismissed=true;if(editing.status==='Cold'||editing.status==='New')editing.status='Potential';document.getElementById('fStatusEdit').value=editing.status;refreshInteractions();toast('Kept in pipeline — marked Potential');}
+function moveToOut(){
+  if(editing.id===null){toast('Save the lead first');return;}
+  pull();editing.out=true;editing.outReason='Five-Strike Rule';
+  commit();closeLead();go('out');toast('Moved to Out list (Five-Strike Rule)');
+}
+function pull(){
+  editing.name=document.getElementById('fName').value.trim();
+  editing.source=document.getElementById('fSourceEdit').value;
+  editing.status=document.getElementById('fStatusEdit').value;
+  editing.stage=document.getElementById('fStageEdit').value;
+  editing.rm=document.getElementById('fRM').value;
+  editing.type=document.getElementById('fType').value;
+  editing.comments=document.getElementById('fComments').value.trim();
+  editing.follow=document.getElementById('fFollow').value;
+  if(editing.status==='Not Interested'){editing.out=true;editing.outReason='Not Interested';}
+}
+function commit(){
+  if(editing.id===null){editing.id=DB.nextId++;DB.leads.push(stripUI(editing));}
+  else{const i=DB.leads.findIndex(l=>l.id===editing.id);DB.leads[i]=stripUI(editing);}
+  save();
+}
+function stripUI(o){const c={...o};delete c._dismissed;return c;}
+function saveLead(){
+  if(!document.getElementById('fName').value.trim()){toast('Lead name is required');return;}
+  pull();commit();closeLead();
+  const cur=document.querySelector('#nav button.active').dataset.view;go(cur);
+  toast('Lead saved');
+}
+function deleteLead(){
+  if(editing.id===null)return;
+  if(!confirm('Delete this lead permanently?'))return;
+  DB.leads=DB.leads.filter(l=>l.id!==editing.id);save();closeLead();go('leads');toast('Lead deleted');
+}
+
+/* ---------- clients ---------- */
+function fmtINR(n){if(n===0)return '₹0';return '₹'+Number(n).toLocaleString('en-IN');}
+function kycDone(c){return c.kyc.kra==='Verified' && !/pending/i.test(c.kyc.ckyc);}
+function stagesOf(c){
+  const defs=[
+    {key:'Sign-up',done:true},
+    {key:'Questionnaire',done:c.questionnaire==='Done'},
+    {key:'Agreement',done:c.agreement==='Done'&&c.signed},
+    {key:'KYC',done:kycDone(c)},
+    {key:'Invested',done:!!c.funded}
+  ];
+  let curSet=false;
+  defs.forEach(s=>{s.current=false;});
+  for(const s of defs){if(!s.done){s.current=true;curSet=true;break;}}
+  if(!curSet)defs[defs.length-1].current=true; // all done
+  return defs;
+}
+function nextStepText(c){
+  const s=stagesOf(c);const cur=s.find(x=>x.current);
+  const map={
+    'Questionnaire':'Client to complete the Risk Profile questionnaire.',
+    'Agreement':'Send the client agreement for e-signature, then collect the signed copy.',
+    'KYC':'Complete KRA KYC verification and CKYC registration.',
+    'Invested':'Onboarding complete — deploy first trades to move the client to Invested.'
+  };
+  if(s.every(x=>x.done))return {label:'Fully onboarded & invested',text:'All steps complete. Client is active and funded.'};
+  return {label:'Next: '+cur.key,text:map[cur.key]||''};
+}
+function currentStageName(c){const s=stagesOf(c);return s.every(x=>x.done)?'Invested':s.find(x=>x.current).key;}
+
+function renderClients(){
+  const q=(document.getElementById('cSearch').value||'').toLowerCase();
+  const fp=document.getElementById('cPlan').value, fs=document.getElementById('cStageF').value;
+  const rows=DB.clients.filter(c=>{
+    const hay=(c.cid+c.first+c.last+c.contact+c.rm).toLowerCase();
+    return (!q||hay.includes(q))&&(!fp||c.plan===fp)&&(!fs||currentStageName(c)===fs);
+  });
+  document.getElementById('clientsBody').innerHTML = rows.length? rows.map(c=>{
+    const gain=c.portfolio.current-c.portfolio.invested;
+    const gc=gain>0?'var(--green)':gain<0?'var(--hot)':'var(--muted)';
+    return `<tr class="lead-row">
+      <td><span class="cid" onclick="openClient('${c.cid}')">${c.cid}</span></td>
+      <td><div class="lead-name">${c.first} ${c.last}</div><div class="lead-sub">${c.source} · ${c.country}</div></td>
+      <td><span class="phone-link" onclick="openClient('${c.cid}')">${c.contact}</span></td>
+      <td>${c.rm}</td>
+      <td>${c.plan}</td>
+      <td><span class="stage-tag stage-${stageBadge(c)}">${currentStageName(c)}</span></td>
+      <td>${fmtINR(c.portfolio.invested)}</td>
+      <td>${fmtINR(c.portfolio.current)}</td>
+      <td style="color:${gc};font-weight:700">${gain>=0?'+':''}${fmtINR(gain)}</td>
+    </tr>`;}).join('')
+    : `<tr><td colspan="9" class="empty">No clients match your filters.</td></tr>`;
+  badges();
+}
+function stageBadge(c){const n=currentStageName(c);return n==='Invested'?'L4':n==='KYC'?'L3':n==='Agreement'?'L2':'L1';}
+
+let CURRENT=null;
+function openClient(cid){CURRENT=DB.clients.find(c=>c.cid===cid);renderProfile();go('clientProfile');}
+function renderProfile(){
+  const c=CURRENT;if(!c)return;
+  document.getElementById('cpAvatar').textContent=(c.first[0]||'')+(c.last[0]||'');
+  document.getElementById('cpName').textContent=`${c.first} ${c.last}`;
+  document.getElementById('cpSub').innerHTML=`<span class="cid">${c.cid}</span> · ${c.contact} · ${c.email} · RM: <b>${c.rm}</b>`;
+  // stepper
+  const st=stagesOf(c);
+  document.getElementById('cpStepper').innerHTML=st.map(s=>`<div class="step ${s.done?'done':''} ${s.current&&!s.done?'current':''} ${s.current&&s.done?'done current':''}">
+    <div class="ball">${s.done?'✓':''}</div><div class="lbl">${s.key}</div></div>`).join('');
+  const nx=nextStepText(c);
+  document.getElementById('cpNext').innerHTML=`<span style="font-size:18px">🎯</span><div><b>${nx.label}</b><div style="margin-top:2px">${nx.text}</div></div>`;
+  paintTabs();
+}
+function paintTabs(){
+  const c=CURRENT;
+  // OVERVIEW
+  document.getElementById('tab-overview').innerHTML=`<div class="two-col">
+    <div class="kv">
+      <div class="kv-h">Client Information <span class="sync-badge">⟳ FBC-Admin</span></div>
+      ${kvr('Date of Sign-up',fmtD(c.signup))}
+      ${kvr('First Name',c.first)}${kvr('Last Name',c.last)}
+      ${kvr('Contact Number',c.contact)}
+      ${kvr('WhatsApp Number',c.sameWa?c.contact+' <span class="lead-sub">(same as contact)</span>':(c.whatsapp||'—'))}
+      ${kvr('Email',c.email)}${kvr('Country',c.country)}${kvr('Postal Code',c.postal)}
+      ${kvr('Source',c.source)}
+      ${kvr('Zerodha Account',yn(c.zerodha))}
+    </div>
+    <div class="kv">
+      <div class="kv-h">Account & Engagement</div>
+      <div class="kv-row"><span class="lab">RM <span style="color:var(--teal)">✎ editable</span></span>
+        <select onchange="editClient('rm',this.value)">${RMS.map(r=>`<option ${r===c.rm?'selected':''}>${r}</option>`).join('')}</select></div>
+      <div class="kv-row"><span class="lab">Billing Cycle <span style="color:var(--teal)">✎ editable</span></span>
+        <select onchange="editClient('plan',this.value)">${['Monthly','Quarterly','Yearly'].map(p=>`<option ${p===c.plan?'selected':''}>${p}</option>`).join('')}</select></div>
+      ${kvr('Questionnaire',c.questionnaire==='Done'?'<span class="tag-done">Done</span>':'<span class="tag-pend">Pending</span>')}
+      ${kvr('Agreement',(c.agreement==='Done'&&c.signed)?'<span class="tag-done">Signed</span>':'<span class="tag-pend">Pending</span>')}
+      ${kvr('Recommended Strategies',c.strategies.map(s=>`<span class="strat-chip" style="margin:0 4px 4px 0;padding:2px 8px">${s}</span>`).join('')||'—')}
+      ${kvr('Investment Goal',c.goal)}
+      ${kvr('SIP',c.sip==='Yes'?'<span class="yes">Yes</span>':'<span class="no">No</span>')}
+    </div></div>`;
+
+  // INVESTMENT & SIP
+  const sip=c.sipDetails;
+  document.getElementById('tab-investment').innerHTML=`<div class="two-col">
+    <div class="kv"><div class="kv-h">Investment Goal</div>
+      ${kvr('Goal',c.goal)}
+      ${kvr('Billing Cycle',c.plan)}
+      ${kvr('Recommended Strategies',c.strategies.join(', '))}
+    </div>
+    <div class="kv"><div class="kv-h">SIP Details</div>
+      ${kvr('SIP enabled',c.sip==='Yes'?'<span class="yes">Yes</span>':'<span class="no">No</span>')}
+      ${sip?`${kvr('Investment / Strategy',sip.investment)}${kvr('Frequency',sip.frequency)}${kvr('Start Month & Year',sip.start)}${kvr('Amount',fmtINR(sip.amount))}`:'<div class="kv-row"><span class="val" style="width:100%;color:var(--muted)">No SIP configured for this client.</span></div>'}
+    </div></div>`;
+
+  // DOCS
+  document.getElementById('tab-docs').innerHTML=`
+    <div class="doc-row"><div><div class="nm">Risk Profile Questionnaire</div><div class="meta">Status: ${c.questionnaire} · available for download</div></div>
+      <button class="btn ghost sm" onclick="toast('Downloading Risk Profile questionnaire (PDF)…')">⬇ Download</button></div>
+    <div class="doc-row"><div><div class="nm">Client Agreement</div><div class="meta">${c.signed?'Signed copy on file — visible to backend team':'Not yet signed'}</div></div>
+      <div style="display:flex;gap:8px">
+        ${c.signed?'<button class="btn ghost sm" onclick="toast(\'Downloading signed agreement (PDF)…\')">⬇ Download signed</button>':''}
+        <button class="btn sm" onclick="emailAgreement('${c.cid}')">✉ Send for signing</button>
+      </div></div>
+    <div class="doc-row"><div><div class="nm">Subscription Invoice — latest</div><div class="meta">${c.invoices.length?c.invoices[c.invoices.length-1].desc:'No invoices yet'}</div></div>
+      <button class="btn ghost sm" onclick="go2tab('invoices')">View invoices →</button></div>`;
+
+  // STRATEGIES
+  document.getElementById('tab-strategies').innerHTML=`<div class="kv"><div class="kv-h">Recommended Strategies <span class="lead-sub" style="font-weight:400">multiple allowed</span></div>
+    <div style="padding:16px">${c.strategies.map(s=>`<span class="strat-chip">★ ${s} <span onclick="removeStrat('${s}')" style="cursor:pointer;opacity:.6">×</span></span>`).join('')||'<span class="lead-sub">No strategies recommended yet.</span>'}
+    <div style="margin-top:12px;display:flex;gap:8px"><select id="addStratSel" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px">${STRATEGIES.map(s=>`<option>${s}</option>`).join('')}</select>
+    <button class="btn sm" onclick="addStrat()">+ Add strategy</button></div></div></div>`;
+
+  // KYC (editable)
+  const k=c.kyc;
+  document.getElementById('tab-kyc').innerHTML=`<div class="kv"><div class="kv-h">KYC Details <span class="lead-sub" style="font-weight:400">backend team can add / modify</span></div>
+    ${kin('namePan','Name (as per PAN)',k.namePan)}
+    ${kin('pan','PAN',k.pan)}
+    <div class="kv-row"><span class="lab">Gender</span><select id="kyc_gender">${['Male','Female','Other','Prefer not to say'].map(g=>`<option ${g===k.gender?'selected':''}>${g}</option>`).join('')}</select></div>
+    ${kin('address','Address',k.address)}
+    ${kin('city','City',k.city)}
+    <div class="kv-row"><span class="lab">Date of Birth</span><input id="kyc_dob" type="date" value="${k.dob}"></div>
+    ${kin('profession','Profession',k.profession)}
+    <div class="kv-row"><span class="lab">Marital Status</span><select id="kyc_marital">${['Single','Married','Divorced','Widowed'].map(m=>`<option ${m===k.marital?'selected':''}>${m}</option>`).join('')}</select></div>
+    <div class="kv-row"><span class="lab">Politically Exposed Person</span><select id="kyc_pep"><option ${k.pep==='No'?'selected':''}>No</option><option ${k.pep==='Yes'?'selected':''}>Yes</option></select></div>
+    ${kin('kra','KRA KYC',k.kra)}
+    ${kin('ckyc','CKYC',k.ckyc)}
+    <div style="padding:14px 16px"><button class="btn" onclick="saveKyc()">Save KYC changes</button></div>
+  </div>`;
+
+  // PORTFOLIO
+  const p=c.portfolio;const gain=p.current-p.invested;
+  document.getElementById('tab-portfolio').innerHTML=`
+    ${p.suspense&&p.suspense.length?`<div class="suspense-alert"><div><h4>⚠ Reconciliation Suspense Holdings</h4><div class="t">${p.suspense.map(s=>`${s[0]} — ${fmtINR(s[1])} · ${s[2]}`).join('<br>')}</div></div>
+      <button class="btn gold sm" onclick="toast('Repair notification sent to ${c.contact} on WhatsApp')">💬 Send repair notification</button></div>`:''}
+    <div class="cards" style="margin-bottom:18px">
+      <div class="metric"><div class="k">Investment Amount</div><div class="v">${fmtINR(p.invested)}</div></div>
+      <div class="metric"><div class="k">Current Value</div><div class="v">${fmtINR(p.current)}</div></div>
+      <div class="metric"><div class="k">Gain</div><div class="v ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${fmtINR(gain)}</div></div>
+      <div class="metric"><div class="k">Absolute Return</div><div class="v ${p.absReturn>=0?'pos':'neg'}">${p.absReturn}%</div></div>
+      <div class="metric"><div class="k">IRR</div><div class="v ${p.irr>=0?'pos':'neg'}">${p.irr}%</div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><h2>Flameback Portfolio Holdings <span class="sync-badge">⟳ FBC-Admin</span></h2></div>
+    <table><thead><tr><th>Holding</th><th>Invested</th><th>Current value</th><th>Gain</th></tr></thead><tbody>
+    ${p.holdings.length?p.holdings.map(h=>{const g=h[2]-h[1];return `<tr><td class="lead-name">${h[0]}</td><td>${fmtINR(h[1])}</td><td>${fmtINR(h[2])}</td><td style="color:${g>=0?'var(--green)':'var(--hot)'};font-weight:700">${g>=0?'+':''}${fmtINR(g)}</td></tr>`;}).join(''):'<tr><td colspan="4" class="empty">No holdings yet — client not funded.</td></tr>'}
+    </tbody></table></div>`;
+
+  // INVOICES
+  document.getElementById('tab-invoices').innerHTML=`<div class="panel"><div class="panel-head"><h2>Client Invoices <span class="sync-badge">⟳ FBC-Admin</span></h2></div>
+    <table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+    ${c.invoices.length?c.invoices.map(i=>`<tr><td>${fmtD(i.date)}</td><td>${i.desc}</td><td style="font-weight:700">${fmtINR(i.amount)}</td>
+      <td>${i.status==='Paid'?'<span class="tag-done">Paid</span>':'<span class="tag-pend">'+i.status+'</span>'}</td>
+      <td><button class="btn ghost sm" onclick="toast('Downloading invoice (PDF)…')">⬇ Download</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No invoices generated yet.</td></tr>'}
+    </tbody></table></div>`;
+
+  // CALLS
+  document.getElementById('tab-calls').innerHTML=`<div class="kv" style="border:none;background:none;box-shadow:none">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">All follow-up dates & times for the RM, synced from the connected calendar.</div>
+    ${c.calls.length?c.calls.map(cl=>`<div class="callsync"><span class="dt">${fmtDT(cl.when)}</span><span>${cl.note}</span><span class="src-cal">⟳ ${cl.source}</span></div>`).join(''):'<div class="empty">No follow-ups scheduled.</div>'}
+    <div style="margin-top:10px"><button class="btn ghost sm" onclick="toast('Opening scheduler — would create a calendar event & sync back')">+ Schedule follow-up</button></div>
+  </div>`;
+}
+function kvr(l,v){return `<div class="kv-row"><span class="lab">${l}</span><span class="val">${v}</span></div>`;}
+function kin(id,l,v){return `<div class="kv-row"><span class="lab">${l}</span><input id="kyc_${id}" value="${(v||'').replace(/"/g,'&quot;')}"></div>`;}
+function yn(v){return v==='Yes'?'<span class="yes">Yes</span>':'<span class="no">No</span>';}
+function fmtD(s){if(!s)return '—';return new Date(s).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+function fmtDT(s){if(!s)return '—';const d=new Date(s);return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+', '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
+
+function editClient(field,val){CURRENT[field]=val;persistClient();toast(field==='rm'?'RM updated':'Billing cycle updated');}
+function saveKyc(){
+  const g=id=>document.getElementById('kyc_'+id).value;
+  CURRENT.kyc={namePan:g('namePan'),pan:g('pan'),gender:g('gender'),address:g('address'),city:g('city'),dob:g('dob'),profession:g('profession'),marital:g('marital'),pep:g('pep'),kra:g('kra'),ckyc:g('ckyc')};
+  persistClient();renderProfile();toast('KYC details saved');
+}
+function addStrat(){const s=document.getElementById('addStratSel').value;if(!CURRENT.strategies.includes(s)){CURRENT.strategies.push(s);persistClient();renderProfile();toast('Strategy added');}else toast('Already recommended');}
+function removeStrat(s){CURRENT.strategies=CURRENT.strategies.filter(x=>x!==s);persistClient();renderProfile();toast('Strategy removed');}
+function persistClient(){const i=DB.clients.findIndex(c=>c.cid===CURRENT.cid);DB.clients[i]=CURRENT;save();}
+function go2tab(t){document.querySelector(`#cpTabs button[data-tab="${t}"]`).click();}
+document.getElementById('cpTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#cpTabs button').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+b.dataset.tab));});
+
+/* ---------- tasks & requests ---------- */
+function fmtDue(s){if(!s)return '<span style="color:#aab2bd">—</span>';const d=new Date(s);const t=new Date();t.setHours(0,0,0,0);const dd=new Date(d);dd.setHours(0,0,0,0);const diff=Math.round((dd-t)/86400000);let tag='',col='var(--muted)';if(diff<0){tag=' · overdue';col='var(--hot)';}else if(diff===0){tag=' · today';col='var(--warm)';}else if(diff===1){tag=' · tomorrow';}return `<span style="color:${col}">${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}${tag}</span>`;}
+function priCell(t){return `<span class="pri pri-${t.priority}"><i></i>${t.priority}</span>`;}
+function statusSelect(t){return `<select class="st-sel stt-${t.status.replace(' ','')}" onclick="event.stopPropagation()" onchange="setTaskStatus(${t.id},this.value)">${['Open','In Progress','Blocked','Done'].map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('')}</select>`;}
+function cidCell(cid){return cid?`<span class="cid" onclick="event.stopPropagation();openClient('${cid}')">${cid}</span>`:'<span class="lead-sub">—</span>';}
+function taskRow(t){return `<tr class="lead-row" onclick="openTask(${t.id})">
+  <td>${priCell(t)}</td>
+  <td><div class="lead-name">${t.title}</div><div class="lead-sub">${t.type}</div></td>
+  <td>${cidCell(t.cid)}</td><td>${t.from.split('·')[0]}</td><td>${fmtDue(t.due)}</td><td>${statusSelect(t)}</td></tr>`;}
+
+function renderTasks(){
+  const R=ROLES[currentRole];
+  document.getElementById('tasksTitle').textContent=currentRole==='RM'?'Tasks & Requests':currentRole+' — Inbox';
+  const inbox=document.getElementById('tInbox').value,fst=document.getElementById('tStatus').value,fp=document.getElementById('tPri').value,q=(document.getElementById('tSearch').value||'').toLowerCase();
+  let rows=DB.tasks.filter(t=>{
+    if(inbox==='mine'&&t.team!==currentRole)return false;
+    if(inbox==='raised'&&!t.from.includes(R.name))return false;
+    if(fst&&t.status!==fst)return false;
+    if(fp&&t.priority!==fp)return false;
+    if(q&&!(t.title+t.type+t.notes+(t.cid||'')+clientName(t.cid)).toLowerCase().includes(q))return false;
+    return true;
+  });
+  const order={'Blocked':0,'Open':1,'In Progress':2,'Done':3};
+  rows.sort((a,b)=>(order[a.status]-order[b.status])||(new Date(a.due)-new Date(b.due)));
+  document.getElementById('tasksBody').innerHTML = rows.length? rows.map(t=>`<tr class="lead-row" onclick="openTask(${t.id})">
+    <td>${priCell(t)}</td>
+    <td><div class="lead-name">${t.title}</div><div class="lead-sub">${t.type}${t.thread&&t.thread.length?' · 💬 '+t.thread.length:''}</div></td>
+    <td>${t.cid?`${cidCell(t.cid)} <span class="lead-sub">${clientName(t.cid)}</span>`:'<span class="lead-sub">—</span>'}</td>
+    <td><span class="team team-${t.from.includes('Compliance')?'Compliance':t.from.includes('Operations')?'Operations':t.from.includes('Investment')?'Investment':'RM'}">${t.from.split('·')[0].trim()}</span> <span class="arrow">→</span> <span class="team team-${t.team}">${t.team}</span></td>
+    <td>${t.assignee||'<span class="lead-sub">Unassigned</span>'}</td>
+    <td>${fmtDue(t.due)}</td><td>${statusSelect(t)}</td></tr>`).join('')
+    : `<tr><td colspan="7" class="empty">No tasks in this view.</td></tr>`;
+  badges();
+}
+function setTaskStatus(id,v){const t=DB.tasks.find(x=>x.id===id);t.status=v;save();rerender();toast('Status → '+v);}
+function rerender(){const v=document.querySelector('#nav button.active').dataset.view;go(v);}
+
+let editingTask=null;
+function openTask(id,prefill){
+  editingTask = id? DB.tasks.find(t=>t.id===id) : {id:null,title:'',team:(prefill&&prefill.team)||currentRole,type:'',cid:(prefill&&prefill.cid)||'',from:ROLES[currentRole].name+' · '+currentRole,priority:'Medium',status:'Open',due:'',notes:'',thread:[]};
+  if(prefill&&prefill.title)editingTask.title=prefill.title;
+  if(prefill&&prefill.type)editingTask.type=prefill.type;
+  const isNew=!id;
+  document.getElementById('tmTitle').textContent=isNew?'New request':editingTask.title;
+  document.getElementById('tmSave').textContent=isNew?'Raise request':'Save';
+  document.getElementById('tmTitleInput').value=editingTask.title;
+  document.getElementById('tmTeam').value=editingTask.team;
+  document.getElementById('tmClient').innerHTML='<option value="">— none —</option>'+DB.clients.map(c=>`<option value="${c.cid}" ${c.cid===editingTask.cid?'selected':''}>${c.cid} · ${c.first} ${c.last}</option>`).join('');
+  document.getElementById('tmPri').value=editingTask.priority;
+  document.getElementById('tmDue').value=editingTask.due;
+  document.getElementById('tmNotes').value=editingTask.notes;
+  tmTypes();
+  const tw=document.getElementById('tmThreadWrap');
+  if(!isNew){tw.classList.remove('hidden');renderThread();}else tw.classList.add('hidden');
+  document.getElementById('taskScrim').classList.add('open');
+}
+function tmTypes(){const team=document.getElementById('tmTeam').value;const sel=document.getElementById('tmType');
+  sel.innerHTML=TASK_TYPES[team].map(t=>`<option ${editingTask&&t===editingTask.type?'selected':''}>${t}</option>`).join('');}
+function closeTask(){document.getElementById('taskScrim').classList.remove('open');editingTask=null;}
+function saveTask(){
+  const title=document.getElementById('tmTitleInput').value.trim();
+  if(!title){toast('Add a task title');return;}
+  editingTask.title=title;
+  editingTask.team=document.getElementById('tmTeam').value;
+  editingTask.type=document.getElementById('tmType').value;
+  editingTask.cid=document.getElementById('tmClient').value;
+  editingTask.priority=document.getElementById('tmPri').value;
+  editingTask.due=document.getElementById('tmDue').value;
+  editingTask.notes=document.getElementById('tmNotes').value.trim();
+  if(editingTask.id===null){if(!DB.nextTask)DB.nextTask=DB.tasks.length+1;editingTask.id=DB.nextTask++;DB.tasks.push(editingTask);toast('Request raised → '+editingTask.team);}
+  else toast('Task saved');
+  save();closeTask();rerender();
+}
+function renderThread(){
+  const el=document.getElementById('tmThread');
+  const base=`<div class="msg"><span class="when">${fmtD(editingTask.created)}</span><div class="by">${editingTask.from.split('·')[0].trim()}</div>${editingTask.notes||'(no notes)'}</div>`;
+  el.innerHTML=base+(editingTask.thread||[]).map(m=>`<div class="msg"><span class="when">${fmtD(m.when)}</span><div class="by">${m.by}</div>${m.text}</div>`).join('');
+}
+function addComment(){
+  const t=document.getElementById('tmReply').value.trim();if(!t)return;
+  editingTask.thread=editingTask.thread||[];
+  editingTask.thread.push({by:ROLES[currentRole].name+' · '+currentRole,text:t,when:dayStr(0)});
+  document.getElementById('tmReply').value='';save();renderThread();toast('Comment posted');
+}
+
+/* ---------- compliance verification ---------- */
+function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function renderVerification(){
+  const el=document.getElementById('verifList');
+  el.innerHTML=DB.clients.map(c=>{
+    const nameOk=norm(c.kyc.namePan)===norm(c.uploaded.namePan);
+    const panOk=norm(c.kyc.pan)===norm(c.uploaded.pan);
+    const dobOk=c.kyc.dob===c.uploaded.dob;
+    const items=[
+      cmpItem('Name (as per PAN)',c.kyc.namePan,c.uploaded.namePan,nameOk),
+      cmpItem('PAN',c.kyc.pan,c.uploaded.pan,panOk),
+      cmpItem('Date of Birth',fmtD(c.kyc.dob),fmtD(c.uploaded.dob),dobOk),
+      flagItem('Agreement signed',c.signed),
+      flagItem('Risk profile questionnaire',c.questionnaire==='Done'),
+      flagItem('KRA KYC verified',c.kyc.kra==='Verified'),
+      flagItem('CKYC registered',!/pending/i.test(c.kyc.ckyc))
+    ].join('');
+    return `<div class="chk">
+      <div class="chk-h"><div><span class="who">${c.first} ${c.last}</span> <span class="cid">${c.cid}</span></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="verdict v-${c.compliance.status}">${c.compliance.status}</span>
+          ${(!nameOk||!panOk||!dobOk)?`<button class="btn ghost sm" onclick="raiseDiscrepancy('${c.cid}')">⚠ Raise to RM</button>`:''}
+          <button class="btn sm" onclick="setVerdict('${c.cid}','Verified')">Mark verified</button>
+        </div></div>
+      ${items}</div>`;
+  }).join('');
+  badges();
+}
+function cmpItem(lab,entered,uploaded,ok){
+  return `<div class="chk-item"><span class="chk-ico ${ok?'chk-ok':'chk-bad'}">${ok?'✓':'✕'}</span>
+    <span class="lab">${lab}</span>
+    <span class="cmp">CRM: <b>${entered}</b> &nbsp; vs &nbsp; Uploaded doc: <b class="${ok?'':'mismatch'}">${uploaded}</b> ${ok?'':' — <span class="mismatch">MISMATCH</span>'}</span></div>`;
+}
+function flagItem(lab,ok){
+  return `<div class="chk-item"><span class="chk-ico ${ok?'chk-ok':'chk-pend'}">${ok?'✓':'!'}</span>
+    <span class="lab">${lab}</span><span class="cmp">${ok?'<b style="color:var(--green)">Complete</b>':'<b style="color:#a96a16">Pending</b>'}</span></div>`;
+}
+function setVerdict(cid,status){DB.clients.find(c=>c.cid===cid).compliance.status=status;save();renderVerification();toast('Marked '+status);}
+function raiseDiscrepancy(cid){
+  const c=DB.clients.find(x=>x.cid===cid);c.compliance.status='Flagged';save();
+  openTask(null,{team:'RM',type:'Collect document',cid,title:'Fix KYC discrepancy — '+c.first+' '+c.last});
+  document.getElementById('tmNotes').value='Document values do not match the CRM record. Please re-collect / correct and re-submit for verification.';
+  toast('Flagged — raising task to RM');
+}
+
+/* ---------- investment: portfolios & IPS ---------- */
+function weekDue(s){if(!s)return false;const d=new Date(s);const lim=new Date();lim.setDate(lim.getDate()+7);return d<=lim;}
+function renderIps(){
+  const funded=DB.clients.filter(c=>c.funded);
+  const aum=funded.reduce((s,c)=>s+c.portfolio.current,0);
+  const dueWk=funded.filter(c=>weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview));
+  const avg=funded.length?(funded.reduce((s,c)=>s+c.portfolio.absReturn,0)/funded.length).toFixed(1):0;
+  document.getElementById('ipsCards').innerHTML=`${dcard('Funded portfolios',funded.length,'Under management','var(--teal)',100)}
+    ${dcard('AUM',fmtINR(aum),'Current value','var(--navy)',100)}
+    ${dcard('Avg absolute return',avg+'%','Across portfolios','var(--green)',0)}
+    ${dcard('Reviews due this week',dueWk.length,'Annual + quarterly','var(--warm)',0)}`;
+  document.getElementById('ipsBody').innerHTML = funded.length? funded.map(c=>{
+    const ret=c.portfolio.absReturn;
+    return `<tr><td class="lead-name"><span class="cid" onclick="openClient('${c.cid}')">${c.first} ${c.last}</span></td>
+      <td>${c.ips.riskBand}</td><td>${fmtINR(c.portfolio.current)}</td>
+      <td style="color:${ret>=0?'var(--green)':'var(--hot)'};font-weight:700">${ret>=0?'+':''}${ret}%</td>
+      <td>${c.ips.targetEquity}%</td>
+      <td>${weekDue(c.ips.nextAnnualReview)?'<span class="verdict v-Pending">this week</span> ':''}${fmtDue(c.ips.nextAnnualReview)}</td>
+      <td>${weekDue(c.ips.nextQuarterlyReview)?'<span class="verdict v-Pending">this week</span> ':''}${fmtDue(c.ips.nextQuarterlyReview)}</td>
+      <td style="white-space:nowrap"><button class="btn ghost sm" onclick="openIpsDoc('${c.cid}')">📄 View IPS</button>
+        <button class="btn ghost sm" onclick="openTask(null,{team:'Operations',cid:'${c.cid}',type:'Statement request',title:'Ops action — ${c.first} ${c.last}'})">→ Ops</button></td></tr>`;
+  }).join('') : `<tr><td colspan="8" class="empty">No funded portfolios yet.</td></tr>`;
+  badges();
+}
+function markReviewed(cid,type){const c=DB.clients.find(x=>x.cid===cid);
+  if(type==='annual'){c.ips.lastAnnualReview=dayStr(0);const d=new Date();d.setFullYear(d.getFullYear()+1);c.ips.nextAnnualReview=d.toISOString().slice(0,10);}
+  else{c.ips.lastQuarterlyReview=dayStr(0);c.ips.nextQuarterlyReview=dayStr(91);}
+  save();rerender();toast((type==='annual'?'Annual IPS':'Quarterly')+' review marked done · next scheduled');}
+function scheduleReviewCall(cid,type){const c=DB.clients.find(x=>x.cid===cid);c.calls=c.calls||[];
+  const d=new Date();d.setDate(d.getDate()+3);d.setHours(15,0,0,0);
+  const title=(type==='annual'?'Annual IPS review':'Quarterly portfolio review')+' — '+c.first+' '+c.last;
+  if(!DB.nextMtg)DB.nextMtg=DB.meetings.length+1;
+  const meet=genMeet();
+  DB.meetings.push({id:DB.nextMtg++,title,rm:c.rm,when:d.toISOString().slice(0,16),dur:45,attendees:[a(c.first+' '+c.last,'Client'),a(c.rm,'RM'),a('Anjali Rao','Investment')],meet,status:'Scheduled'});
+  c.calls.push({when:d.toISOString().slice(0,16),note:title,source:'Calendar sync'});
+  save();rerender();toast('Review call scheduled · Google Meet invite sent');}
+function scheduleMeeting(cid){const c=DB.clients.find(x=>x.cid===cid);c.calls=c.calls||[];const d=new Date();d.setDate(d.getDate()+7);d.setHours(15,0,0,0);c.calls.push({when:d.toISOString().slice(0,16),note:'Portfolio review meeting (Investment team)',source:'Calendar sync'});save();toast('Meeting scheduled & synced to calendar');}
+
+/* ---------- onboarding flow / app / assignment ---------- */
+function sameDay(iso,off){const d=new Date(iso);const t=new Date();t.setDate(t.getDate()+off);return d.toDateString()===t.toDateString();}
+function flowChip(f){if(f==='Self-serve')return '<span class="flowchip flow-self">🧑‍💻 Self-serve</span>';if(f==='RM-assisted')return '<span class="flowchip flow-rm">🤝 RM-assisted</span>';return '<span class="flowchip flow-none">—</span>';}
+
+function renderAssignment(){
+  const rows=DB.leads.filter(l=>l.appUser&&!l.qualified);
+  document.getElementById('assignBody').innerHTML = rows.length? rows.map(l=>`<tr>
+    <td><div class="lead-name">${l.name}${l.abandoned?' <span class="conflict-tag">recovery path</span>':''}</div><div class="lead-sub">${l.comments}</div></td>
+    <td><div class="lead-sub">📞 ${l.phone}</div><div class="lead-sub">✉ ${l.email}</div></td>
+    <td><span class="src">${l.source}</span></td>
+    <td>${flowChip(l.flow)}</td>
+    <td><div class="lead-name" style="font-size:13px">${l.rec}</div><div class="lead-sub">${l.recReason}</div></td>
+    <td><span class="stage-tag stage-L1">${ONB_STEPS[l.onbStep]}</span></td>
+    <td><button class="btn sm" onclick="openAsgn(${l.id})">Qualify &amp; assign</button></td></tr>`).join('')
+    : `<tr><td colspan="7" class="empty">No leads awaiting assignment.</td></tr>`;
+  badges();
+}
+
+let ASSIGNING=null;
+function openAsgn(leadId){
+  ASSIGNING=DB.leads.find(l=>l.id===leadId);
+  ASSIGNING._meet=ASSIGNING.meetLink||genMeet();
+  document.getElementById('asgnLead').innerHTML=`<b>${ASSIGNING.name}</b> · ${flowChip(ASSIGNING.flow)}<br><span class="lead-sub">📞 ${ASSIGNING.phone} · ✉ ${ASSIGNING.email} · Source: ${ASSIGNING.source}</span><br><span class="lead-sub">${ASSIGNING.comments}</span>`;
+  document.getElementById('asgnRM').innerHTML=RMS.map(r=>`<option ${r===ASSIGNING.rec?'selected':''}>${r}</option>`).join('');
+  const dt=new Date();dt.setDate(dt.getDate()+1);
+  document.getElementById('asgnDate').value=dt.toISOString().slice(0,10);
+  document.getElementById('asgnTime').value='15:00';
+  asgnPreview();
+  document.getElementById('asgnScrim').classList.add('open');
+}
+function asgnPreview(){
+  const rm=document.getElementById('asgnRM').value;
+  document.getElementById('asgnReason').textContent=rm===ASSIGNING.rec?'✓ Best fit — '+ASSIGNING.recReason:'Manual override — '+rm+' will be assigned.';
+  document.getElementById('asgnMeet').innerHTML='🎥 <span>'+ASSIGNING._meet+'</span>';
+  document.getElementById('asgnAtt').innerHTML=`<span class="att">${ASSIGNING.name} · Client</span><span class="att rm-att">${rm} · RM</span><span class="att">Maya Sharma · Qualifier</span>`;
+}
+function closeAsgn(){document.getElementById('asgnScrim').classList.remove('open');ASSIGNING=null;}
+function confirmAssign(){
+  const rm=document.getElementById('asgnRM').value;
+  const date=document.getElementById('asgnDate').value,time=document.getElementById('asgnTime').value;
+  if(!date){toast('Pick a meeting date');return;}
+  const when=date+'T'+time;
+  ASSIGNING.qualified=true;ASSIGNING.rm=rm;ASSIGNING.assignedRM=rm;ASSIGNING.meetLink=ASSIGNING._meet;
+  ASSIGNING.onbStep=Math.max(ASSIGNING.onbStep,3);ASSIGNING.status='Potential';ASSIGNING.stage='L2';
+  if(!DB.nextMtg)DB.nextMtg=DB.meetings.length+1;
+  DB.meetings.push({id:DB.nextMtg++,title:'Onboarding call — '+ASSIGNING.name,rm,when,dur:30,
+    attendees:[a(ASSIGNING.name,'Client'),a(rm,'RM'),a('Maya Sharma','Qualifier')],meet:ASSIGNING._meet,status:'Scheduled'});
+  delete ASSIGNING._meet;save();closeAsgn();rerender();
+  toast(rm+' assigned · added to Google Meet invite');
+}
+
+function renderOnboarding(){
+  const pop=active().filter(l=>l.onbStep!==undefined);
+  const max=Math.max(1,...ONB_STEPS.map((_,i)=>pop.filter(l=>l.onbStep===i).length));
+  document.getElementById('onbFunnel').innerHTML=ONB_STEPS.map((s,i)=>{
+    const n=pop.filter(l=>l.onbStep===i).length;
+    return `<div class="frow"><div class="fname">${s}</div><div class="fbar"><i style="width:${n/max*100}%"></i><span>${n}</span></div></div>`;
+  }).join('');
+  const inOnb=pop.filter(l=>l.onbStep<7).sort((a,b)=>b.onbStep-a.onbStep);
+  document.getElementById('onbBody').innerHTML = inOnb.length? inOnb.map(l=>`<tr class="lead-row" onclick="openLead(${l.id})">
+    <td class="lead-name">${l.name}</td><td>${flowChip(l.flow)}</td>
+    <td><span class="stage-tag stage-${l.onbStep>=5?'L4':l.onbStep>=4?'L3':l.onbStep>=3?'L2':'L1'}">${ONB_STEPS[l.onbStep]}</span></td>
+    <td>${l.rm||'<span class="lead-sub">unassigned</span>'}</td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty">No leads currently in onboarding.</td></tr>`;
+  badges();
+}
+
+function calcConflicts(list){
+  const byRm={};list.forEach(m=>{(byRm[m.rm]=byRm[m.rm]||[]).push(m);});
+  const conf=new Set();
+  for(const rm in byRm){const ms=byRm[rm].filter(m=>m.status!=='Done').sort((a,b)=>new Date(a.when)-new Date(b.when));
+    for(let i=1;i<ms.length;i++){const pe=new Date(ms[i-1].when).getTime()+ms[i-1].dur*60000;const cs=new Date(ms[i].when).getTime();if(cs<pe){conf.add(ms[i].id);conf.add(ms[i-1].id);}}}
+  return conf;
+}
+function renderCalendar(){
+  const isRM=currentRole==='RM';
+  document.getElementById('calTitle').textContent=isRM?'My Calendar — '+ROLES.RM.name:'Team Calendar';
+  let list=DB.meetings.slice();
+  if(isRM)list=list.filter(m=>m.rm===ROLES.RM.name);
+  const conf=calcConflicts(DB.meetings);
+  list.sort((x,y)=>new Date(x.when)-new Date(y.when));
+  const byDay={};list.forEach(m=>{const k=new Date(m.when).toDateString();(byDay[k]=byDay[k]||[]).push(m);});
+  const today=new Date().toDateString();const tmrw=new Date(Date.now()+86400000).toDateString();
+  let html='';
+  const keys=Object.keys(byDay).sort((x,y)=>new Date(x)-new Date(y));
+  if(!keys.length)html='<div class="empty">No meetings scheduled.</div>';
+  keys.forEach(k=>{
+    const lbl=k===today?'Today':k===tmrw?'Tomorrow':new Date(k).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'});
+    const nconf=byDay[k].filter(m=>conf.has(m.id)&&m.status!=='Done').length;
+    html+=`<div class="cal-day"><div class="cal-day-h">${lbl}${nconf?` <span class="conflict-tag">${nconf} conflict${nconf>1?'s':''}</span>`:''}</div>`;
+    byDay[k].forEach(m=>{
+      const c=conf.has(m.id)&&m.status!=='Done';const d=new Date(m.when);
+      const end=new Date(d.getTime()+m.dur*60000);
+      html+=`<div class="mtg ${m.status==='Done'?'done':''} ${c?'conflict':''}">
+        <div class="time">${d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}<span class="dur">${m.dur} min · ${m.status}</span></div>
+        <div class="body"><h4>${m.title} ${c?'<span class="conflict-tag">⚠ overlaps</span>':''}</h4>
+          <div class="who">RM: ${m.rm} · ends ${end.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="attendees">${m.attendees.map(at=>`<span class="att ${at.role==='RM'?'rm-att':''}">${at.n} · ${at.role}</span>`).join('')}</div>
+          ${m.status!=='Done'?`<a class="meet-link" href="https://${m.meet}" target="_blank">🎥 Join ${m.meet}</a>`:''}
+          ${c?`<button class="btn ghost sm" style="margin-top:8px" onclick="reschedule(${m.id})">📞 Call client & reschedule</button>`:''}
+        </div></div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('calBody').innerHTML=html;
+  badges();
+}
+function reschedule(id){const m=DB.meetings.find(x=>x.id===id);const d=new Date(m.when);d.setDate(d.getDate()+1);m.when=d.toISOString().slice(0,16);save();renderCalendar();toast('Client called — meeting moved to next day, Google Calendar updated');}
+
+/* ---------- reviews & reminders ---------- */
+function renderReminders(){
+  const funded=DB.clients.filter(c=>c.funded);
+  const annual=funded.filter(c=>weekDue(c.ips.nextAnnualReview));
+  const quarterly=funded.filter(c=>weekDue(c.ips.nextQuarterlyReview));
+  const total=annual.length+quarterly.length;
+  document.getElementById('remBanner').innerHTML=total?`<b>${total} review${total>1?'s are':' is'} up this week</b> — ${annual.length} annual IPS review${annual.length!==1?'s':''} and ${quarterly.length} quarterly portfolio review${quarterly.length!==1?'s':''}. Schedule the calls or send a reminder.`:`No reviews due this week — you're all caught up.`;
+  document.getElementById('remAnnual').innerHTML = annual.length? annual.map(c=>remRow(c,'annual',c.ips.nextAnnualReview,c.ips.lastAnnualReview)).join('') : `<tr><td colspan="5" class="empty">No annual reviews due this week.</td></tr>`;
+  document.getElementById('remQuarterly').innerHTML = quarterly.length? quarterly.map(c=>remRow(c,'quarterly',c.ips.nextQuarterlyReview,c.ips.lastQuarterlyReview)).join('') : `<tr><td colspan="5" class="empty">No quarterly reviews due this week.</td></tr>`;
+  badges();
+}
+function remRow(c,type,due,last){
+  const over=new Date(due)<new Date();
+  return `<tr><td class="lead-name"><span class="cid" onclick="openClient('${c.cid}')">${c.first} ${c.last}</span></td>
+    <td>${c.rm}</td><td>${last?fmtD(last):'—'}</td>
+    <td>${over?'<span class="verdict v-Flagged">overdue</span> ':'<span class="verdict v-Pending">this week</span> '}${fmtDue(due)}</td>
+    <td style="white-space:nowrap">
+      <button class="btn sm" onclick="scheduleReviewCall('${c.cid}','${type}')">📅 Schedule call</button>
+      <button class="btn ghost sm" onclick="emailReview('${c.cid}','${type}')">✉ Reminder</button>
+      <button class="btn ghost sm" onclick="openIpsDoc('${c.cid}')">📄 IPS</button>
+      <button class="btn ghost sm" onclick="markReviewed('${c.cid}','${type}')">✓ Done</button>
+    </td></tr>`;
+}
+
+/* ---------- IPS document ---------- */
+function age(dob){if(!dob)return '—';const d=new Date(dob);const t=new Date();let a=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))a--;return a;}
+function openIpsDoc(cid){
+  const c=DB.clients.find(x=>x.cid===cid);
+  const eq=c.ips.targetEquity, debt=Math.max(0,95-eq), cash=100-eq-debt;
+  const objMap={'Future Goal':'Build a long-term corpus for a specific future goal, prioritising disciplined compounding over the full horizon.','Capital appreciation':'Maximise long-term capital growth, accepting higher short-term volatility in exchange for higher expected returns.','Income Generation':'Generate a steady income stream with capital preservation as a primary concern.'};
+  document.getElementById('ipsDocBody').innerHTML=`<div class="ips-doc">
+    <div class="doc-title"><h2>Investment Policy Statement</h2>
+      <div class="meta">${c.first} ${c.last} · ${c.cid} · Prepared by ${c.rm} · ${fmtD(dayStr(0))}</div></div>
+    <div class="ips-sec"><h3>1 · Investor Profile</h3>
+      <div class="ips-kv">
+        <div class="r"><span class="l">Name</span><span class="v">${c.first} ${c.last}</span></div>
+        <div class="r"><span class="l">Age</span><span class="v">${age(c.kyc.dob)} yrs</span></div>
+        <div class="r"><span class="l">Profession</span><span class="v">${c.kyc.profession}</span></div>
+        <div class="r"><span class="l">Risk band</span><span class="v">${c.ips.riskBand}</span></div>
+        <div class="r"><span class="l">Time horizon</span><span class="v">${c.ips.riskBand==='Conservative'?'3–5 yrs':c.ips.riskBand==='Aggressive'?'10+ yrs':'7–10 yrs'}</span></div>
+        <div class="r"><span class="l">Billing plan</span><span class="v">${c.plan}</span></div>
+      </div></div>
+    <div class="ips-sec"><h3>2 · Investment Objective</h3><p>${objMap[c.goal]||c.goal}</p></div>
+    <div class="ips-sec"><h3>3 · Target Asset Allocation</h3>
+      <div class="alloc-bar"><div class="alloc-eq" style="width:${eq}%">Equity ${eq}%</div><div class="alloc-debt" style="width:${debt}%">Debt ${debt}%</div><div class="alloc-cash" style="width:${cash}%">Cash ${cash}%</div></div>
+      <p>Rebalancing band of ±5%. Drift beyond the band triggers a rebalance at the next review.</p></div>
+    <div class="ips-sec"><h3>4 · Recommended Strategies</h3><p>${c.strategies.map(s=>'• '+s).join('<br>')||'—'}</p></div>
+    <div class="ips-sec"><h3>5 · Benchmark</h3><p>Blended benchmark: ${eq}% NIFTY 500 TRI / ${debt}% CRISIL Composite Bond / ${cash}% liquid. Performance assessed net of fees over rolling 1- and 3-year periods.</p></div>
+    <div class="ips-sec"><h3>6 · Constraints & Liquidity</h3><p>No leverage. Liquidity reserve of ${cash}% maintained for near-term needs. ${c.kyc.pep==='Yes'?'Client is a politically exposed person — enhanced monitoring applies.':'No special regulatory constraints noted.'}</p></div>
+    <div class="ips-sec"><h3>7 · Review Schedule</h3>
+      <div class="ips-kv">
+        <div class="r"><span class="l">Annual IPS review</span><span class="v">${fmtD(c.ips.nextAnnualReview)}</span></div>
+        <div class="r"><span class="l">Quarterly portfolio review</span><span class="v">${fmtD(c.ips.nextQuarterlyReview)}</span></div>
+        <div class="r"><span class="l">Last annual review</span><span class="v">${c.ips.lastAnnualReview?fmtD(c.ips.lastAnnualReview):'—'}</span></div>
+        <div class="r"><span class="l">Last quarterly review</span><span class="v">${c.ips.lastQuarterlyReview?fmtD(c.ips.lastQuarterlyReview):'—'}</span></div>
+      </div></div>
+    <div class="sig-row"><div class="sig">Client signature</div><div class="sig">${c.rm} · Relationship Manager</div></div>
+  </div>`;
+  document.getElementById('ipsEmailBtn').onclick=()=>{closeIps();emailIps(cid);};
+  document.getElementById('ipsScrim').classList.add('open');
+}
+function closeIps(){document.getElementById('ipsScrim').classList.remove('open');}
+
+/* ---------- gmail email composer ---------- */
+function openEmail(o){
+  const fromOpts=Object.values(RM_EMAILS).concat(ROLES[currentRole].email).filter((v,i,arr)=>arr.indexOf(v)===i);
+  const from=o.from||ROLES[currentRole].email;
+  document.getElementById('emFrom').innerHTML=fromOpts.map(e=>`<option ${e===from?'selected':''}>${e}</option>`).join('');
+  document.getElementById('emTo').value=o.to||'';
+  document.getElementById('emSubject').value=o.subject||'';
+  document.getElementById('emBody').value=o.body||'';
+  document.getElementById('emailScrim').classList.add('open');
+}
+function closeEmail(){document.getElementById('emailScrim').classList.remove('open');}
+function sendEmail(){const from=document.getElementById('emFrom').value;closeEmail();toast('Email sent from '+from);}
+function emailReview(cid,type){const c=DB.clients.find(x=>x.cid===cid);
+  openEmail({from:emailOf(c.rm),to:c.email,subject:(type==='annual'?'Your annual portfolio review is due':'Your quarterly portfolio review'),
+    body:`Dear ${c.first},\n\nIt's time for your ${type==='annual'?'annual Investment Policy review':'quarterly portfolio review'}. I'd like to schedule a short call to walk you through performance and any adjustments.\n\nPlease let me know a convenient time, or use the calendar link I'll share.\n\nWarm regards,\n${c.rm}\nFlameback Capital`});}
+function emailIps(cid){const c=DB.clients.find(x=>x.cid===cid);
+  openEmail({from:emailOf(c.rm),to:c.email,subject:'Your Investment Policy Statement — '+c.first+' '+c.last,
+    body:`Dear ${c.first},\n\nPlease find attached your updated Investment Policy Statement. It captures your objectives, target allocation and review schedule.\n\nDo review and revert with any questions.\n\nWarm regards,\n${c.rm}\nFlameback Capital`});}
+function emailAgreement(cid){const c=DB.clients.find(x=>x.cid===cid);
+  openEmail({from:emailOf(c.rm),to:c.email,subject:'Please sign your Flameback advisory agreement',
+    body:`Dear ${c.first},\n\nPlease find the link to e-sign your advisory agreement. Once signed, we'll proceed with onboarding.\n\n[Sign agreement]\n\nWarm regards,\n${c.rm}\nFlameback Capital`});}
+
+/* ---------- badges ---------- */
+function badges(){
+  const c=counts();
+  document.getElementById('navLeads').textContent=c.total;
+  document.getElementById('navOut').textContent=c.out;
+  document.getElementById('navSugg').textContent=DB.suggestions.length;
+  document.getElementById('navClients').textContent=DB.clients.length;
+  document.getElementById('navTasks').textContent=DB.tasks.filter(t=>t.team===currentRole&&t.status!=='Done').length;
+  document.getElementById('navVerif').textContent=DB.clients.filter(c=>c.compliance.status!=='Verified').length;
+  document.getElementById('navIps').textContent=DB.clients.filter(c=>c.funded&&c.ips.nextReview&&new Date(c.ips.nextReview)<=new Date()).length;
+  document.getElementById('navAssign').textContent=DB.leads.filter(l=>l.appUser&&!l.qualified).length;
+  document.getElementById('navOnb').textContent=active().filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
+  document.getElementById('navCal').textContent=DB.meetings.filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
+  document.getElementById('navRem').textContent=DB.clients.filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
+}
+
+/* boot */
+applyRole();
+go('dashboard');
+</script>
+</body>
+</html>
