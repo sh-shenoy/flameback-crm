@@ -322,6 +322,32 @@
   .msg .by{font-weight:700;color:var(--navy);font-size:12px}
   .msg .when{color:var(--muted);font-size:11px;float:right}
 
+  /* onboarding form */
+  .modal.wide{width:760px}
+  .onb-headwrap{padding:16px 22px 12px;border-bottom:1px solid var(--line)}
+  .onb-headwrap .top{display:flex;align-items:center;justify-content:space-between}
+  .onb-headwrap h2{font-size:17px;color:var(--navy)}
+  .onb-formno{font-size:12px;font-weight:700;color:var(--teal);background:#e6f4f1;border:1px solid #bfe3db;border-radius:8px;padding:2px 9px;margin-left:8px}
+  .onb-sub{font-size:12px;color:var(--muted);margin-top:5px}
+  .onb-prog{height:7px;background:#eef2f7;border-radius:5px;overflow:hidden;margin-top:11px}
+  .onb-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--green));transition:width .25s}
+  .onb-progtxt{font-size:11px;color:var(--muted);font-weight:600;margin-top:5px}
+  .synced-note{background:#fff7e8;border:1px solid #f0dcae;border-radius:10px;padding:11px 14px;font-size:12.5px;color:#7a5a1a;margin-bottom:18px;line-height:1.5}
+  .onb-sec{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .onb-sec.done{border-color:#bfe3db;background:#fbfefd}
+  .onb-sec-h{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+  .onb-sec-h .ok{font-size:11px;color:var(--green);font-weight:700}
+  .onb-sec .field{margin-bottom:0}
+  .onb-sec label{font-size:11.5px}
+  .checks{display:flex;flex-wrap:wrap;gap:8px 16px}
+  .checks label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--navy);font-weight:500;text-transform:none;letter-spacing:0}
+  .esign-box{border:1.5px dashed var(--gold);background:#fbf3e3;border-radius:12px;padding:16px 18px;text-align:center}
+  .esign-box p{font-size:13px;color:var(--navy);margin-bottom:4px}
+  .esign-box.sent{border-style:solid;border-color:#bfe3db;background:#eef9f6}
+  .esign-box .big{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:6px}
+  .btn.disabled{opacity:.45;cursor:not-allowed}
+  .full{grid-column:1 / -1}
+
   /* onboarding flow diagram */
   .flow{max-width:560px;margin:0 auto}
   .fbox{background:#fdf6ef;border:1.5px solid #e8d4bf;border-radius:12px;padding:13px 18px;text-align:center;position:relative}
@@ -413,6 +439,24 @@
   .em-row label{width:60px;color:var(--muted);font-weight:600}
   .em-row input,.em-row select{flex:1;border:none;background:none;font-size:13px;color:var(--ink);outline:none}
   .em-body{width:100%;border:none;outline:none;font-size:13px;min-height:150px;resize:vertical;margin-top:10px;line-height:1.5}
+  /* ---- Owner / Leadership view ---- */
+  .owner-tabs{display:flex;gap:8px;margin:-4px 0 18px;flex-wrap:wrap}
+  .owner-tabs button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 15px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;transition:.12s}
+  .owner-tabs button:hover{border-color:var(--ink)}
+  .owner-tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .owner-tabs button .n{background:var(--hot);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700}
+  .owner-tabs button.on .n{background:rgba(255,255,255,.28)}
+  .attn-row{display:flex;align-items:center;gap:13px;padding:12px 4px;border-bottom:1px solid var(--line)}
+  .attn-row:last-child{border-bottom:none}
+  .attn-row .sev{width:4px;align-self:stretch;border-radius:3px;background:var(--warm);flex-shrink:0}
+  .attn-row.high .sev{background:var(--hot)}
+  .attn-ic{font-size:17px;flex-shrink:0}
+  .attn-main{flex:1;min-width:0}
+  .attn-what{font-weight:700;font-size:13px;color:var(--ink)}
+  .attn-detail{font-size:12px;color:var(--muted);margin-top:2px}
+  .attn-acts{display:flex;gap:7px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+  .attn-count{border-radius:11px;padding:2px 9px;font-size:12px;font-weight:700;color:#fff;margin-left:8px}
+  .empty-good{padding:24px;text-align:center;color:var(--green);font-weight:600;font-size:14px}
 </style>
 </head>
 <body>
@@ -432,10 +476,12 @@
         <option value="Compliance">Compliance Team</option>
         <option value="Operations">Operations Team</option>
         <option value="Investment">Investment Team</option>
+        <option value="Owner">Leadership — Dept Heads</option>
       </select>
     </div>
     <nav class="nav" id="nav">
       <button data-view="dashboard" class="active"><span class="ico">▦</span> Dashboard</button>
+      <button data-view="owner"><span class="ico">🧑‍💼</span> Leadership <span class="count" id="navOwner">0</span></button>
       <button data-view="leads"><span class="ico">👥</span> Leads <span class="count" id="navLeads">0</span></button>
       <button data-view="assignment"><span class="ico">🎯</span> Assignment Queue <span class="count" id="navAssign">0</span></button>
       <button data-view="onboarding"><span class="ico">🧭</span> Onboarding <span class="count" id="navOnb">0</span></button>
@@ -466,6 +512,18 @@
       </div>
       <div class="cards" id="dashCards"></div>
       <div id="dashPanel"></div>
+    </section>
+
+    <!-- OWNER / LEADERSHIP -->
+    <section id="view-owner" class="hidden">
+      <div class="page-head">
+        <div><h1 id="ownerTitle">Leadership</h1><p id="ownerSub">Team throughput & where you're needed</p></div>
+        <div id="ownerAction"></div>
+      </div>
+      <div class="owner-tabs" id="ownerTabs"></div>
+      <div class="cards" id="ownerCards"></div>
+      <div id="ownerAttn"></div>
+      <div id="ownerScore" style="margin-top:18px"></div>
     </section>
 
     <!-- LEADS -->
@@ -713,7 +771,7 @@
           <div class="panel">
             <div class="panel-head"><h2>Leads in onboarding</h2></div>
             <table>
-              <thead><tr><th>Lead</th><th>Flow</th><th>Current step</th><th>RM</th></tr></thead>
+              <thead><tr><th>Lead</th><th>Flow</th><th>Current step</th><th>RM</th><th>Onboarding form</th></tr></thead>
               <tbody id="onbBody"></tbody>
             </table>
           </div>
@@ -873,6 +931,7 @@
   </div>
   <div class="drawer-foot">
     <button class="btn ghost" id="delBtn" onclick="deleteLead()" style="margin-right:auto">Delete</button>
+    <button class="btn" id="onbStartBtn" onclick="startOnboarding(editing&&editing.id)" style="display:none">🚀 Start onboarding</button>
     <button class="btn ghost" onclick="closeLead()">Cancel</button>
     <button class="btn" onclick="saveLead()">Save lead</button>
   </div>
@@ -984,6 +1043,43 @@
   </div>
 </div>
 
+<!-- START ONBOARDING — MOBILE PROMPT -->
+<div class="modal-scrim" id="onbMobScrim">
+  <div class="modal" style="width:440px">
+    <div class="modal-h"><h2>Start onboarding</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeOnbMob()">×</button></div>
+    <div class="modal-b">
+      <div class="field"><label>Client mobile number</label>
+        <input id="onbMobInput" placeholder="+91 ..." onkeydown="if(event.key==='Enter')onbMobSubmit()">
+      </div>
+      <div class="onb-sub" id="onbMobNote" style="line-height:1.5"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeOnbMob()">Cancel</button>
+      <button class="btn" onclick="onbMobSubmit()">Open form →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING FORM -->
+<div class="modal-scrim" id="onbFormScrim">
+  <div class="modal wide">
+    <div class="onb-headwrap">
+      <div class="top">
+        <h2>Onboarding form <span class="onb-formno" id="onbFormNo">FORM-—</span></h2>
+        <button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeOnbForm()">×</button>
+      </div>
+      <div class="onb-sub" id="onbFormSub"></div>
+      <div class="onb-prog"><i id="onbProgBar" style="width:0%"></i></div>
+      <div class="onb-progtxt" id="onbProgTxt">0% complete</div>
+    </div>
+    <div class="modal-b" id="onbFormBody"></div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeOnbForm()">Close</button>
+      <button class="btn" onclick="saveOnbForm()">Save progress</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1064,7 +1160,8 @@ const ROLES={
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','onboarding','calendar','tasks','suggestions']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions']},
-  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','tasks','clients','suggestions']}
+  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','tasks','clients','suggestions']},
+  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','tasks','verification','ips','reminders','calendar','leads','out','suggestions']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -1165,6 +1262,7 @@ function migrate(){
   DB.leads.forEach(ensureLeadExtras);
   if(!DB.appLeadsSeeded){const apps=seedAppLeads();apps.forEach(a=>a.id=DB.nextId++);DB.leads.push(...apps);DB.appLeadsSeeded=true;}
   if(!DB.meetings){DB.meetings=seedMeetings();DB.nextMtg=DB.meetings.length+1;}
+  if(!DB.forms){DB.forms=seedForms();DB.nextForm=1002;}
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -1174,7 +1272,8 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','tasks','verification','ips','out','suggestions'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','tasks','verification','ips','out','suggestions'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
   if(v==='assignment')renderAssignment();
@@ -1188,7 +1287,7 @@ function go(v){
   if(v==='out')renderOut();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
-function switchRole(r){currentRole=r;applyRole();go('dashboard');}
+function switchRole(r){currentRole=r;applyRole();go(ROLES[r].nav[0]);}
 function applyRole(){
   const R=ROLES[currentRole];
   document.getElementById('roleName').textContent=R.name;
@@ -1439,6 +1538,7 @@ function openLead(id){
   document.getElementById('dTitle').textContent=isNew?'New Lead':editing.name;
   document.getElementById('dSub').textContent=isNew?'Add to pipeline':`${editing.source} · ${editing.rm}`;
   document.getElementById('delBtn').style.display=isNew?'none':'inline-flex';
+  document.getElementById('onbStartBtn').style.display=(!isNew&&!editing.out)?'inline-flex':'none';
   document.getElementById('fRM').innerHTML=RMS.map(r=>`<option ${r===editing.rm?'selected':''}>${r}</option>`).join('');
   document.getElementById('fName').value=editing.name;
   document.getElementById('fSourceEdit').value=editing.source;
@@ -2017,11 +2117,15 @@ function renderOnboarding(){
     return `<div class="frow"><div class="fname">${s}</div><div class="fbar"><i style="width:${n/max*100}%"></i><span>${n}</span></div></div>`;
   }).join('');
   const inOnb=pop.filter(l=>l.onbStep<7).sort((a,b)=>b.onbStep-a.onbStep);
-  document.getElementById('onbBody').innerHTML = inOnb.length? inOnb.map(l=>`<tr class="lead-row" onclick="openLead(${l.id})">
+  document.getElementById('onbBody').innerHTML = inOnb.length? inOnb.map(l=>{
+    const f=l.phone?findForm(l.phone):null;
+    const btn=f?`<button class="btn ghost sm" onclick="event.stopPropagation();startOnboarding(${l.id})">Resume · ${formProgress(f)}%</button>`
+      :`<button class="btn sm" onclick="event.stopPropagation();startOnboarding(${l.id})">Start onboarding</button>`;
+    return `<tr class="lead-row" onclick="openLead(${l.id})">
     <td class="lead-name">${l.name}</td><td>${flowChip(l.flow)}</td>
     <td><span class="stage-tag stage-${l.onbStep>=5?'L4':l.onbStep>=4?'L3':l.onbStep>=3?'L2':'L1'}">${ONB_STEPS[l.onbStep]}</span></td>
-    <td>${l.rm||'<span class="lead-sub">unassigned</span>'}</td></tr>`).join('')
-    : `<tr><td colspan="4" class="empty">No leads currently in onboarding.</td></tr>`;
+    <td>${l.rm||'<span class="lead-sub">unassigned</span>'}</td><td>${btn}</td></tr>`;}).join('')
+    : `<tr><td colspan="5" class="empty">No leads currently in onboarding.</td></tr>`;
   badges();
 }
 
@@ -2153,6 +2257,277 @@ function emailAgreement(cid){const c=DB.clients.find(x=>x.cid===cid);
     body:`Dear ${c.first},\n\nPlease find the link to e-sign your advisory agreement. Once signed, we'll proceed with onboarding.\n\n[Sign agreement]\n\nWarm regards,\n${c.rm}\nFlameback Capital`});}
 
 /* ---------- badges ---------- */
+/* ---------- Onboarding form (linked by mobile) ---------- */
+const ONB_FORM=[
+  {key:'personal',title:'1 · Personal details',fields:[
+    {k:'fullName',l:'Full name (as per PAN)'},
+    {k:'dob',l:'Date of birth',t:'date'},
+    {k:'gender',l:'Gender',t:'select',o:['Male','Female','Other']},
+    {k:'pan',l:'PAN'},
+    {k:'aadhaar',l:'Aadhaar (last 4)'},
+    {k:'nationality',l:'Nationality'}
+  ]},
+  {key:'contact',title:'2 · Contact & address',fields:[
+    {k:'mobile',l:'Mobile (linked)',ro:true},
+    {k:'email',l:'Email',t:'email'},
+    {k:'addr',l:'Residential address',t:'area',full:true},
+    {k:'city',l:'City'},{k:'state',l:'State'},{k:'pin',l:'PIN code'}
+  ]},
+  {key:'financial',title:'3 · Financial profile',fields:[
+    {k:'occupation',l:'Occupation',t:'select',o:['Salaried','Self-employed / Business','Professional','Retired','Other']},
+    {k:'income',l:'Annual income',t:'select',o:['< ₹10L','₹10–25L','₹25–50L','₹50L–1Cr','> ₹1Cr']},
+    {k:'networth',l:'Net worth band',t:'select',o:['< ₹50L','₹50L–2Cr','₹2–5Cr','> ₹5Cr']},
+    {k:'sourceFunds',l:'Source of funds',t:'select',o:['Salary','Business income','Investments','Inheritance','Other']}
+  ]},
+  {key:'objective',title:'4 · Investment objective',fields:[
+    {k:'goal',l:'Primary goal',t:'select',o:['Wealth creation','Retirement','Income generation','Child education','Capital preservation']},
+    {k:'horizon',l:'Time horizon',t:'select',o:['< 3 yrs','3–5 yrs','5–10 yrs','> 10 yrs']},
+    {k:'initial',l:'Initial investment (₹)'},
+    {k:'sip',l:'Monthly SIP (₹)'}
+  ]},
+  {key:'risk',title:'5 · Risk profile',fields:[
+    {k:'q1',l:'If your portfolio dropped 20%, you would…',t:'select',o:['Sell everything','Sell some','Hold','Buy more']},
+    {k:'q2',l:'Investment experience',t:'select',o:['None','Some','Experienced','Professional']},
+    {k:'q3',l:'Risk appetite',t:'select',o:['Low','Moderate','High','Very high']},
+    {k:'band',l:'Resulting risk band',t:'select',o:['Conservative','Moderate','Aggressive']}
+  ]},
+  {key:'bank',title:'6 · Bank & demat',fields:[
+    {k:'bank',l:'Bank name'},{k:'acct',l:'Account number'},{k:'ifsc',l:'IFSC'},
+    {k:'demat',l:'Demat / broker',t:'select',o:['Zerodha — to open','Zerodha — active','Other broker','None yet']}
+  ]},
+  {key:'nominee',title:'7 · Nominee',fields:[
+    {k:'nomName',l:'Nominee name'},
+    {k:'nomRel',l:'Relationship',t:'select',o:['Spouse','Parent','Child','Sibling','Other']},
+    {k:'nomShare',l:'Share %'}
+  ]},
+  {key:'decl',title:'8 · Declarations & FATCA',fields:[
+    {k:'pep',l:'Politically exposed person?',t:'select',o:['No','Yes']},
+    {k:'taxres',l:'Tax resident of India only?',t:'select',o:['Yes','No']},
+    {k:'consent',l:'Consents',t:'checks',o:['Terms & conditions','Privacy policy','Risk disclosure','Fee schedule'],full:true}
+  ]}
+];
+function seedForms(){
+  return [{no:'FORM-1001',mobile:'+91 99888 17263',leadId:null,
+    data:{
+      personal:{fullName:'Rohit Bansal',dob:'1988-03-14',gender:'Male',pan:'AKLPB9921K',aadhaar:'4421',nationality:'Indian'},
+      contact:{mobile:'+91 99888 17263',email:'rohit.b@email.com',addr:'B-204, Hiranandani Gardens, Powai',city:'Mumbai',state:'Maharashtra',pin:'400076'},
+      financial:{occupation:'Salaried',income:'₹25–50L',networth:'₹50L–2Cr',sourceFunds:'Salary'},
+      objective:{goal:'Wealth creation',horizon:'5–10 yrs',initial:'1500000',sip:'50000'}
+    },
+    status:'In progress',esign:null,started:dayStr(-5),lastSaved:dayStr(-5)}];
+}
+let CURRENT_FORM=null,ONB_LEAD=null;
+function digits(s){return (s||'').replace(/\D/g,'').slice(-10);}
+function findForm(mob){const d=digits(mob);return d.length>=10?DB.forms.find(f=>digits(f.mobile)===d):null;}
+function newForm(mob,lead){const data={contact:{mobile:mob}};if(lead){data.personal={fullName:lead.name};data.contact.email=lead.email||'';}
+  return {no:'FORM-'+(DB.nextForm++),mobile:mob,leadId:lead?lead.id:null,data,status:'Not started',esign:null,started:dayStr(0),lastSaved:dayStr(0)};}
+function formProgress(f){let tot=0,fill=0;ONB_FORM.forEach(s=>s.fields.forEach(fl=>{tot++;const v=f.data[s.key]&&f.data[s.key][fl.k];if(Array.isArray(v)?v.length:(v!==undefined&&v!==''&&v!==null))fill++;}));return Math.round(fill/tot*100);}
+function secDone(f,sec){return sec.fields.every(fl=>{const v=f.data[sec.key]&&f.data[sec.key][fl.k];return Array.isArray(v)?v.length>0:(v!==undefined&&v!==''&&v!==null);});}
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function startOnboarding(leadId){
+  ONB_LEAD=leadId?DB.leads.find(l=>l.id===leadId):null;
+  const inp=document.getElementById('onbMobInput');
+  inp.value=ONB_LEAD&&ONB_LEAD.phone?ONB_LEAD.phone:'';
+  const note=document.getElementById('onbMobNote');
+  if(ONB_LEAD&&ONB_LEAD.phone){const ex=findForm(ONB_LEAD.phone);
+    note.innerHTML=ex?`📲 Number auto-filled from the app lead. A form (<b>${ex.no}</b>, ${formProgress(ex)}% done, started ${fmtD(ex.started)}) is already linked to this mobile — we'll <b>resume</b> it.`
+      :`📲 Number auto-filled from the app lead. No form linked yet — a new one will be created.`;}
+  else note.textContent="Enter the client's mobile number. Every onboarding form is linked by mobile, so if the client already started (self-serve or with another RM) we resume that exact form.";
+  document.getElementById('onbMobScrim').classList.add('open');
+  setTimeout(()=>inp.focus(),50);
+}
+function closeOnbMob(){document.getElementById('onbMobScrim').classList.remove('open');}
+function onbMobSubmit(){
+  const mob=(document.getElementById('onbMobInput').value||'').trim();
+  if(digits(mob).length<10){toast('Enter a valid 10-digit mobile number');return;}
+  let f=findForm(mob);
+  if(f){f._resumed=true;}
+  else{f=newForm(mob,ONB_LEAD);DB.forms.push(f);f._resumed=false;}
+  if(ONB_LEAD&&!f.leadId)f.leadId=ONB_LEAD.id;
+  if(ONB_LEAD){ONB_LEAD.onbStep=Math.max(ONB_LEAD.onbStep||0,3);}
+  save();
+  closeOnbMob();
+  openOnbForm(f);
+  toast(f._resumed?`Resuming ${f.no} — ${formProgress(f)}% already captured`:`New form ${f.no} created & linked to ${mob}`);
+}
+function openOnbForm(f){CURRENT_FORM=f;renderOnbForm();document.getElementById('onbFormScrim').classList.add('open');}
+function closeOnbForm(){document.getElementById('onbFormScrim').classList.remove('open');if(CURRENT_FORM)delete CURRENT_FORM._resumed;CURRENT_FORM=null;rerender();}
+function fieldHtml(secKey,fl,val){
+  const id=`onb_${secKey}_${fl.k}`,cls=fl.full?'field full':'field';
+  if(fl.t==='checks'){
+    return `<div class="${cls}"><label>${fl.l}</label><div class="checks">${fl.o.map(o=>`<label><input type="checkbox" ${(val||[]).includes(o)?'checked':''} onchange="onbToggle('${secKey}','${fl.k}','${esc(o)}',this)"> ${o}</label>`).join('')}</div></div>`;
+  }
+  if(fl.t==='select'){
+    return `<div class="${cls}"><label>${fl.l}</label><select onchange="onbSet('${secKey}','${fl.k}',this.value)"><option value="">— select —</option>${fl.o.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+  }
+  if(fl.t==='area'){
+    return `<div class="${cls}"><label>${fl.l}</label><textarea onchange="onbSet('${secKey}','${fl.k}',this.value)" ${fl.ro?'disabled':''}>${esc(val)}</textarea></div>`;
+  }
+  const type=fl.t==='date'?'date':fl.t==='email'?'email':'text';
+  return `<div class="${cls}"><label>${fl.l}</label><input type="${type}" value="${esc(val)}" ${fl.ro?'disabled':''} onchange="onbSet('${secKey}','${fl.k}',this.value)"></div>`;
+}
+function renderOnbForm(){
+  const f=CURRENT_FORM;
+  document.getElementById('onbFormNo').textContent=f.no;
+  const lead=f.leadId&&DB.leads.find(l=>l.id===f.leadId);
+  document.getElementById('onbFormSub').innerHTML=`📲 Linked to ${esc(f.mobile)}${lead?` · ${esc(lead.name)} (${flowChip(lead.flow||'RM-assisted')})`:''} · status: <b>${f.status}</b>`;
+  let html='';
+  if(f._resumed)html+=`<div class="synced-note">⟳ <b>Resuming this form.</b> It was started ${fmtD(f.started)} and is synced to the mobile number — everything the client already filled (including self-serve) is pre-filled below. Pick up where they left off.</div>`;
+  ONB_FORM.forEach(sec=>{
+    const done=secDone(f,sec);
+    html+=`<div class="onb-sec ${done?'done':''}"><div class="onb-sec-h"><span>${sec.title}</span>${done?'<span class="ok">✓ complete</span>':''}</div><div class="grid2">`;
+    sec.fields.forEach(fl=>{html+=fieldHtml(sec.key,fl,(f.data[sec.key]||{})[fl.k]);});
+    html+=`</div></div>`;
+  });
+  html+=esignHtml(f);
+  document.getElementById('onbFormBody').innerHTML=html;
+  updateProg();
+}
+function esignHtml(f){
+  const pct=formProgress(f),ready=pct>=85;
+  if(f.status==='E-sign sent'||f.status==='Signed'){
+    return `<div class="onb-sec"><div class="onb-sec-h"><span>9 · Agreement & e-sign</span></div>
+      <div class="esign-box sent"><div class="big">${f.status==='Signed'?'✅ Agreement signed':'✍️ E-sign request sent'}</div>
+      <div class="onb-sub">Investment management agreement sent to <b>${esc(f.esign.sentTo)}</b> on ${fmtD(f.esign.when)} via DocuSign (simulated).</div>
+      ${f.status==='E-sign sent'?`<button class="btn sm" style="margin-top:12px" onclick="markSigned()">Mark as signed (demo)</button>`:''}</div></div>`;
+  }
+  return `<div class="onb-sec"><div class="onb-sec-h"><span>9 · Agreement & e-sign</span></div>
+    <div class="esign-box"><p><b>Send the agreement for e-signature</b></p>
+    <div class="onb-sub" style="margin:6px 0 12px">${ready?'Form is complete enough — send the investment management agreement to the client for electronic signature.':`Finish the form first — ${pct}% complete, need 85%+ to send.`}</div>
+    <button class="btn ${ready?'':'disabled'}" ${ready?'':'disabled'} onclick="sendEsign()">✍️ Send e-sign request for agreement</button></div></div>`;
+}
+function onbSet(sec,k,v){const d=CURRENT_FORM.data[sec]=CURRENT_FORM.data[sec]||{};d[k]=v;updateProg();}
+function onbToggle(sec,k,opt,el){const d=CURRENT_FORM.data[sec]=CURRENT_FORM.data[sec]||{};const arr=d[k]=d[k]||[];const i=arr.indexOf(opt);if(el.checked&&i<0)arr.push(opt);if(!el.checked&&i>=0)arr.splice(i,1);updateProg();}
+function updateProg(){
+  if(!CURRENT_FORM)return;
+  const pct=formProgress(CURRENT_FORM);
+  document.getElementById('onbProgBar').style.width=pct+'%';
+  document.getElementById('onbProgTxt').textContent=pct+'% complete';
+  if(CURRENT_FORM.status==='Not started'||CURRENT_FORM.status==='In progress'){
+    const last=document.querySelector('#onbFormBody .onb-sec:last-child');
+    if(last)last.outerHTML=esignHtml(CURRENT_FORM);
+  }
+}
+function saveOnbForm(){const f=CURRENT_FORM;f.lastSaved=dayStr(0);if(f.status==='Not started'&&formProgress(f)>0)f.status='In progress';save();toast(`Saved ${f.no} · ${formProgress(f)}% complete`);closeOnbForm();}
+function sendEsign(){const f=CURRENT_FORM;const email=(f.data.contact&&f.data.contact.email)||(f.leadId&&(DB.leads.find(l=>l.id===f.leadId)||{}).email)||'client@email.com';
+  f.status='E-sign sent';f.esign={sentTo:email,when:dayStr(0),status:'Sent'};f.lastSaved=dayStr(0);
+  if(f.leadId){const l=DB.leads.find(x=>x.id===f.leadId);if(l){l.onbStep=Math.max(l.onbStep||0,5);l.stage='L3';l.status='Onboarding';}}
+  save();renderOnbForm();toast('✍️ E-sign request for the agreement sent to '+email);}
+function markSigned(){const f=CURRENT_FORM;f.status='Signed';if(f.esign)f.esign.status='Signed';
+  if(f.leadId){const l=DB.leads.find(x=>x.id===f.leadId);if(l){l.onbStep=Math.max(l.onbStep||0,6);l.stage='L4';}}
+  save();renderOnbForm();toast('Agreement signed — client ready to fund & invest');}
+
+/* ---------- Owner / Leadership view ---------- */
+let ownerDept='Sales';
+const OWNER_DEPTS=[
+  {key:'Sales',team:'RM',label:'Sales',icon:'📞'},
+  {key:'Investment',team:'Investment',label:'Investment',icon:'📈'},
+  {key:'Compliance',team:'Compliance',label:'Compliance',icon:'✅'},
+  {key:'Operations',team:'Operations',label:'Operations',icon:'⚙️'}
+];
+const DEPT_SUB={
+  Sales:'Pipeline activity across RMs · five-strike, follow-ups & the lead desk',
+  Investment:'Reviews, rebalances & reconciliations · IPS adherence',
+  Compliance:'KYC / AML throughput · flagged clients needing sign-off',
+  Operations:'Account opening, demat & ops tickets · what is stuck'
+};
+function setOwnerDept(k){ownerDept=k;renderOwner();}
+function startToday(){const t=new Date();t.setHours(0,0,0,0);return t;}
+function firstName(n){return (n||'').split(' ')[0];}
+function withinWeek(s){if(!s)return false;const d=new Date(s);const lo=new Date();lo.setDate(lo.getDate()-7);lo.setHours(0,0,0,0);const hi=new Date();hi.setHours(23,59,59,999);return d>=lo&&d<=hi;}
+function outreachThisWeek(rm){const lo=new Date();lo.setDate(lo.getDate()-7);lo.setHours(0,0,0,0);return active().filter(l=>!rm||l.rm===rm).reduce((n,l)=>n+(l.hist||[]).filter(x=>new Date(x.when)>=lo).length,0);}
+function teamTaskStats(team){const all=DB.tasks.filter(t=>t.team===team);return {all,done:all.filter(t=>t.status==='Done'),open:all.filter(t=>t.status==='Open'),inprog:all.filter(t=>t.status==='In Progress'),blocked:all.filter(t=>t.status==='Blocked'),overdue:all.filter(t=>t.status!=='Done'&&t.due&&new Date(t.due)<startToday())};}
+function obtn(label,fn,kind){return `<button class="btn ${kind||''} sm" onclick="event.stopPropagation();${fn}">${label}</button>`;}
+
+function deptAttn(k){
+  if(k==='Sales')return salesAttn().concat(taskAttn('RM'));
+  if(k==='Investment')return investmentAttn().concat(taskAttn('Investment'));
+  if(k==='Compliance')return complianceAttn().concat(taskAttn('Compliance'));
+  if(k==='Operations')return taskAttn('Operations');
+  return [];
+}
+function salesAttn(){
+  const items=[];
+  active().filter(l=>l.stage==='L1'&&l.count>=5&&!l.appUser).forEach(l=>items.push({sev:'high',icon:'🚫',what:'Five-Strike reached',who:l.name+' · '+l.rm,detail:`${l.count} outreach attempts, no conversion — eligible for the Out List`,actions:[obtn('Write off → Out',`ownerWriteOff(${l.id})`,''),obtn('Reassign RM',`openLead(${l.id})`,'ghost')]}));
+  active().filter(l=>l.follow&&new Date(l.follow)<startToday()).forEach(l=>items.push({sev:'med',icon:'⏰',what:'Follow-up overdue',who:l.name+(l.rm?' · '+l.rm:''),detail:'Follow-up was due '+fmtDue(l.follow),actions:[obtn('Nudge '+(firstName(l.rm)||'RM'),`ownerNudge('${l.rm||'the RM'}','follow up with ${l.name}')`,'ghost')]}));
+  DB.leads.filter(l=>l.appUser&&!l.qualified).forEach(l=>items.push({sev:'med',icon:'🎯',what:'App lead awaiting qualification',who:l.name,detail:(l.flow||'')+' · sitting in the assignment queue',actions:[obtn('Nudge Lead Desk',`ownerNudge('Maya Sharma','qualify ${l.name}')`,'ghost')]}));
+  return items;
+}
+function investmentAttn(){
+  const items=[];
+  DB.clients.filter(c=>c.funded).forEach(c=>{
+    const nm=c.first+' '+c.last+' · '+c.cid;
+    if(c.ips.nextQuarterlyReview&&weekDue(c.ips.nextQuarterlyReview)){const od=new Date(c.ips.nextQuarterlyReview)<startToday();items.push({sev:od?'high':'med',icon:'📉',what:od?'Quarterly review overdue':'Quarterly review due this week',who:nm,detail:'Due '+fmtDue(c.ips.nextQuarterlyReview),actions:[obtn('Mark reviewed',`ownerMarkReview('${c.cid}','q')`,''),obtn('Open client',`openClient('${c.cid}')`,'ghost')]});}
+    if(c.ips.nextAnnualReview&&weekDue(c.ips.nextAnnualReview)){const od=new Date(c.ips.nextAnnualReview)<startToday();items.push({sev:od?'high':'med',icon:'📅',what:od?'Annual IPS review overdue':'Annual IPS review due this week',who:nm,detail:'Due '+fmtDue(c.ips.nextAnnualReview),actions:[obtn('Mark reviewed',`ownerMarkReview('${c.cid}','a')`,''),obtn('Open client',`openClient('${c.cid}')`,'ghost')]});}
+  });
+  return items;
+}
+function complianceAttn(){
+  const items=[];
+  DB.clients.filter(c=>c.compliance.status==='Flagged').forEach(c=>items.push({sev:'high',icon:'🚩',what:'Client flagged in verification',who:c.first+' '+c.last+' · '+c.cid,detail:'Discrepancy found — needs review / sign-off',actions:[obtn('Open verification',`go('verification')`,'ghost'),obtn('Open client',`openClient('${c.cid}')`,'ghost')]}));
+  DB.clients.filter(c=>c.compliance.status==='Pending').forEach(c=>items.push({sev:'med',icon:'🕓',what:'KYC pending',who:c.first+' '+c.last+' · '+c.cid,detail:'Awaiting verification',actions:[obtn('Open verification',`go('verification')`,'ghost')]}));
+  return items;
+}
+function taskAttn(team){
+  const s=teamTaskStats(team),items=[];
+  s.blocked.forEach(t=>items.push({sev:'high',icon:'⛔',what:'Ticket blocked',who:t.title,detail:`${t.cid||'—'} · ${t.assignee||'whole team'}`,actions:[obtn('Reassign',`openTask(${t.id})`,'ghost'),obtn('Escalate',`ownerEscalate(${t.id})`,'')]}));
+  s.overdue.filter(t=>t.status!=='Blocked').forEach(t=>items.push({sev:'med',icon:'⏳',what:'Ticket overdue',who:t.title,detail:`Due ${fmtDue(t.due)} · ${t.assignee||'whole team'}`,actions:[obtn('Reassign',`openTask(${t.id})`,'ghost'),obtn('Escalate',`ownerEscalate(${t.id})`,'')]}));
+  return items;
+}
+function attnRow(it){return `<div class="attn-row ${it.sev==='high'?'high':''}"><div class="sev"></div><div class="attn-ic">${it.icon}</div>
+  <div class="attn-main"><div class="attn-what">${it.what} <span style="color:var(--muted);font-weight:600">— ${it.who}</span></div><div class="attn-detail">${it.detail||''}</div></div>
+  <div class="attn-acts">${it.actions.join('')}</div></div>`;}
+function attnPanel(items){
+  return `<div class="panel"><div class="panel-head"><h2>⚠ Needs your attention<span class="attn-count" style="background:${items.length?'var(--hot)':'var(--green)'}">${items.length}</span></h2></div>
+    ${items.length?items.map(attnRow).join(''):'<div class="empty-good">✅ All clear — no intervention needed right now.</div>'}</div>`;
+}
+function ownerCards(k){
+  if(k==='Sales'){
+    const a=active(),reach=outreachThisWeek(),mtgs=DB.meetings.filter(m=>withinWeek(m.when)).length,l4=a.filter(l=>l.stage==='L4').length,attn=deptAttn('Sales').length;
+    return dcard('Active leads',a.length,'In pipeline','var(--teal)',100)
+      +dcard('Outreach this week',reach,'Calls · meetings · msgs','var(--green)',Math.min(100,reach*8))
+      +dcard('Meetings this week',mtgs,'Across all RMs','#5b3aa8',mtgs*14)
+      +dcard('Pre-investment (L4)',l4,'Closing soon','var(--warm)',l4*25)
+      +dcard('Needs attention',attn,'Awaiting your call','var(--hot)',attn*15);
+  }
+  const s=teamTaskStats(OWNER_DEPTS.find(d=>d.key===k).team),attn=deptAttn(k).length;
+  return dcard('Completed',s.done.length,'Tickets closed','var(--green)',s.all.length?s.done.length/s.all.length*100:0)
+    +dcard('In progress',s.inprog.length,'Being worked','var(--teal)',s.inprog.length*20)
+    +dcard('Open',s.open.length,'Awaiting pickup','#5b3aa8',s.open.length*20)
+    +dcard('Overdue',s.overdue.length,'Past due date','var(--warm)',s.overdue.length*25)
+    +dcard('Needs attention',attn,'Awaiting your call','var(--hot)',attn*15);
+}
+function ownerScore(k){
+  if(k==='Sales'){
+    const rows=RMS.map(rm=>{const leads=active().filter(l=>l.rm===rm);const od=leads.filter(l=>l.follow&&new Date(l.follow)<startToday()).length;const fs=leads.filter(l=>l.stage==='L1'&&l.count>=5).length;
+      return `<tr><td class="lead-name">${rm}</td><td>${leads.length}</td><td>${leads.filter(l=>l.status==='Hot').length}</td><td>${outreachThisWeek(rm)}</td><td style="color:${od?'var(--hot)':'var(--muted)'}">${od}</td><td style="color:${fs?'var(--hot)':'var(--muted)'}">${fs}</td></tr>`;}).join('');
+    return panelTable('RM scorecard','View all leads →',"go('leads')",['RM','Active leads','Hot','Outreach (7d)','Overdue f/u','Five-strike'],rows);
+  }
+  const team=OWNER_DEPTS.find(d=>d.key===k).team,ts=DB.tasks.filter(t=>t.team===team);
+  const rows=(TEAM_MEMBERS[team]||[]).map(n=>statRow(n,ts.filter(t=>t.assignee===n)));
+  const un=ts.filter(t=>!t.assignee);if(un.length)rows.push(statRow('Unassigned (whole team)',un));
+  return panelTable(team+' scorecard','Open inbox →',"go('tasks')",['Member','Open','In progress','Done','Overdue'],rows.join(''));
+}
+function statRow(name,mine){const od=mine.filter(t=>t.status!=='Done'&&t.due&&new Date(t.due)<startToday()).length;
+  return `<tr><td class="lead-name">${name}</td><td>${mine.filter(t=>t.status==='Open').length}</td><td>${mine.filter(t=>t.status==='In Progress').length}</td><td>${mine.filter(t=>t.status==='Done').length}</td><td style="color:${od?'var(--hot)':'var(--muted)'}">${od}</td></tr>`;}
+function renderOwner(){
+  document.getElementById('ownerTabs').innerHTML=OWNER_DEPTS.map(d=>{const n=deptAttn(d.key).length;
+    return `<button class="${d.key===ownerDept?'on':''}" onclick="setOwnerDept('${d.key}')">${d.icon} ${d.label}${n?` <span class="n">${n}</span>`:''}</button>`;}).join('');
+  const dept=OWNER_DEPTS.find(d=>d.key===ownerDept)||OWNER_DEPTS[0];
+  document.getElementById('ownerTitle').textContent='Head of '+dept.label;
+  document.getElementById('ownerSub').textContent=DEPT_SUB[dept.key];
+  document.getElementById('ownerCards').innerHTML=ownerCards(dept.key);
+  document.getElementById('ownerAttn').innerHTML=attnPanel(deptAttn(dept.key));
+  document.getElementById('ownerScore').innerHTML=ownerScore(dept.key);
+  badges();
+}
+/* owner actions */
+function ownerNudge(who,ctx){toast('🔔 Reminder sent to '+(firstName(who)||who)+' — '+ctx);}
+function ownerEscalate(id){const t=DB.tasks.find(x=>x.id===id);if(!t)return;t.priority='High';logTask(t,'Escalated by Leadership — priority raised to High',true);save();toast('Escalated: '+t.title);renderOwner();}
+function ownerWriteOff(id){const l=DB.leads.find(x=>x.id===id);if(!l)return;l.out=true;l.outReason='Five-Strike — written off (Leadership)';save();toast(l.name+' moved to Out List');renderOwner();}
+function ownerMarkReview(cid,kind){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;if(kind==='q'){c.ips.lastQuarterlyReview=dayStr(0);c.ips.nextQuarterlyReview=dayStr(90);}else{c.ips.lastAnnualReview=dayStr(0);c.ips.nextAnnualReview=dayStr(365);}save();toast('Review marked done for '+c.first+' '+c.last);renderOwner();}
+
 function badges(){
   const c=counts();
   document.getElementById('navLeads').textContent=c.total;
@@ -2166,6 +2541,7 @@ function badges(){
   document.getElementById('navOnb').textContent=active().filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
   document.getElementById('navCal').textContent=DB.meetings.filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
   document.getElementById('navRem').textContent=DB.clients.filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
+  const no=document.getElementById('navOwner');if(no)no.textContent=OWNER_DEPTS.reduce((n,d)=>n+deptAttn(d.key).length,0);
 }
 
 /* boot */
