@@ -1754,7 +1754,7 @@ function openLead(id){
   document.getElementById('dTitle').textContent=isNew?'New Lead':editing.name;
   document.getElementById('dSub').textContent=isNew?'Add to pipeline':`${editing.source} · ${editing.rm}`;
   document.getElementById('delBtn').style.display=isNew?'none':'inline-flex';
-  document.getElementById('onbStartBtn').style.display=(!isNew&&!editing.out)?'inline-flex':'none';
+  document.getElementById('onbStartBtn').style.display=(currentRole==='RM'&&!isNew&&!editing.out)?'inline-flex':'none';
   document.getElementById('fRM').innerHTML=RMS.map(r=>`<option ${r===editing.rm?'selected':''}>${r}</option>`).join('');
   document.getElementById('fName').value=editing.name;
   document.getElementById('fSourceEdit').value=editing.source;
@@ -2335,8 +2335,10 @@ function renderOnboarding(){
   const inOnb=pop.filter(l=>l.onbStep<7).sort((a,b)=>b.onbStep-a.onbStep);
   document.getElementById('onbBody').innerHTML = inOnb.length? inOnb.map(l=>{
     const f=l.phone?findForm(l.phone):null;
-    const btn=f?`<button class="btn ghost sm" onclick="event.stopPropagation();startOnboarding(${l.id})">Resume · ${formProgress(f)}%</button>`
-      :`<button class="btn sm" onclick="event.stopPropagation();startOnboarding(${l.id})">Start onboarding</button>`;
+    const btn=currentRole==='RM'
+      ? (f?`<button class="btn ghost sm" onclick="event.stopPropagation();startOnboarding(${l.id})">Resume · ${formProgress(f)}%</button>`
+          :`<button class="btn sm" onclick="event.stopPropagation();startOnboarding(${l.id})">Start onboarding</button>`)
+      : (f?`<span class="lead-sub">In progress · ${formProgress(f)}%</span>`:`<span class="lead-sub">Not started</span>`);
     return `<tr class="lead-row" onclick="openLead(${l.id})">
     <td class="lead-name">${l.name}</td><td>${flowChip(l.flow)}</td>
     <td><span class="stage-tag stage-${l.onbStep>=5?'L4':l.onbStep>=4?'L3':l.onbStep>=3?'L2':'L1'}">${ONB_STEPS[l.onbStep]}</span></td>
