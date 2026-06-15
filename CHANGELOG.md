@@ -16,6 +16,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - One person (one number) can hold a PMS, an RIA and an International account — one of each.
 - Family members (e.g. spouse) are linked under the primary's number.
 - Clients list shows one row per account, grouped by household, with a quick-view dropdown (holdings, CAGR since inception, invested / current).
+- Onboarding is now a household hub: enter a number → see every account on it → resume any, or add more accounts (PMS / RIA / International) and family members, each with its own product and agreement / e-sign.
 - Product tags on clients (PMS Lite (RIA) / PMS / International investing) with a filter.
 
 **Calendar & reminders**
