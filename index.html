@@ -372,6 +372,50 @@
   .hub-pill{display:inline-block;background:#eef4f9;border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;color:var(--navy)}
   .hub-callout{background:#fff7e8;border:1px solid #f0dcae;border-radius:10px;padding:12px 15px;font-size:13px;color:#7a5a1a;margin:12px 0;line-height:1.6}
   .hub-callout.tip{background:#eef9f6;border-color:#bfe3db;color:#1d5b50}
+  .alert-stack{position:fixed;top:18px;right:18px;z-index:90;display:flex;flex-direction:column;gap:10px;width:300px;max-width:90vw}
+  .call-alert{position:relative;background:#fff;border:1px solid var(--line);border-left:4px solid var(--hot);border-radius:12px;box-shadow:0 12px 34px rgba(15,39,66,.20);padding:13px 15px;animation:slideIn .25s}
+  @keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+  .call-alert .ttl{font-weight:700;color:var(--navy);font-size:13px}
+  .call-alert .meta{font-size:12px;color:var(--muted);margin:4px 0 10px;line-height:1.55}
+  .call-alert .mins{color:var(--hot);font-weight:700}
+  .call-alert .acts{display:flex;gap:7px}
+  .call-alert .x{position:absolute;top:7px;right:10px;background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer}
+  .ptag{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid;white-space:nowrap}
+  .ptag.pt-ria{background:#e6f4f1;color:#13635f;border-color:#bfe3db}
+  .ptag.pt-pms{background:#e7eefb;color:#2f54a8;border-color:#c7d6f3}
+  .ptag.pt-intl{background:#f3ecfb;color:#6b3aa8;border-color:#dccdf2}
+  .rel-chip{display:inline-block;font-size:10px;font-weight:700;background:#fdf0e3;color:#a96a16;border:1px solid #f0dcae;border-radius:10px;padding:0 7px;vertical-align:middle}
+  .pf-meta{display:grid;grid-template-columns:repeat(4,1fr)}
+  .pf-meta>div{padding:12px 16px;border-right:1px solid var(--line)}
+  .pf-meta>div:last-child{border-right:none}
+  .pf-meta .k{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .pf-meta .v{font-size:14px;color:var(--navy);font-weight:600;margin-top:3px}
+  .ptab-pane{display:none;padding-top:18px}
+  .ptab-pane.active{display:block}
+  .acct-card{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .acct-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;background:#fafbfd}
+  .acct-head .l{display:flex;align-items:center;gap:10px}
+  .acct-body{padding:14px 16px;border-top:1px solid var(--line);display:none}
+  .acct-card.open .acct-body{display:block}
+  .acct-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+  .acct-metrics .m{background:#f6f9fc;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .acct-metrics .m .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .acct-metrics .m .v{font-size:17px;font-weight:800;color:var(--navy);margin-top:3px}
+  .acct-foot{border-top:1px dashed var(--line);padding-top:10px}
+  .rep-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .rep-card{border:1px solid var(--line);border-radius:12px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .ptl{list-style:none;padding:0;margin:0}
+  .ptl li{display:flex;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+  .ptl .dot{width:10px;height:10px;border-radius:50%;background:var(--teal);margin-top:5px;flex-shrink:0}
+  .ptl .dot.life{background:var(--green)}
+  .ptl .dot.reach{background:var(--cold)}
+  .ptl .ev{font-size:13.5px;color:var(--navy);font-weight:600}
+  .ptl .when{font-size:11px;color:var(--muted);margin-top:2px}
+  .quick-box{background:#f6f9fc;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+  .qmetrics{display:flex;gap:18px}
+  .qmetrics .k,.qhold .k{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .qmetrics .v{font-size:16px;font-weight:800;color:var(--navy)}
+  .qhold .qh{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:7px;padding:2px 8px;font-size:12px;margin:3px 5px 0 0}
   .kflow{max-width:600px;margin:10px auto 0}
   .knode{border-radius:12px;padding:11px 16px;text-align:center;border:1.5px solid;margin:0 auto;max-width:430px}
   .knode .who{font-weight:700;font-size:14px}
@@ -530,6 +574,7 @@
       <button data-view="calendar"><span class="ico">📅</span> Calendar <span class="count" id="navCal">0</span></button>
       <button data-view="reminders"><span class="ico">🔔</span> Reviews & Reminders <span class="count" id="navRem">0</span></button>
       <button data-view="clients"><span class="ico">💼</span> Clients <span class="count" id="navClients">0</span></button>
+      <button data-view="profiles"><span class="ico">🪪</span> Profiles</button>
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> Verification <span class="count" id="navVerif">0</span></button>
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
@@ -627,7 +672,7 @@
     <!-- CLIENTS (ACTIVE) -->
     <section id="view-clients" class="hidden">
       <div class="page-head">
-        <div><h1>Clients — Active</h1><p>Unique Client ID is mapped to the registered contact number. Click a contact number to open the full profile.</p></div>
+        <div><h1>Clients — Active</h1><p>One row per account. A person can hold a PMS, an RIA and an International account — and family members are linked under the primary's number. Click a contact number to open the full profile.</p></div>
         <span class="sync-badge">⟳ Synced from FBC-Admin</span>
       </div>
       <div class="panel">
@@ -640,11 +685,15 @@
             <option value="">All onboarding stages</option>
             <option>Sign-up</option><option>Questionnaire</option><option>Agreement</option><option>KYC</option><option>Invested</option>
           </select>
+          <select class="filter" id="cProduct" onchange="renderClients()">
+            <option value="">All products</option>
+            <option>PMS Lite (RIA)</option><option>PMS</option><option>International investing</option>
+          </select>
         </div>
         <table>
           <thead><tr>
-            <th>Client ID</th><th>Client</th><th>Contact No.</th><th>RM</th>
-            <th>Billing</th><th>Onboarding stage</th><th>Invested</th><th>Current value</th><th>Gain</th>
+            <th>Client ID</th><th>Client</th><th>Contact No.</th><th>RM</th><th>Product</th>
+            <th>Billing</th><th>Onboarding stage</th><th>Invested</th><th>Current value</th><th>Gain</th><th>Quick view</th>
           </tr></thead>
           <tbody id="clientsBody"></tbody>
         </table>
@@ -790,7 +839,7 @@
     <section id="view-calendar" class="hidden">
       <div class="page-head">
         <div><h1 id="calTitle">Calendar</h1><p>Integrated calendar with meeting invites & Google Meet links. Conflicts are flagged — call the client to reschedule.</p></div>
-        <span class="cal-badge">⟳ Google Calendar connected</span>
+        <button class="btn sm" style="margin-right:8px" onclick="openMtg()">➕ Schedule meeting / call</button><button class="btn ghost sm" style="margin-right:8px" onclick="previewCallReminder()">🔔 Preview call reminder</button><span class="cal-badge">⟳ Google Calendar connected</span>
       </div>
       <div id="calBody"></div>
     </section>
@@ -1100,6 +1149,38 @@
       </div>
     </section>
 
+    <!-- PROFILES (list) -->
+    <section id="view-profiles" class="hidden">
+      <div class="page-head"><div><h1>Profiles</h1><p>Every lead and client, searchable by name, email or number. Each person links to their accounts, reports, communication preferences and full timeline.</p></div></div>
+      <div class="panel">
+        <div class="filterbar">
+          <div class="search"><input id="pfSearch" placeholder="Search by name, email or number…" oninput="renderProfiles()"></div>
+          <select class="filter" id="pfKind" onchange="renderProfiles()"><option value="">Leads &amp; clients</option><option>Client</option><option>Lead</option></select>
+        </div>
+        <table><thead><tr><th>Name</th><th>Type</th><th>Contact No.</th><th>RM</th><th>Accounts</th></tr></thead><tbody id="profilesBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- PROFILE (person page) -->
+    <section id="view-profile" class="hidden">
+      <button class="back-link" onclick="go('profiles')">← Back to profiles</button>
+      <div class="profile-top">
+        <div class="avatar" id="pfAvatar">—</div>
+        <div style="flex:1"><div class="page-head" style="margin:0"><div><h1 id="pfName" style="font-size:20px">Profile</h1><p id="pfSub">—</p></div></div></div>
+      </div>
+      <div class="kv" style="margin:14px 0 18px"><div class="pf-meta" id="pfMeta"></div></div>
+      <div class="tabs" id="pfTabs">
+        <button class="active" data-ptab="accounts">Accounts</button>
+        <button data-ptab="reports">Reports</button>
+        <button data-ptab="comm">Communication</button>
+        <button data-ptab="timeline">Timeline</button>
+      </div>
+      <div class="ptab-pane active" id="ptab-accounts"></div>
+      <div class="ptab-pane" id="ptab-reports"></div>
+      <div class="ptab-pane" id="ptab-comm"></div>
+      <div class="ptab-pane" id="ptab-timeline"></div>
+    </section>
+
   </main>
 </div>
 
@@ -1345,6 +1426,36 @@
   </div>
 </div>
 
+<div class="modal-scrim" id="mtgScrim">
+  <div class="modal">
+    <div class="modal-h"><h2>Schedule meeting / call</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeMtg()">×</button></div>
+    <div class="modal-b">
+      <div class="field"><label>Title</label><input id="mtTitle" placeholder="e.g. Portfolio review — Rajesh Khanna"></div>
+      <div class="grid2">
+        <div class="field"><label>Type</label><select id="mtType" onchange="mtPreview()"><option>Google Meet (video)</option><option>Phone call</option></select></div>
+        <div class="field"><label>With (client / lead / colleague)</label><select id="mtWith" onchange="mtPreview()"></select></div>
+      </div>
+      <div class="field"><label>Add team members <span class="lead-sub">— optional</span></label><div class="checks" id="mtTeam"></div></div>
+      <div class="grid2">
+        <div class="field"><label>Date</label><input type="date" id="mtDate"></div>
+        <div class="field"><label>Time</label><input type="time" id="mtTime" value="11:00"></div>
+      </div>
+      <div class="field" style="max-width:50%"><label>Duration (min)</label><select id="mtDur"><option>30</option><option selected>45</option><option>60</option></select></div>
+      <div class="section-h">Invite</div>
+      <div style="background:#e8f0fe;border:1px solid #c6dafc;border-radius:10px;padding:14px 16px">
+        <a class="meet-link" id="mtMeet" href="#" onclick="return false">🎥 <span>—</span></a>
+        <div class="lead-sub" style="margin-top:10px">Attendees auto-added to the invite:</div>
+        <div class="attendees" id="mtAtt" style="margin-top:6px"></div>
+        <div class="lead-sub" style="margin-top:8px">A Google Calendar invite with this link is emailed to all attendees via your connected Gmail.</div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeMtg()">Cancel</button>
+      <button class="btn" onclick="sendMtg()">📅 Send invite</button>
+    </div>
+  </div>
+</div>
+<div class="alert-stack" id="alertStack"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1455,15 +1566,37 @@ function demoLeads(){
     mk('Tina DSouza','Meta','Cold','L1','Call',5,'No response after multiple attempts.',0,[h('Call',-20),h('Call',-15),h('WhatsApp',-10),h('Call',-5),h('Call',-1)],'Five-Strike Rule')
   ];
 }
+/* a household: one person + family, sharing one number, holding several product accounts (one row each) */
+function demoHousehold(){
+  const ph='+91 98111 30000';
+  const mk=(cid,first,last,relation,product,goal,plan,iv,cv,risk,teq,pan,prof,nqr,nar)=>({
+    cid,contact:ph,whatsapp:ph,sameWa:true,signup:dayStr(-150),first,last,
+    email:(first+'.'+last).toLowerCase()+'@email.com',country:'India',postal:'110001',source:'Referral',zerodha:'Yes',
+    questionnaire:'Done',agreement:'Done',signed:true,plan,goal,rm:'Shashank',holder:'Rajesh Khanna',relation,product,
+    sip:'Yes',sipDetails:{investment:'Flameback Multicap',frequency:'Monthly',start:'Jan 2026',amount:30000},
+    strategies:['Flameback Multicap'],
+    kyc:{namePan:first+' '+last,pan,gender:relation==='Spouse'?'Female':'Male',address:'Delhi',city:'Delhi',dob:'1979-05-10',profession:prof,marital:'Married',pep:'No',kra:'Verified',ckyc:'14-digit · Done'},
+    portfolio:{invested:iv,current:cv,absReturn:Math.round((cv-iv)/iv*1000)/10,irr:12.5,holdings:[['Reliance Industries',Math.round(iv*0.3),Math.round(cv*0.3)],['HDFC Bank',Math.round(iv*0.25),Math.round(cv*0.25)],['Infosys',Math.round(iv*0.2),Math.round(cv*0.2)]],suspense:[]},
+    invoices:[inv(-90,'Annual subscription 2025-26',40000,'Paid')],
+    funded:true,compliance:{status:'Verified'},
+    ips:{riskBand:risk,targetEquity:teq,lastReview:dayStr(-60),nextReview:nqr,notes:'',nextAnnualReview:nar,lastAnnualReview:dayStr(-360),nextQuarterlyReview:nqr,lastQuarterlyReview:dayStr(-95)},
+    calls:[call(3,'Household review call')]
+  });
+  return [
+    mk('FBC-1007','Rajesh','Khanna','Self','PMS','Capital appreciation','Yearly',4000000,4600000,'Aggressive',80,'AKKPK7007R','Business Owner',dayStr(45),dayStr(120)),
+    mk('FBC-1008','Rajesh','Khanna','Self','PMS Lite (RIA)','Wealth creation','Quarterly',1200000,1290000,'Moderate',60,'AKKPK7007R','Business Owner',dayStr(50),dayStr(160)),
+    mk('FBC-1009','Sunita','Khanna','Spouse','PMS Lite (RIA)','Future Goal','Quarterly',900000,954000,'Moderate',60,'BKKPK8008S','Homemaker',dayStr(60),dayStr(200))
+  ];
+}
 
 /* roles */
 const ROLES={
-  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','tasks','out','suggestions','hub']},
-  Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','onboarding','calendar','tasks','suggestions','hub']},
+  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','tasks','out','suggestions','hub']},
+  Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
-  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','tasks','clients','suggestions','hub']},
-  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']}
+  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','calendar','tasks','suggestions','hub']},
+  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -1512,6 +1645,8 @@ function tk(title,team,type,cid,from,priority,status,dueOff,notes,thread){return
 function ensureClientExtras(c){
   if(!c.uploaded){c.uploaded={namePan:c.kyc.namePan,pan:c.kyc.pan,dob:c.kyc.dob};if(c.cid==='FBC-1003')c.uploaded.dob='1991-07-21';}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
+  if(!c.product){c.product={'FBC-1001':'PMS','FBC-1002':'PMS Lite (RIA)','FBC-1003':'PMS Lite (RIA)','FBC-1004':'PMS','FBC-1005':'International investing','FBC-1006':'PMS Lite (RIA)'}[c.cid]||(c.goal==='Capital appreciation'?'PMS':'PMS Lite (RIA)');}
+  if(!c.holder){c.holder=c.first+' '+c.last;c.relation='Self';}
   if(!c.ips){const band=c.goal==='Income Generation'?'Conservative':c.goal==='Capital appreciation'?'Aggressive':'Moderate';
     c.ips={riskBand:band,targetEquity:band==='Conservative'?40:band==='Aggressive'?80:60,lastReview:c.funded?dayStr(-60):'',nextReview:c.funded?dayStr(c.cid==='FBC-1002'?-3:25):dayStr(40),notes:''};}
   if(c.ips.nextAnnualReview===undefined){
@@ -1570,6 +1705,10 @@ function migrate(){
     const nl=demoLeads();nl.forEach(l=>{l.id=DB.nextId++;ensureLeadExtras(l);});DB.leads.push(...nl);
     DB.demoPeopleV2=true;
   }
+  if(!DB.demoHouseholdV1){
+    const hh=demoHousehold();hh.forEach(ensureClientExtras);DB.clients.push(...hh);
+    DB.demoHouseholdV1=true;
+  }
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -1579,7 +1718,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1592,6 +1731,7 @@ function go(v){
   if(v==='verification')renderVerification();
   if(v==='ips')renderIps();
   if(v==='out')renderOut();
+  if(v==='profiles')renderProfiles();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
 function switchRole(r){currentRole=r;applyRole();go(ROLES[r].nav[0]);}
@@ -1966,26 +2106,28 @@ function currentStageName(c){const s=stagesOf(c);return s.every(x=>x.done)?'Inve
 
 function renderClients(){
   const q=(document.getElementById('cSearch').value||'').toLowerCase();
-  const fp=document.getElementById('cPlan').value, fs=document.getElementById('cStageF').value;
+  const fp=document.getElementById('cPlan').value, fs=document.getElementById('cStageF').value, fpr=document.getElementById('cProduct').value;
   const rows=mine(DB.clients).filter(c=>{
-    const hay=(c.cid+c.first+c.last+c.contact+c.rm).toLowerCase();
-    return (!q||hay.includes(q))&&(!fp||c.plan===fp)&&(!fs||currentStageName(c)===fs);
-  });
+    const hay=(c.cid+c.first+c.last+c.contact+c.rm+(c.holder||'')).toLowerCase();
+    return (!q||hay.includes(q))&&(!fp||c.plan===fp)&&(!fs||currentStageName(c)===fs)&&(!fpr||c.product===fpr);
+  }).sort((a,b)=>(a.contact+'|'+(a.holder||'')+'|'+a.product).localeCompare(b.contact+'|'+(b.holder||'')+'|'+b.product));
   document.getElementById('clientsBody').innerHTML = rows.length? rows.map(c=>{
     const gain=c.portfolio.current-c.portfolio.invested;
     const gc=gain>0?'var(--green)':gain<0?'var(--hot)':'var(--muted)';
     return `<tr class="lead-row">
       <td><span class="cid" onclick="openClient('${c.cid}')">${c.cid}</span></td>
-      <td><div class="lead-name">${c.first} ${c.last}</div><div class="lead-sub">${c.source} · ${c.country}</div></td>
+      <td><div class="lead-name">${c.first} ${c.last}${(c.relation&&c.relation!=='Self')?` <span class="rel-chip">${c.relation}</span>`:''}</div><div class="lead-sub">${(c.relation&&c.relation!=='Self')?('↳ linked to '+c.holder):(c.source+' · '+c.country)}</div></td>
       <td><span class="phone-link" onclick="openClient('${c.cid}')">${c.contact}</span></td>
       <td>${c.rm}</td>
+      <td>${productTag(c.product)}</td>
       <td>${c.plan}</td>
       <td><span class="stage-tag stage-${stageBadge(c)}">${currentStageName(c)}</span></td>
       <td>${fmtINR(c.portfolio.invested)}</td>
       <td>${fmtINR(c.portfolio.current)}</td>
       <td style="color:${gc};font-weight:700">${gain>=0?'+':''}${fmtINR(gain)}</td>
+      <td><button class="btn ghost sm" onclick="event.stopPropagation();clientQuick(\'${c.cid}\',this)">Quick view</button></td>
     </tr>`;}).join('')
-    : `<tr><td colspan="9" class="empty">No clients match your filters.</td></tr>`;
+    : `<tr><td colspan="11" class="empty">No clients match your filters.</td></tr>`;
   badges();
 }
 function stageBadge(c){const n=currentStageName(c);return n==='Invested'?'L4':n==='KYC'?'L3':n==='Agreement'?'L2':'L1';}
@@ -2131,6 +2273,9 @@ function go2tab(t){document.querySelector(`#cpTabs button[data-tab="${t}"]`).cli
 document.getElementById('cpTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   document.querySelectorAll('#cpTabs button').forEach(x=>x.classList.toggle('active',x===b));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+b.dataset.tab));});
+document.getElementById('pfTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#pfTabs button').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('.ptab-pane').forEach(p=>p.classList.toggle('active',p.id==='ptab-'+b.dataset.ptab));});
 
 /* ---------- tasks & requests ---------- */
 function fmtDue(s){if(!s)return '<span style="color:#aab2bd">—</span>';const d=new Date(s);const t=new Date();t.setHours(0,0,0,0);const dd=new Date(d);dd.setHours(0,0,0,0);const diff=Math.round((dd-t)/86400000);let tag='',col='var(--muted)';if(diff<0){tag=' · overdue';col='var(--hot)';}else if(diff===0){tag=' · today';col='var(--warm)';}else if(diff===1){tag=' · tomorrow';}return `<span style="color:${col}">${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}${tag}</span>`;}
@@ -2568,6 +2713,212 @@ function emailAgreement(cid){const c=DB.clients.find(x=>x.cid===cid);
     body:`Dear ${c.first},\n\nPlease find the link to e-sign your advisory agreement. Once signed, we'll proceed with onboarding.\n\n[Sign agreement]\n\nWarm regards,\n${c.rm}\nFlameback Capital`});}
 
 /* ---------- badges ---------- */
+/* ---------- RM manual meeting / call scheduling ---------- */
+let MT_PEEPS=[],MT_MEET='';
+function teamOf(n){for(const t in TEAM_MEMBERS)if(TEAM_MEMBERS[t].includes(n))return t;return 'Team';}
+function openMtg(){
+  MT_PEEPS=[];
+  DB.clients.forEach(c=>MT_PEEPS.push({n:c.first+' '+c.last,role:'Client'}));
+  active().filter(l=>!(l.appUser&&!l.qualified)).forEach(l=>MT_PEEPS.push({n:l.name,role:'Lead'}));
+  Object.keys(TEAM_MEMBERS).forEach(t=>TEAM_MEMBERS[t].forEach(n=>MT_PEEPS.push({n,role:t})));
+  document.getElementById('mtWith').innerHTML='<option value="">— none —</option>'+MT_PEEPS.map((x,i)=>`<option value="${i}">${x.n} · ${x.role}</option>`).join('');
+  const me=ROLES[currentRole].name;
+  const members=[].concat.apply([],Object.values(TEAM_MEMBERS)).filter(n=>n!==me);
+  document.getElementById('mtTeam').innerHTML=members.map(n=>`<label><input type="checkbox" value="${n}" onchange="mtPreview()"> ${n}</label>`).join('');
+  document.getElementById('mtTitle').value='';
+  const d=new Date();d.setDate(d.getDate()+1);document.getElementById('mtDate').value=d.toISOString().slice(0,10);
+  document.getElementById('mtTime').value='11:00';document.getElementById('mtDur').value='45';document.getElementById('mtType').value='Google Meet (video)';
+  MT_MEET=genMeet();mtPreview();
+  document.getElementById('mtgScrim').classList.add('open');
+}
+function closeMtg(){document.getElementById('mtgScrim').classList.remove('open');}
+function mtAttendees(){
+  const me=ROLES[currentRole].name,att=[{n:me,role:currentRole}];
+  const wi=document.getElementById('mtWith').value;if(wi!==''&&MT_PEEPS[wi])att.unshift({n:MT_PEEPS[wi].n,role:MT_PEEPS[wi].role});
+  [...document.querySelectorAll('#mtTeam input:checked')].forEach(c=>att.push({n:c.value,role:teamOf(c.value)}));
+  return att;
+}
+function mtPreview(){
+  const isMeet=document.getElementById('mtType').value.indexOf('Google Meet')>=0;
+  document.getElementById('mtMeet').innerHTML=isMeet?('🎥 <span>'+MT_MEET+'</span>'):'📞 <span>Phone call — no video link</span>';
+  document.getElementById('mtAtt').innerHTML=mtAttendees().map(x=>`<span class="att ${x.role===currentRole?'rm-att':''}">${x.n} · ${x.role}</span>`).join('');
+}
+function sendMtg(){
+  const title=(document.getElementById('mtTitle').value||'').trim();
+  const date=document.getElementById('mtDate').value,time=document.getElementById('mtTime').value;
+  if(!title){toast('Add a title');return;}
+  if(!date){toast('Pick a date');return;}
+  const isMeet=document.getElementById('mtType').value.indexOf('Google Meet')>=0;
+  const att=mtAttendees().map(x=>a(x.n,x.role));
+  if(!DB.nextMtg)DB.nextMtg=DB.meetings.length+1;
+  DB.meetings.push({id:DB.nextMtg++,title,rm:ROLES[currentRole].name,when:date+'T'+time,dur:+document.getElementById('mtDur').value,attendees:att,meet:isMeet?MT_MEET:'',status:'Scheduled'});
+  save();closeMtg();go('calendar');
+  toast(isMeet?'📅 Meeting scheduled · Google Meet link created · invite emailed via Google Calendar':'📞 Call scheduled · reminder added to your calendar');
+}
+
+/* ---------- Profiles (unified leads + clients, person-level) ---------- */
+function cagr(c){const inv=c.portfolio.invested,cur=c.portfolio.current;if(!inv||!cur)return 0;const yrs=Math.max(0.5,(Date.now()-new Date(c.signup).getTime())/(365*864e5));return (Math.pow(cur/inv,1/yrs)-1)*100;}
+function buildProfiles(){
+  const persons=[],byNum={};
+  DB.clients.forEach(c=>{
+    const k=digits(c.contact)||('cid'+c.cid);
+    if(!byNum[k]){byNum[k]={pid:'n'+k,kind:'Client',name:c.holder||(c.first+' '+c.last),phone:c.contact,email:c.email,rm:c.rm,dob:(c.kyc&&c.kyc.dob)||'',source:c.source,accounts:[],leads:[]};persons.push(byNum[k]);}
+    byNum[k].accounts.push(c);
+    if(c.relation==='Self'){byNum[k].email=c.email;byNum[k].dob=(c.kyc&&c.kyc.dob)||'';byNum[k].name=c.holder||byNum[k].name;byNum[k].rm=c.rm;}
+  });
+  DB.leads.filter(l=>!l.out).forEach(l=>{
+    const k=l.phone?digits(l.phone):'';
+    let person=k&&byNum[k];
+    if(!person)person=persons.find(x=>x.name.toLowerCase()===(l.name||'').toLowerCase());
+    if(person){person.leads.push(l);} 
+    else{persons.push({pid:'l'+l.id,kind:'Lead',name:l.name,phone:l.phone||'',email:l.email||'',rm:l.rm||l.assignedRM||'',dob:'',source:l.source,accounts:[],leads:[l]});}
+  });
+  return persons;
+}
+function profilesScope(){let ps=buildProfiles();if(currentRole==='RM'){const me=ROLES.RM.name;ps=ps.filter(p=>p.rm===me||p.accounts.some(a=>a.rm===me)||p.leads.some(l=>(l.rm||l.assignedRM)===me));}return ps;}
+function renderProfiles(){
+  const q=(document.getElementById('pfSearch').value||'').toLowerCase();
+  const kind=document.getElementById('pfKind').value;
+  let ps=profilesScope().filter(p=>{const hay=(p.name+(p.phone||'')+(p.email||'')).toLowerCase();return (!q||hay.includes(q))&&(!kind||p.kind===kind);});
+  ps.sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('profilesBody').innerHTML=ps.length?ps.map(p=>`<tr class="lead-row" onclick="openProfile('${p.pid}')">
+    <td><div class="lead-name">${p.name}</div><div class="lead-sub">${p.email||'—'}</div></td>
+    <td>${p.kind==='Client'?'<span class="ptag pt-ria">Client</span>':'<span class="ptag pt-pms">Lead</span>'}</td>
+    <td>${p.phone||'<span class="lead-sub">—</span>'}</td>
+    <td>${p.rm||'<span class="lead-sub">unassigned</span>'}</td>
+    <td>${p.accounts.length?(p.accounts.length+' account'+(p.accounts.length>1?'s':'')):'<span class="lead-sub">— prospect</span>'}</td></tr>`).join(''):`<tr><td colspan="5" class="empty">No profiles match.</td></tr>`;
+  badges();
+}
+let CURRENT_PROFILE=null;
+function openProfile(pid){const p=buildProfiles().find(x=>x.pid===pid);if(!p){toast('Profile not found');return;}CURRENT_PROFILE=p;renderProfilePage();go('profile');}
+function renderProfilePage(){
+  const p=CURRENT_PROFILE;
+  document.getElementById('pfAvatar').textContent=(p.name||'?').slice(0,1).toUpperCase();
+  document.getElementById('pfName').textContent=p.name;
+  document.getElementById('pfSub').innerHTML=`${p.kind==='Client'?'<span class="ptag pt-ria">Client</span>':'<span class="ptag pt-pms">Lead / Prospect</span>'} &middot; ${p.phone||'no number'} &middot; ${p.email||'no email'}`;
+  document.getElementById('pfMeta').innerHTML=
+    `<div><span class="k">Date of birth</span><span class="v">${p.dob?fmtD(p.dob):'—'}</span></div>`+
+    `<div><span class="k">RM</span><span class="v">${p.rm||'unassigned'}</span></div>`+
+    `<div><span class="k">Source</span><span class="v">${p.source||'—'}</span></div>`+
+    `<div><span class="k">Marketing tags</span><span class="v"><span class="lead-sub">from marketing — coming soon</span></span></div>`;
+  renderPfAccounts(p);renderPfReports(p);renderPfComm(p);renderPfTimeline(p);
+  document.querySelectorAll('#pfTabs button').forEach((x,i)=>x.classList.toggle('active',i===0));
+  document.querySelectorAll('.ptab-pane').forEach((x,i)=>x.classList.toggle('active',x.id==='ptab-accounts'));
+}
+function renderPfAccounts(p){
+  const el=document.getElementById('ptab-accounts');
+  if(!p.accounts.length){el.innerHTML=`<div class="empty" style="padding:24px">No accounts yet — ${p.kind==='Lead'?('prospect in the pipeline'+(p.leads[0]?' (stage '+p.leads[0].stage+')':'')):'not onboarded'}. Accounts appear here once onboarding is completed and funded.</div>`;return;}
+  el.innerHTML=p.accounts.map(c=>{
+    const inv=c.portfolio.invested,cur=c.portfolio.current,isRia=(c.product||'').indexOf('RIA')>=0;
+    const strat=(c.strategies||[]).map((st,i)=>`<div class="doc-row" style="display:flex;justify-content:space-between;padding:7px 14px"><span class="nm">${st}</span><span style="color:var(--green);font-weight:700">+${(c.portfolio.irr+i*1.4).toFixed(1)}%</span></div>`).join('')||'<div class="lead-sub" style="padding:10px 14px">No strategy assigned</div>';
+    const hold=(c.portfolio.holdings||[]).map(h=>`<tr><td style="padding:7px 14px">${h[0]}</td><td style="text-align:right;padding:7px 14px">${fmtINR(h[1])} → <b>${fmtINR(h[2])}</b></td></tr>`).join('')||'<tr><td class="lead-sub" style="padding:10px 14px">No holdings yet</td></tr>';
+    return `<div class="acct-card" id="ac-${c.cid}">
+      <div class="acct-head" onclick="document.getElementById('ac-${c.cid}').classList.toggle('open')">
+        <div class="l">${productTag(c.product)} <b>${c.first} ${c.last}</b> <span class="lead-sub">${c.cid}${c.relation&&c.relation!=='Self'?' · '+c.relation:''}</span></div>
+        <div class="lead-sub">${fmtINR(cur)} ▾</div>
+      </div>
+      <div class="acct-body">
+        <div class="acct-metrics">
+          <div class="m"><div class="k">Amount invested</div><div class="v">${fmtINR(inv)}</div></div>
+          <div class="m"><div class="k">Current value</div><div class="v">${fmtINR(cur)}</div></div>
+          <div class="m"><div class="k">CAGR since inception</div><div class="v">${cagr(c).toFixed(1)}%</div></div>
+          <div class="m"><div class="k">Abs. return</div><div class="v">${c.portfolio.absReturn}%</div></div>
+        </div>
+        <div class="kv"><div class="kv-h">Strategy performance</div><div>${strat}</div></div>
+        <div class="kv" style="margin-top:10px"><div class="kv-h">Holdings</div><table style="width:100%"><tbody>${hold}</tbody></table></div>
+        <div class="acct-foot lead-sub" style="margin-top:12px">Last rebalance proposal sent: <b>${c.ips.lastQuarterlyReview?fmtD(c.ips.lastQuarterlyReview):'—'}</b>${isRia?` &middot; Last rebalanced by client (RIA): <b>${c.ips.lastQuarterlyReview?fmtD(c.ips.lastQuarterlyReview):'—'}</b>`:` &middot; Last rebalanced: <b>${c.ips.lastReview?fmtD(c.ips.lastReview):'—'}</b>`}</div>
+        <button class="btn ghost sm" style="margin-top:12px" onclick="openClient('${c.cid}')">Open full account detail →</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderPfReports(p){
+  const el=document.getElementById('ptab-reports');
+  if(!p.accounts.length){el.innerHTML=`<div class="empty" style="padding:24px">Reports become available once the person is an onboarded, funded client.</div>`;return;}
+  const reports=[['Holding statement','📄'],['Tax report — capital gains','🧾'],['Strategy performance report','📈'],['Fund inflows & outflows','💰'],['Basic information report','🗂️']];
+  el.innerHTML=`<p class="hub-lead">Downloadable reports for ${p.name}${p.accounts.length>1?(' (across '+p.accounts.length+' accounts)'):''}.</p><div class="rep-grid">`+
+    reports.map(r=>`<div class="rep-card"><div><div style="font-weight:600;color:var(--navy)">${r[1]} ${r[0]}</div><div class="lead-sub">PDF · generated on demand</div></div><button class="btn sm" onclick="downloadReport('${r[0].replace(/'/g,'')}','${p.name.replace(/'/g,'')}')">Download</button></div>`).join('')+`</div>`;
+}
+function downloadReport(kind,who){
+  const body='FLAMEBACK CAPITAL — '+kind+'\nClient: '+who+'\nGenerated: '+new Date().toLocaleString('en-IN')+'\n\n(Demo report — wireframe placeholder.)\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([body],{type:'text/plain'}));a.download=(who+' - '+kind+'.txt').replace(/[^a-z0-9 .\-]/gi,'');document.body.appendChild(a);a.click();a.remove();
+  toast('Generating '+kind+' (demo) — downloaded');
+}
+function commStore(){const p=CURRENT_PROFILE;const o=p.accounts[0]||p.leads[0];if(!o.commPref)o.commPref={channels:['Email','WhatsApp'],freq:'Monthly',lang:'English',time:'Morning',dnd:false};return o.commPref;}
+function renderPfComm(p){
+  const el=document.getElementById('ptab-comm');const cm=commStore();const chans=['Email','WhatsApp','SMS','Phone call'];
+  el.innerHTML=`<p class="hub-lead">How ${p.name} prefers to hear from us — editable.</p>
+   <div class="kv"><div class="kv-h">Preferred channels</div><div class="checks" style="padding:12px 14px">${chans.map(c=>`<label><input type="checkbox" ${(cm.channels||[]).includes(c)?'checked':''} onchange="commToggle('${c}',this)"> ${c}</label>`).join('')}</div></div>
+   <div class="grid2" style="margin-top:14px">
+     <div class="field"><label>Contact frequency</label><select onchange="commSet('freq',this.value)">${['Weekly','Monthly','Quarterly','On key events only'].map(o=>`<option ${cm.freq===o?'selected':''}>${o}</option>`).join('')}</select></div>
+     <div class="field"><label>Preferred language</label><select onchange="commSet('lang',this.value)">${['English','Hindi','Marathi','Gujarati','Tamil'].map(o=>`<option ${cm.lang===o?'selected':''}>${o}</option>`).join('')}</select></div>
+     <div class="field"><label>Preferred time of day</label><select onchange="commSet('time',this.value)">${['Morning','Afternoon','Evening'].map(o=>`<option ${cm.time===o?'selected':''}>${o}</option>`).join('')}</select></div>
+     <div class="field"><label>Do not disturb</label><select onchange="commSet('dnd',this.value==='Yes')"><option ${!cm.dnd?'selected':''}>No</option><option ${cm.dnd?'selected':''}>Yes</option></select></div>
+   </div>`;
+}
+function commToggle(c,el){const cm=commStore();cm.channels=cm.channels||[];const i=cm.channels.indexOf(c);if(el.checked&&i<0)cm.channels.push(c);if(!el.checked&&i>=0)cm.channels.splice(i,1);save();toast('Communication preference saved');}
+function commSet(k,v){const cm=commStore();cm[k]=v;save();toast('Communication preference saved');}
+function renderPfTimeline(p){
+  const el=document.getElementById('ptab-timeline');const ev=[];
+  p.leads.forEach(l=>(l.hist||[]).forEach(h=>ev.push({d:h.when,t:h.type,txt:'Reached out by '+h.type.toLowerCase()+(l.name!==p.name?(' — '+l.name):''),kind:'reach'})));
+  p.accounts.forEach(c=>{
+    if(c.signup)ev.push({d:c.signup,t:'Onboarded',txt:'Signed up — '+c.cid+' ('+c.product+')',kind:'life'});
+    if(c.funded){ev.push({d:c.ips&&c.ips.lastReview?c.ips.lastReview:c.signup,t:'Funded & executed',txt:'Account funded and first trades deployed — '+c.cid,kind:'life'});}
+    if(c.ips&&c.ips.lastQuarterlyReview)ev.push({d:c.ips.lastQuarterlyReview,t:'Rebalanced',txt:'Portfolio rebalanced — '+c.cid,kind:'life'});
+    (c.calls||[]).forEach(call=>ev.push({d:call.when,t:'Call',txt:call.note,kind:'reach'}));
+  });
+  ev.sort((a,b)=>new Date(b.d)-new Date(a.d));
+  el.innerHTML=ev.length?'<ul class="ptl">'+ev.map(e=>`<li><span class="dot ${e.kind}"></span><div><div class="ev">${e.t} — <span class="lead-sub" style="font-weight:500">${e.txt}</span></div><div class="when">${new Date(e.d).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div></div></li>`).join('')+'</ul>':'<div class="empty" style="padding:24px">No timeline events yet.</div>';
+}
+function clientQuick(cid,btn){
+  const tr=btn.closest('tr');const nx=tr.nextElementSibling;
+  if(nx&&nx.classList.contains('quick-row')){nx.remove();btn.textContent='Quick view';return;}
+  document.querySelectorAll('.quick-row').forEach(r=>r.remove());
+  document.querySelectorAll('#clientsBody .btn').forEach(b=>{if(b.textContent==='Hide')b.textContent='Quick view';});
+  const c=DB.clients.find(x=>x.cid===cid);if(!c)return;
+  const hold=(c.portfolio.holdings||[]).slice(0,5).map(h=>`<span class="qh">${h[0]} <b>${fmtINR(h[2])}</b></span>`).join('')||'<span class="lead-sub">No holdings yet</span>';
+  const row=document.createElement('tr');row.className='quick-row';
+  row.innerHTML=`<td colspan="${tr.children.length}"><div class="quick-box">
+    <div class="qmetrics"><div><span class="k">Invested</span><span class="v">${fmtINR(c.portfolio.invested)}</span></div><div><span class="k">Current</span><span class="v">${fmtINR(c.portfolio.current)}</span></div><div><span class="k">CAGR since inception</span><span class="v">${cagr(c).toFixed(1)}%</span></div></div>
+    <div class="qhold" style="flex:1"><span class="k">Current holdings</span><div>${hold}</div></div>
+    <a class="btn ghost sm" onclick="openProfile('n'+digits('${c.contact}'))">Open profile →</a>
+  </div></td>`;
+  tr.after(row);btn.textContent='Hide';
+}
+
+/* ---------- call reminders (pop up 10 min before each call) ---------- */
+let _alerted={};
+function reminderScope(){return currentRole==='RM'?DB.meetings.filter(m=>m.rm===ROLES.RM.name):DB.meetings;}
+function checkCallReminders(){
+  const now=Date.now();
+  reminderScope().forEach(m=>{
+    if(m.status==='Done')return;
+    const mins=(new Date(m.when).getTime()-now)/60000;
+    if(mins>0&&mins<=10&&!_alerted[m.id]){_alerted[m.id]=true;showCallAlert(m);}
+  });
+}
+function showCallAlert(m){
+  const mins=Math.max(1,Math.round((new Date(m.when).getTime()-Date.now())/60000));
+  const client=(m.attendees.find(a=>a.role==='Client')||{}).n||'';
+  dismissAlert(m.id);
+  const div=document.createElement('div');div.className='call-alert';div.id='alert-'+m.id;
+  div.innerHTML='<button class="x" onclick="dismissAlert('+m.id+')">×</button>'
+    +'<div class="ttl">🔔 Upcoming call</div>'
+    +'<div class="meta"><span class="mins">in '+mins+' min</span> · '+m.title+(client?'<br>with '+client:'')+'<br>'+new Date(m.when).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</div>'
+    +'<div class="acts"><a class="btn sm" href="https://'+m.meet+'" target="_blank">🎥 Join</a>'
+    +'<button class="btn ghost sm" onclick="snoozeAlert('+m.id+')">Snooze 5m</button></div>';
+  document.getElementById('alertStack').appendChild(div);
+}
+function dismissAlert(id){const el=document.getElementById('alert-'+id);if(el)el.remove();}
+function snoozeAlert(id){dismissAlert(id);delete _alerted[id];setTimeout(function(){_alerted[id]=true;const m=DB.meetings.find(x=>x.id===id);if(m)showCallAlert(m);},5*60000);}
+function previewCallReminder(){
+  const up=reminderScope().filter(m=>m.status!=='Done').sort((a,b)=>new Date(a.when)-new Date(b.when));
+  const next=up.find(m=>new Date(m.when).getTime()>Date.now())||up[0];
+  if(!next){toast('No upcoming calls to preview');return;}
+  showCallAlert(next);
+}
+function productTag(p){if(!p)return '<span class="lead-sub">—</span>';const cls=p==='PMS'?'pt-pms':p==='International investing'?'pt-intl':'pt-ria';const label=p==='International investing'?'Intl investing':p;return '<span class="ptag '+cls+'">'+label+'</span>';}
+
 /* ---------- Knowledge Hub ---------- */
 function hubGo(id){const el=document.getElementById('hub-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
 
@@ -2866,6 +3217,8 @@ function badges(){
 /* boot */
 applyRole();
 go('dashboard');
+checkCallReminders();
+setInterval(checkCallReminders,30000);
 </script>
 </body>
 </html>
