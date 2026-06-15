@@ -1522,7 +1522,9 @@ function fmtDate(s){if(!s)return '<span style="color:#aab2bd">—</span>';const 
   return `<span style="color:${col}">${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}, ${d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}${tag}</span>`;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function active(){return DB.leads.filter(l=>!l.out);}
-function counts(){const a=active();return{total:a.length,L1:a.filter(l=>l.stage==='L1').length,L2:a.filter(l=>l.stage==='L2').length,L3:a.filter(l=>l.stage==='L3').length,L4:a.filter(l=>l.stage==='L4').length,hot:a.filter(l=>l.status==='Hot').length,out:DB.leads.filter(l=>l.out).length};}
+/* RM sees only their own records; everyone else (and Leadership) sees all */
+function mine(list){return currentRole==='RM'?list.filter(x=>x&&x.rm===ROLES.RM.name):list;}
+function counts(){const a=mine(active());return{total:a.length,L1:a.filter(l=>l.stage==='L1').length,L2:a.filter(l=>l.stage==='L2').length,L3:a.filter(l=>l.stage==='L3').length,L4:a.filter(l=>l.stage==='L4').length,hot:a.filter(l=>l.status==='Hot').length,out:mine(DB.leads).filter(l=>l.out).length};}
 
 /* ---------- dashboard ---------- */
 function teamTasks(team){return DB.tasks.filter(t=>t.team===team);}
@@ -1531,10 +1533,10 @@ function renderDash(){
   A.innerHTML='';
   if(currentRole==='RM'){
     const c=counts();
-    const due=active().filter(l=>l.follow).filter(l=>{const d=new Date(l.follow);d.setHours(0,0,0,0);const t=new Date();t.setHours(0,0,0,0);return d<=t;});
+    const due=mine(active()).filter(l=>l.follow).filter(l=>{const d=new Date(l.follow);d.setHours(0,0,0,0);const t=new Date();t.setHours(0,0,0,0);return d<=t;});
     T.textContent='RM Dashboard';S.textContent='Your pipeline & client follow-ups';
     A.innerHTML='<button class="btn" onclick="openLead(null)">+ Add Lead</button>';
-    const revDue=DB.clients.filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
+    const revDue=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
     C.innerHTML=`${dcard('Active leads',c.total,'In pipeline','var(--teal)',100)}
       ${dcard('Hot leads',c.hot,'Status = Hot','var(--hot)',c.total?c.hot/c.total*100:0)}
       ${dcard('Onboarding +',c.L3+c.L4,'L3 & L4 stages','var(--green)',c.total?(c.L3+c.L4)/c.total*100:0)}
@@ -1606,7 +1608,7 @@ function dcard(k,v,meta,col,pct){return `<div class="card"><div class="k">${k}</
 function renderLeads(){
   const q=(document.getElementById('searchBox').value||'').toLowerCase();
   const fst=document.getElementById('fStage').value, fss=document.getElementById('fStatus').value, fsr=document.getElementById('fSource').value;
-  let rows=active().filter(l=>!(l.appUser&&!l.qualified)).filter(l=>
+  let rows=mine(active()).filter(l=>!(l.appUser&&!l.qualified)).filter(l=>
     (!q||(l.name+l.rm+l.comments).toLowerCase().includes(q)) &&
     (!fst||l.stage===fst)&&(!fss||l.status===fss)&&(!fsr||l.source===fsr));
   const tb=document.getElementById('leadsBody');
@@ -1634,7 +1636,7 @@ function strikeMini(l){
 
 /* ---------- out list ---------- */
 function renderOut(){
-  const rows=DB.leads.filter(l=>l.out);
+  const rows=mine(DB.leads).filter(l=>l.out);
   document.getElementById('outBody').innerHTML = rows.length? rows.map(l=>`<tr>
     <td class="lead-name">${l.name}</td><td><span class="src">${l.source}</span></td><td>${l.rm}</td>
     <td style="font-weight:700">${l.count}</td>
@@ -1872,7 +1874,7 @@ function currentStageName(c){const s=stagesOf(c);return s.every(x=>x.done)?'Inve
 function renderClients(){
   const q=(document.getElementById('cSearch').value||'').toLowerCase();
   const fp=document.getElementById('cPlan').value, fs=document.getElementById('cStageF').value;
-  const rows=DB.clients.filter(c=>{
+  const rows=mine(DB.clients).filter(c=>{
     const hay=(c.cid+c.first+c.last+c.contact+c.rm).toLowerCase();
     return (!q||hay.includes(q))&&(!fp||c.plan===fp)&&(!fs||currentStageName(c)===fs);
   });
@@ -2324,7 +2326,7 @@ function confirmAssign(){
 }
 
 function renderOnboarding(){
-  const pop=active().filter(l=>l.onbStep!==undefined);
+  const pop=mine(active()).filter(l=>l.onbStep!==undefined);
   const max=Math.max(1,...ONB_STEPS.map((_,i)=>pop.filter(l=>l.onbStep===i).length));
   document.getElementById('onbFunnel').innerHTML=ONB_STEPS.map((s,i)=>{
     const n=pop.filter(l=>l.onbStep===i).length;
@@ -2387,7 +2389,7 @@ function reschedule(id){const m=DB.meetings.find(x=>x.id===id);const d=new Date(
 
 /* ---------- reviews & reminders ---------- */
 function renderReminders(){
-  const funded=DB.clients.filter(c=>c.funded);
+  const funded=mine(DB.clients).filter(c=>c.funded);
   const annual=funded.filter(c=>weekDue(c.ips.nextAnnualReview));
   const quarterly=funded.filter(c=>weekDue(c.ips.nextQuarterlyReview));
   const total=annual.length+quarterly.length;
@@ -2755,14 +2757,14 @@ function badges(){
   document.getElementById('navLeads').textContent=c.total;
   document.getElementById('navOut').textContent=c.out;
   document.getElementById('navSugg').textContent=SUGG.length;
-  document.getElementById('navClients').textContent=DB.clients.length;
+  document.getElementById('navClients').textContent=mine(DB.clients).length;
   document.getElementById('navTasks').textContent=DB.tasks.filter(t=>t.team===currentRole&&t.status!=='Done').length;
   document.getElementById('navVerif').textContent=DB.clients.filter(c=>c.compliance.status!=='Verified').length;
   document.getElementById('navIps').textContent=DB.clients.filter(c=>c.funded&&c.ips.nextReview&&new Date(c.ips.nextReview)<=new Date()).length;
   document.getElementById('navAssign').textContent=DB.leads.filter(l=>l.appUser&&!l.qualified).length;
-  document.getElementById('navOnb').textContent=active().filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
-  document.getElementById('navCal').textContent=DB.meetings.filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
-  document.getElementById('navRem').textContent=DB.clients.filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
+  document.getElementById('navOnb').textContent=mine(active()).filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
+  document.getElementById('navCal').textContent=mine(DB.meetings).filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
+  document.getElementById('navRem').textContent=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
   const no=document.getElementById('navOwner');if(no)no.textContent=OWNER_DEPTS.reduce((n,d)=>n+deptAttn(d.key).length,0);
 }
 
