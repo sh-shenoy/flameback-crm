@@ -1367,6 +1367,43 @@ function seedClients(){
 }
 function inv(off,desc,amt,status){return {date:dayStr(off),desc,amount:amt,status};}
 function call(off,note){const d=new Date();d.setDate(d.getDate()+off);d.setHours(15,30,0,0);return {when:d.toISOString().slice(0,16),note,source:'Calendar sync'};}
+/* extra demo people so Reviews, Out list and onboarding phases are populated (all assigned to the RM, Shashank) */
+function demoClients(){
+  const mk=(cid,first,last,goal,plan,iv,cv,risk,teq,nar,nqr,phone,pan,city,prof)=>({
+    cid,contact:phone,whatsapp:phone,sameWa:true,signup:dayStr(-120),first,last,
+    email:(first+'.'+last).toLowerCase()+'@email.com',country:'India',postal:'400001',source:'Referral',zerodha:'Yes',
+    questionnaire:'Done',agreement:'Done',signed:true,plan,goal,rm:'Shashank',
+    sip:'Yes',sipDetails:{investment:'Flameback Multicap',frequency:'Monthly',start:'Jan 2026',amount:40000},
+    strategies:['Flameback Multicap'],
+    kyc:{namePan:first+' '+last,pan,gender:'Male',address:city,city,dob:'1980-01-01',profession:prof,marital:'Married',pep:'No',kra:'Verified',ckyc:'14-digit · Done'},
+    portfolio:{invested:iv,current:cv,absReturn:Math.round((cv-iv)/iv*1000)/10,irr:12.0,holdings:[['Reliance Industries',Math.round(iv*0.3),Math.round(cv*0.3)],['HDFC Bank',Math.round(iv*0.25),Math.round(cv*0.25)],['Infosys',Math.round(iv*0.2),Math.round(cv*0.2)]],suspense:[]},
+    invoices:[inv(-90,'Annual subscription 2025-26',42000,'Paid')],
+    funded:true,compliance:{status:'Verified'},
+    ips:{riskBand:risk,targetEquity:teq,lastReview:dayStr(-60),nextReview:nqr,notes:'',nextAnnualReview:nar,lastAnnualReview:dayStr(-360),nextQuarterlyReview:nqr,lastQuarterlyReview:dayStr(-95)},
+    calls:[call(2,'Schedule review call')]
+  });
+  return [
+    mk('FBC-1004','Arjun','Kapoor','Capital appreciation','Yearly',3000000,3450000,'Aggressive',80,dayStr(3),dayStr(48),'+91 98111 20001','AKKPK1111A','Mumbai','Business Owner'),
+    mk('FBC-1005','Neha','Verma','Future Goal','Quarterly',1800000,1923000,'Moderate',60,dayStr(150),dayStr(2),'+91 98111 20002','NEVPV2222B','Delhi','Consultant'),
+    mk('FBC-1006','Sanjay','Gupta','Income Generation','Quarterly',2200000,2266000,'Conservative',40,dayStr(190),dayStr(-3),'+91 98111 20003','SAGPG3333C','Pune','Doctor')
+  ];
+}
+function demoLeads(){
+  const mk=(name,source,status,stage,type,count,comments,followOff,hist,outReason)=>({
+    id:0,name,source,status,stage,rm:'Shashank',type,count,comments,
+    follow:outReason?'':nextDays(followOff),hist:hist||[],out:!!outReason,outReason:outReason||''
+  });
+  return [
+    mk('Deepa Nair','Meta','Cold','L1','Call',2,'Early conversation, gauging interest.',2,[h('Call',-6),h('Call',-2)]),
+    mk('Vikas Reddy','Referral','Hot','L2','Meeting',3,'Keen — comparing PMS vs advisory.',1,[h('Call',-8),h('Meeting',-3),h('Meeting',-1)]),
+    mk('Aisha Khan','Google','Onboarding','L3','Meeting',5,'KYC docs collected, agreement next.',2,[h('Meeting',-20),h('Email',-10),h('Meeting',-4)]),
+    mk('Rohan Mehta','Direct','Hot','L4','Meeting',6,'Onboarding done, deploying first trades.',0,[h('Meeting',-25),h('Call',-5),h('Meeting',-1)]),
+    mk('Imran Sheikh','LinkedIn','Potential','L2','Call',2,'Travelling, reconnect next week.',4,[h('Call',-5),h('Call',-1)]),
+    mk('Ritu Agarwal','Meta','Cold','L1','Call',5,'No response after 5 attempts — five-strike review.',0,[h('Call',-18),h('Call',-13),h('WhatsApp',-9),h('Call',-5),h('Call',-1)]),
+    mk('Kabir Shah','Search','Not Interested','L1','Call',4,'Said not looking right now.',0,[h('Call',-14),h('Call',-9),h('Call',-3)],'Not Interested'),
+    mk('Tina DSouza','Meta','Cold','L1','Call',5,'No response after multiple attempts.',0,[h('Call',-20),h('Call',-15),h('WhatsApp',-10),h('Call',-5),h('Call',-1)],'Five-Strike Rule')
+  ];
+}
 
 /* roles */
 const ROLES={
@@ -1477,6 +1514,11 @@ function migrate(){
   if(!DB.appLeadsSeeded){const apps=seedAppLeads();apps.forEach(a=>a.id=DB.nextId++);DB.leads.push(...apps);DB.appLeadsSeeded=true;}
   if(!DB.meetings){DB.meetings=seedMeetings();DB.nextMtg=DB.meetings.length+1;}
   if(!DB.forms){DB.forms=seedForms();DB.nextForm=1002;}
+  if(!DB.demoPeopleV2){
+    const nc=demoClients();nc.forEach(ensureClientExtras);DB.clients.push(...nc);
+    const nl=demoLeads();nl.forEach(l=>{l.id=DB.nextId++;ensureLeadExtras(l);});DB.leads.push(...nl);
+    DB.demoPeopleV2=true;
+  }
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
