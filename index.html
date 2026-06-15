@@ -727,6 +727,7 @@
         <button data-tab="investment">Investment & SIP</button>
         <button data-tab="docs">Risk Profile & Agreement</button>
         <button data-tab="portfolio">Portfolio</button>
+        <button data-tab="reports">Reports</button>
         <button data-tab="invoices">Invoices</button>
         <button data-tab="calls">Call Sync</button>
       </div>
@@ -737,6 +738,7 @@
       <div class="tab-pane" id="tab-strategies"></div>
       <div class="tab-pane" id="tab-kyc"></div>
       <div class="tab-pane" id="tab-portfolio"></div>
+      <div class="tab-pane" id="tab-reports"></div>
       <div class="tab-pane" id="tab-invoices"></div>
       <div class="tab-pane" id="tab-calls"></div>
     </section>
@@ -2151,11 +2153,17 @@ function stageBadge(c){const n=currentStageName(c);return n==='Invested'?'L4':n=
 
 let CURRENT=null;
 function openClient(cid){CURRENT=DB.clients.find(c=>c.cid===cid);renderProfile();go('clientProfile');}
+function acctReportsHtml(c){
+  const who=(c.first+' '+c.last+' '+c.cid);
+  const reps=[['Holding statement','📄'],['Tax report — capital gains','🧾'],['Strategy performance report','📈'],['Fund inflows & outflows','💰'],['Basic information report','🗂️']];
+  return '<p class="hub-lead">Downloadable reports for this account — '+productTag(c.product)+' · '+c.cid+'.</p><div class="rep-grid">'+reps.map(r=>'<div class="rep-card"><div><div style="font-weight:600;color:var(--navy)">'+r[1]+' '+r[0]+'</div><div class="lead-sub">PDF · generated on demand</div></div><button class="btn sm" onclick="downloadReport(\''+r[0].replace(/'/g,'')+'\',\''+who.replace(/'/g,'')+'\')">Download</button></div>').join('')+'</div>';
+}
 function renderProfile(){
   const c=CURRENT;if(!c)return;
   document.getElementById('cpAvatar').textContent=(c.first[0]||'')+(c.last[0]||'');
   document.getElementById('cpName').textContent=`${c.first} ${c.last}`;
-  document.getElementById('cpSub').innerHTML=`<span class="cid">${c.cid}</span> · ${c.contact} · ${c.email} · RM: <b>${c.rm}</b>`;
+  const fam=(c.relation&&c.relation!=='Self');
+  document.getElementById('cpSub').innerHTML=(fam?`🔗 linked to <b>${c.holder}</b> <span class="rel-chip">${c.relation}</span> · `:'')+`${productTag(c.product)} · <span class="cid">${c.cid}</span> · ${c.contact} · RM: <b>${c.rm}</b>`;
   // stepper
   const st=stagesOf(c);
   document.getElementById('cpStepper').innerHTML=st.map(s=>`<div class="step ${s.done?'done':''} ${s.current&&!s.done?'current':''} ${s.current&&s.done?'done current':''}">
@@ -2163,6 +2171,7 @@ function renderProfile(){
   const nx=nextStepText(c);
   document.getElementById('cpNext').innerHTML=`<span style="font-size:18px">🎯</span><div><b>${nx.label}</b><div style="margin-top:2px">${nx.text}</div></div>`;
   paintTabs();
+  document.getElementById('tab-reports').innerHTML=acctReportsHtml(c);
 }
 function paintTabs(){
   const c=CURRENT;
@@ -2866,9 +2875,8 @@ function renderPfAccounts(p){
         <div class="kv"><div class="kv-h">Portfolio performance — value over time</div><div style="padding:10px 14px">${portfolioGraph(c)}<div class="lead-sub" style="margin-top:4px">${fmtINR(inv)} invested → ${fmtINR(cur)} current · CAGR ${cagr(c).toFixed(1)}%</div></div></div>
         <div class="kv" style="margin-top:10px"><div class="kv-h">Strategy performance</div><div>${strat}</div></div>
         <div class="kv" style="margin-top:10px"><div class="kv-h">Holdings</div><table style="width:100%"><tbody>${hold}</tbody></table></div>
-        <div class="kv" style="margin-top:10px"><div class="kv-h">Reports (this account)</div><div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px">${['Holding statement','Tax — capital gains','Strategy performance','Fund inflows & outflows','Basic information'].map(r=>`<button class="btn ghost sm" onclick="downloadReport(\'${r}\',\'${c.first} ${c.last} ${c.cid}\')">${r}</button>`).join('')}</div></div>
         <div class="acct-foot lead-sub" style="margin-top:12px">Last rebalance proposal sent: <b>${c.ips.lastQuarterlyReview?fmtD(c.ips.lastQuarterlyReview):'—'}</b>${isRia?` &middot; Last rebalanced by client (RIA): <b>${c.ips.lastQuarterlyReview?fmtD(c.ips.lastQuarterlyReview):'—'}</b>`:` &middot; Last rebalanced: <b>${c.ips.lastReview?fmtD(c.ips.lastReview):'—'}</b>`}</div>
-        <button class="btn ghost sm" style="margin-top:12px" onclick="openClient('${c.cid}')">Open full account detail →</button>
+        <button class="btn ghost sm" style="margin-top:12px" onclick="openClient('${c.cid}')">Open account →</button>
       </div>
     </div>`;
   }).join('');

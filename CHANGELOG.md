@@ -11,7 +11,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
   - **Communication preferences** — editable channels, frequency, language, preferred time, do-not-disturb.
   - **Timeline** — reach-outs for leads (method, date, notes); onboarding / funding / rebalance history for clients.
   - **Notes** — free-text notes about the client as a person (family, interests, context).
-- Each account now shows a **portfolio performance graph**, per-strategy performance, holdings, and **account-specific reports** (reports are per account, not per client).
+- Each account now shows a **portfolio performance graph**, per-strategy performance and holdings. Open an account to its own page — a family member's account shows their name with "linked to [primary holder] · [relation]" — and **Reports are a tab inside that account** (account-specific, not client-level).
 - Removed the Strategies tab (strategies are pre-decided / backend-managed) and the KYC tab (not RM-visible) from the account detail.
 
 **Accounts & households**
