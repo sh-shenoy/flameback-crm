@@ -726,8 +726,6 @@
         <button class="active" data-tab="overview">Overview</button>
         <button data-tab="investment">Investment & SIP</button>
         <button data-tab="docs">Risk Profile & Agreement</button>
-        <button data-tab="strategies">Strategies</button>
-        <button data-tab="kyc">KYC</button>
         <button data-tab="portfolio">Portfolio</button>
         <button data-tab="invoices">Invoices</button>
         <button data-tab="calls">Call Sync</button>
@@ -1171,14 +1169,14 @@
       <div class="kv" style="margin:14px 0 18px"><div class="pf-meta" id="pfMeta"></div></div>
       <div class="tabs" id="pfTabs">
         <button class="active" data-ptab="accounts">Accounts</button>
-        <button data-ptab="reports">Reports</button>
         <button data-ptab="comm">Communication</button>
         <button data-ptab="timeline">Timeline</button>
+        <button data-ptab="notes">Notes</button>
       </div>
       <div class="ptab-pane active" id="ptab-accounts"></div>
-      <div class="ptab-pane" id="ptab-reports"></div>
       <div class="ptab-pane" id="ptab-comm"></div>
       <div class="ptab-pane" id="ptab-timeline"></div>
+      <div class="ptab-pane" id="ptab-notes"></div>
     </section>
 
   </main>
@@ -2820,10 +2818,32 @@ function renderProfilePage(){
     `<div><span class="k">RM</span><span class="v">${p.rm||'unassigned'}</span></div>`+
     `<div><span class="k">Source</span><span class="v">${p.source||'—'}</span></div>`+
     `<div><span class="k">Marketing tags</span><span class="v"><span class="lead-sub">from marketing — coming soon</span></span></div>`;
-  renderPfAccounts(p);renderPfReports(p);renderPfComm(p);renderPfTimeline(p);
+  renderPfAccounts(p);renderPfComm(p);renderPfTimeline(p);renderPfNotes(p);
   document.querySelectorAll('#pfTabs button').forEach((x,i)=>x.classList.toggle('active',i===0));
   document.querySelectorAll('.ptab-pane').forEach((x,i)=>x.classList.toggle('active',x.id==='ptab-accounts'));
 }
+function portfolioSeries(c){
+  const inv=c.portfolio.invested||0,cur=c.portfolio.current||0,n=9,pts=[];
+  let seed=0;for(let i=0;i<c.cid.length;i++)seed+=c.cid.charCodeAt(i);
+  for(let i=0;i<n;i++){const t=i/(n-1);const base=inv+(cur-inv)*t;const wig=Math.sin(seed*0.7+i*1.3)*(Math.abs(cur-inv)||cur*0.1)*0.10;pts.push(Math.max(0,base+(i>0&&i<n-1?wig:0)));}
+  pts[0]=inv;pts[n-1]=cur;return pts;
+}
+function portfolioGraph(c){
+  const pts=portfolioSeries(c);if(!c.portfolio.current)return '<div class="lead-sub" style="padding:6px 0">No portfolio yet — account not funded.</div>';
+  const w=520,h=110,pad=8,mn=Math.min.apply(null,pts),mx=Math.max.apply(null,pts),rng=(mx-mn)||1;
+  const xs=i=>pad+i*(w-2*pad)/(pts.length-1),ys=v=>h-pad-((v-mn)/rng)*(h-2*pad);
+  const line=pts.map((v,i)=>(i?'L':'M')+xs(i).toFixed(1)+','+ys(v).toFixed(1)).join(' ');
+  const area=line+' L'+xs(pts.length-1).toFixed(1)+','+(h-pad)+' L'+xs(0).toFixed(1)+','+(h-pad)+' Z';
+  const up=c.portfolio.current>=c.portfolio.invested,col=up?'#2f9e6b':'#e0533d',gid='g'+c.cid;
+  return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" style="width:100%;height:110px"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity="0.22"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs><path d="'+area+'" fill="url(#'+gid+')"/><path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2"/></svg>';
+}
+function renderPfNotes(p){
+  const el=document.getElementById('ptab-notes');const store=p.accounts[0]||p.leads[0];
+  el.innerHTML='<p class="hub-lead">Free-text notes about '+esc(p.name)+' as a person — family, interests, preferences, relationship context. Saved with the profile.</p>'+
+    '<textarea id="pfNotesBox" style="width:100%;min-height:200px" placeholder="e.g. Prefers evening calls. Two kids in college. Keen on ESG. Plays golf on weekends. Risk-averse after 2020…">'+esc((store&&store.profileNotes)||'')+'</textarea>'+
+    '<div style="margin-top:10px"><button class="btn" onclick="savePfNotes()">Save notes</button></div>';
+}
+function savePfNotes(){const p=CURRENT_PROFILE;const store=p.accounts[0]||p.leads[0];if(store){store.profileNotes=document.getElementById('pfNotesBox').value;save();toast('Notes saved');}}
 function renderPfAccounts(p){
   const el=document.getElementById('ptab-accounts');
   if(!p.accounts.length){el.innerHTML=`<div class="empty" style="padding:24px">No accounts yet — ${p.kind==='Lead'?('prospect in the pipeline'+(p.leads[0]?' (stage '+p.leads[0].stage+')':'')):'not onboarded'}. Accounts appear here once onboarding is completed and funded.</div>`;return;}
@@ -2843,8 +2863,10 @@ function renderPfAccounts(p){
           <div class="m"><div class="k">CAGR since inception</div><div class="v">${cagr(c).toFixed(1)}%</div></div>
           <div class="m"><div class="k">Abs. return</div><div class="v">${c.portfolio.absReturn}%</div></div>
         </div>
-        <div class="kv"><div class="kv-h">Strategy performance</div><div>${strat}</div></div>
+        <div class="kv"><div class="kv-h">Portfolio performance — value over time</div><div style="padding:10px 14px">${portfolioGraph(c)}<div class="lead-sub" style="margin-top:4px">${fmtINR(inv)} invested → ${fmtINR(cur)} current · CAGR ${cagr(c).toFixed(1)}%</div></div></div>
+        <div class="kv" style="margin-top:10px"><div class="kv-h">Strategy performance</div><div>${strat}</div></div>
         <div class="kv" style="margin-top:10px"><div class="kv-h">Holdings</div><table style="width:100%"><tbody>${hold}</tbody></table></div>
+        <div class="kv" style="margin-top:10px"><div class="kv-h">Reports (this account)</div><div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px">${['Holding statement','Tax — capital gains','Strategy performance','Fund inflows & outflows','Basic information'].map(r=>`<button class="btn ghost sm" onclick="downloadReport(\'${r}\',\'${c.first} ${c.last} ${c.cid}\')">${r}</button>`).join('')}</div></div>
         <div class="acct-foot lead-sub" style="margin-top:12px">Last rebalance proposal sent: <b>${c.ips.lastQuarterlyReview?fmtD(c.ips.lastQuarterlyReview):'—'}</b>${isRia?` &middot; Last rebalanced by client (RIA): <b>${c.ips.lastQuarterlyReview?fmtD(c.ips.lastQuarterlyReview):'—'}</b>`:` &middot; Last rebalanced: <b>${c.ips.lastReview?fmtD(c.ips.lastReview):'—'}</b>`}</div>
         <button class="btn ghost sm" style="margin-top:12px" onclick="openClient('${c.cid}')">Open full account detail →</button>
       </div>

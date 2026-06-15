@@ -8,9 +8,11 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - New searchable directory of every lead and client (by name, email or number); leads and a household's accounts link into one person.
 - Profile page with four tabs:
   - **Accounts** — each PMS / RIA / International account with amount invested, current value, CAGR since inception, strategy performance, holdings, last rebalance proposal sent, and last rebalanced by client (for RIA).
-  - **Reports** — downloadable holding statement, tax (capital gains), strategy performance, fund inflows/outflows, and basic information reports.
   - **Communication preferences** — editable channels, frequency, language, preferred time, do-not-disturb.
   - **Timeline** — reach-outs for leads (method, date, notes); onboarding / funding / rebalance history for clients.
+  - **Notes** — free-text notes about the client as a person (family, interests, context).
+- Each account now shows a **portfolio performance graph**, per-strategy performance, holdings, and **account-specific reports** (reports are per account, not per client).
+- Removed the Strategies tab (strategies are pre-decided / backend-managed) and the KYC tab (not RM-visible) from the account detail.
 
 **Accounts & households**
 - One person (one number) can hold a PMS, an RIA and an International account — one of each.
