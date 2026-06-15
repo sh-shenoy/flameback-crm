@@ -756,7 +756,11 @@
       <div class="page-head">
         <div><h1>Onboarding Journey</h1><p>The client-facing flow from the app — Self-serve or RM-assisted, switchable any time, advisory-first.</p></div>
       </div>
-            <div class="panel">
+            <div class="panel" style="padding:18px 20px;margin-bottom:18px">
+        <h2 style="font-size:14px;color:var(--navy);margin-bottom:14px">Funnel — where leads are right now</h2>
+        <div class="funnel" id="onbFunnel"></div>
+      </div>
+      <div class="panel">
         <div class="panel-head"><h2>Leads in onboarding</h2></div>
         <table>
           <thead><tr><th>Lead</th><th>Flow</th><th>Current step</th><th>RM</th><th>Onboarding form</th></tr></thead>
@@ -2321,6 +2325,11 @@ function confirmAssign(){
 
 function renderOnboarding(){
   const pop=active().filter(l=>l.onbStep!==undefined);
+  const max=Math.max(1,...ONB_STEPS.map((_,i)=>pop.filter(l=>l.onbStep===i).length));
+  document.getElementById('onbFunnel').innerHTML=ONB_STEPS.map((s,i)=>{
+    const n=pop.filter(l=>l.onbStep===i).length;
+    return `<div class="frow"><div class="fname">${s}</div><div class="fbar"><i style="width:${n/max*100}%"></i><span>${n}</span></div></div>`;
+  }).join('');
   const inOnb=pop.filter(l=>l.onbStep<7).sort((a,b)=>b.onbStep-a.onbStep);
   document.getElementById('onbBody').innerHTML = inOnb.length? inOnb.map(l=>{
     const f=l.phone?findForm(l.phone):null;
