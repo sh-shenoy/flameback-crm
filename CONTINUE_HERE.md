@@ -29,6 +29,8 @@ A clickable **CRM demo wireframe** for Flameback Capital (wealth management), bu
 3. **Multi-team + Tasks & Requests** — cross-team handoff system with From→To team, priority, due, status, and a comment thread. Compliance **Verification Checklist** (Name/PAN/DOB vs uploaded docs, flag/verify, raise to RM). Operations queue. Investment **Portfolios & IPS**.
 4. **Onboarding journey + app routing** — flowchart-style onboarding diagram (Self-serve / RM-assisted, switch anytime, abandon→recovery, advisory-first, two client-only steps). **Qualifier** role + **Assignment Queue**: qualify a new app lead, pick best-fit RM, auto-generate a **Google Meet** link and add Client+RM+Qualifier to the invite. **Calendar** with Google Meet links and **conflict detection** + "call & reschedule".
 5. **IPS + reviews + Gmail** — per-client **dummy IPS document** (objective, target allocation, benchmark, review schedule). Two cadences: **annual IPS review** + **quarterly portfolio review**. **Reviews & Reminders** view showing who's due **this week** (auto-reminder framing). **Gmail composer** that sends **from the RM's email** ("from the RM or whoever").
+6. **Named assignees within a team** — tasks/requests can now be assigned to a **specific person** (not just team-level). `TEAM_MEMBERS` roster per team; the task modal has an **Assign to person** dropdown that repopulates by team; a new **"Assigned to me"** inbox filter shows tasks assigned to the current identity. Some seed tasks are pre-assigned; others left "Unassigned (whole team)".
+7. **Kanban board + ticket activity log** — Tasks & Requests now has a **Board ⇄ List** toggle (board is default). The board has four columns (Open / In Progress / Blocked / Done); cards are **drag-and-drop** between columns and dropping updates the ticket status. All ticket events feed a unified **Activity log** (the old "Conversation" thread): status moves and reassignments are appended as system entries (dashed style), alongside free-text updates. **Reassignment requires a reason** — changing a ticket's team or assignee reveals a required reason field, and on save it logs `Reassigned <from> → <to> — <reason>` so the full history of who did what is preserved. Key functions in `index.html`: `setTaskView`, `renderBoard`/`kcard`, the DnD handlers (`dragTask`/`dropTask`/`moveTask`), and `logTask` (the single place that appends activity entries).
 
 ## Seeded demo characters / data to show in a demo
 - Lead **Anita Desai** sits at 5 strikes (Five-Strike Rule trigger).
@@ -36,13 +38,52 @@ A clickable **CRM demo wireframe** for Flameback Capital (wealth management), bu
 - App leads awaiting qualification: **Aarti Joshi**, **Rohit Bansal** (recovery path), **Meera Pillai**.
 - Calendar has two overlapping meetings for RM Shashank today (conflict demo).
 
+## Feature Suggestions — REAL shared board (Supabase)
+Unlike the rest of the demo (localStorage only), the **Feature Suggestions** board is wired to a real shared backend so department heads can add ideas and 👍 agree / 👎 disagree from their own machines.
+
+- **Empty at start.** No seeded suggestions — the board fills from real input.
+- **Anyone can add**; **everyone can agree/disagree**. No login — each browser gets an anonymous voter id (`fbc_voter` in localStorage), so one browser = one stance per idea, switchable. Cards sort by **net support** (agree − disagree).
+- **Backend = Supabase.** The Supabase JS SDK is loaded via CDN in `<head>`. Config lives in two constants near the top of the `<script>` in `index.html`: `SUPABASE_URL` and `SUPABASE_ANON_KEY`. While they're blank, the board shows a setup panel and the rest of the CRM works normally.
+- Realtime is on: new ideas/votes appear live for everyone viewing the board.
+
+### To activate the board (one-time)
+1. Create a free project at **supabase.com**.
+2. In the SQL editor, run:
+   ```sql
+   create table suggestions (
+     id uuid primary key default gen_random_uuid(),
+     title text not null,
+     description text default '',
+     category text default 'Other',
+     author text default 'Anonymous',
+     status text default 'Requested',
+     created_at timestamptz default now()
+   );
+   create table votes (
+     suggestion_id uuid references suggestions(id) on delete cascade,
+     voter text not null,
+     stance text not null check (stance in ('agree','disagree')),
+     created_at timestamptz default now(),
+     primary key (suggestion_id, voter)
+   );
+   alter table suggestions enable row level security;
+   alter table votes enable row level security;
+   create policy "open suggestions" on suggestions for all using (true) with check (true);
+   create policy "open votes" on votes for all using (true) with check (true);
+   alter publication supabase_realtime add table suggestions;
+   alter publication supabase_realtime add table votes;
+   ```
+3. Project Settings → API: copy the **Project URL** and **anon public** key into `SUPABASE_URL` / `SUPABASE_ANON_KEY` in `index.html`.
+4. **Host the page** (it must be reachable by the dept heads — e.g. Netlify drag-drop, Vercel, GitHub Pages, Cloudflare Pages) and share the link.
+
+**Security note:** the policies above are fully **open** — anyone with the link + anon key can read/add/vote/delete. That's fine for an internal, trust-based board among department heads. The anon key is safe to ship in client code by design (it's gated by these row-level policies). If you later want one-person-one-vote or to lock down deletes/status changes, add Supabase Auth (e.g. email magic-link) and tighten the policies.
+
 ## Known "mocked" parts (real build = engineering work)
 - Roles are a demo switcher, not auth/permissions.
 - "Synced from FBC-Admin", Google Meet link creation, Google Calendar sync, Gmail send, and the Monday auto-reminder job are all **simulated in-browser**. Real build wires these to the respective APIs (FBC-Admin DB, Google Calendar/Meet, Gmail OAuth per RM, a cron reminder job).
 
 ## Open / possible next steps (discussed, not yet built)
 - Lead → Client conversion when an L4 lead is funded.
-- Named assignees within a team (not just team-level).
 - Email/WhatsApp notifications on task assignment.
 - Client-side app screens (the two-flow login the client actually sees).
 - Spec for the RM-matching logic (capacity / language / region / AUM band).

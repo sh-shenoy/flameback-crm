@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Flameback CRM — Demo Wireframe v1</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --navy:#0f2742;
@@ -149,6 +150,19 @@
   .vote:hover{border-color:var(--teal);background:#f0fbfb}
   .vote .up{font-size:14px;color:var(--teal)}
   .vote .n{font-size:18px;font-weight:800;color:var(--navy)}
+  .vote-col{display:flex;flex-direction:column;gap:8px;min-width:62px}
+  .vbtn{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:#fbfcfe;cursor:pointer;font-size:15px;line-height:1;transition:.15s}
+  .vbtn .n{font-size:15px;font-weight:800;color:var(--navy)}
+  .vbtn:hover{border-color:var(--teal)}
+  .vbtn.agree.active{background:#e3f3eb;border-color:#1f7a4f}
+  .vbtn.agree.active .n{color:#1f7a4f}
+  .vbtn.disagree.active{background:#fde7e7;border-color:#c0492f}
+  .vbtn.disagree.active .n{color:#c0492f}
+  .setup-panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px;box-shadow:var(--shadow)}
+  .setup-panel h3{font-size:15px;color:var(--navy);margin-bottom:8px}
+  .setup-panel p{font-size:13px;color:#4a5666;margin-bottom:10px}
+  .setup-panel ol{font-size:13px;color:#4a5666;margin:0 0 10px 18px;display:flex;flex-direction:column;gap:6px}
+  .setup-panel code{background:#eef2f7;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
   .sugg-body h3{font-size:15px;color:var(--navy);margin-bottom:4px}
   .sugg-body p{font-size:13px;color:#4a5666;margin-bottom:8px}
   .sugg-meta{font-size:12px;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -248,6 +262,32 @@
   .pri-Low i{background:var(--cold)}.pri-Low{color:var(--cold)}
   .st-sel{padding:4px 8px;border-radius:6px;border:1px solid var(--line);font-size:12px;font-weight:600;background:#fbfcfe}
   .stt-Open{color:#46566b}.stt-InProgress{color:#2f54a8}.stt-Done{color:#1f7a4f}.stt-Blocked{color:var(--hot)}
+  /* tasks view toggle + kanban */
+  .viewtog{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .vt{border:none;background:#fff;padding:6px 12px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
+  .vt+.vt{border-left:1px solid var(--line)}
+  .vt.active{background:var(--navy);color:#fff}
+  .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:16px;align-items:start}
+  .kcol{background:#f6f9fc;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:140px;transition:.12s}
+  .kcol.drag-over{outline:2px dashed var(--teal);outline-offset:-3px;background:#f0fbfb}
+  .kcol-h{padding:10px 12px;font-size:12px;font-weight:800;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+  .kcol-h .cnt{background:#e7edf5;color:#46566b;border-radius:20px;padding:1px 9px;font-size:11px;font-weight:700}
+  .kcol-body{padding:10px;display:flex;flex-direction:column;gap:10px;flex:1}
+  .kcard{background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:10px;padding:11px 12px;box-shadow:var(--shadow);cursor:grab}
+  .kcard:hover{border-color:var(--teal)}
+  .kcard:active{cursor:grabbing}
+  .kcard.dragging{opacity:.45}
+  .kcard.p-High{border-left-color:var(--hot)}.kcard.p-Medium{border-left-color:var(--warm)}.kcard.p-Low{border-left-color:var(--cold)}
+  .kcard h4{font-size:13px;color:var(--navy);margin-bottom:2px;line-height:1.3}
+  .kcard .ksub{font-size:11px;color:var(--muted)}
+  .kcard .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .kcard .who{font-size:11px;color:#46566b;background:#eef2f7;border-radius:6px;padding:2px 7px}
+  .kcard .who.un{color:#aab2bd;font-style:italic}
+  .kempty{font-size:12px;color:#aab2bd;text-align:center;padding:8px}
+  .reassign-box{background:#fff7ec;border:1px solid #f0d9a8;border-radius:10px;padding:10px 12px}
+  .reassign-box label{color:#a96a16}
+  .msg.sys{background:#eef3f8;border-style:dashed;color:#46566b;font-size:12px}
+  .msg.sys .by{color:#46566b}
   .arrow{color:var(--muted);margin:0 4px}
 
   /* checklist */
@@ -561,8 +601,13 @@
       </div>
       <div class="panel">
         <div class="filterbar">
+          <div class="viewtog">
+            <button id="vtBoard" class="vt active" onclick="setTaskView('board')">▦ Board</button>
+            <button id="vtList" class="vt" onclick="setTaskView('list')">☰ List</button>
+          </div>
           <select class="filter" id="tInbox" onchange="renderTasks()">
             <option value="mine">My team's inbox</option>
+            <option value="assigned">Assigned to me</option>
             <option value="raised">Raised by me</option>
             <option value="all">All tasks</option>
           </select>
@@ -574,10 +619,13 @@
           </select>
           <div class="search" style="margin-left:auto"><input id="tSearch" placeholder="Search tasks…" oninput="renderTasks()"></div>
         </div>
-        <table>
-          <thead><tr><th>Priority</th><th>Task</th><th>Client</th><th>From → To</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead>
-          <tbody id="tasksBody"></tbody>
-        </table>
+        <div id="tasksBoard" class="kanban"></div>
+        <div id="tasksTable" class="hidden">
+          <table>
+            <thead><tr><th>Priority</th><th>Task</th><th>Client</th><th>From → To</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead>
+            <tbody id="tasksBody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -711,13 +759,13 @@
     <!-- SUGGESTIONS -->
     <section id="view-suggestions" class="hidden">
       <div class="page-head">
-        <div><h1>Feature Suggestions</h1><p>Tell us what to build next. The team prioritises by votes and ships in batches.</p></div>
+        <div><h1>Feature Suggestions</h1><p>A shared board for the team — anyone can add an idea, and everyone can 👍 agree or 👎 disagree. Sorted by net support.</p></div>
       </div>
       <div class="sugg-grid">
         <div id="suggList"></div>
         <div class="form-box">
           <h3>Suggest a feature</h3>
-          <div class="hint">Future users of this CRM — drop your idea, we build the roadmap from it.</div>
+          <div class="hint">Drop your idea — it appears on the shared board for everyone to weigh in on.</div>
           <div class="field"><label>Your name / desk</label><input id="sName" placeholder="e.g. Priya — Bangalore desk"></div>
           <div class="field"><label>Feature title</label><input id="sTitle" placeholder="e.g. Auto-reminder on WhatsApp"></div>
           <div class="field"><label>What should it do?</label><textarea id="sDesc" placeholder="Describe the problem and the feature you'd like…"></textarea></div>
@@ -848,16 +896,23 @@
         <div class="field"><label>Task type</label><select id="tmType"></select></div>
       </div>
       <div class="grid2">
+        <div class="field"><label>Assign to person</label><select id="tmAssignee" onchange="tmReassignCheck()"></select></div>
         <div class="field"><label>Link client (optional)</label><select id="tmClient"></select></div>
-        <div class="field"><label>Priority</label><select id="tmPri"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
       </div>
-      <div class="field"><label>Due date</label><input type="date" id="tmDue"></div>
+      <div class="field reassign-box" id="tmReassignWrap" style="display:none">
+        <label>Reason for reassignment <span style="color:var(--hot)">*</span></label>
+        <input id="tmReason" placeholder="Why is this moving to a different team/person? (logged to the activity trail)">
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Priority</label><select id="tmPri"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+        <div class="field"><label>Due date</label><input type="date" id="tmDue"></div>
+      </div>
       <div class="field"><label>Notes / context</label><textarea id="tmNotes" placeholder="Add details the other team needs…"></textarea></div>
       <div id="tmThreadWrap" class="hidden">
-        <div class="section-h">Conversation</div>
+        <div class="section-h">Activity log <span class="lead-sub">— everything done on this ticket so far</span></div>
         <div class="thread" id="tmThread"></div>
-        <div class="field" style="margin-top:8px"><textarea id="tmReply" placeholder="Add a comment…"></textarea></div>
-        <button class="btn ghost sm" onclick="addComment()">Post comment</button>
+        <div class="field" style="margin-top:8px"><textarea id="tmReply" placeholder="Add an update or comment…"></textarea></div>
+        <button class="btn ghost sm" onclick="addComment()">Post update</button>
       </div>
     </div>
     <div class="modal-f">
@@ -932,6 +987,22 @@
 <div class="toast" id="toast"></div>
 
 <script>
+/* ---------- shared feature-suggestions backend (Supabase) ----------
+   Paste your Supabase project values below to turn the Feature Suggestions
+   board into a real shared board (everyone you share the link with can add
+   ideas and agree/disagree). Until these are filled in, the board shows a
+   one-time setup panel and the rest of the CRM works as before.
+   Find these in Supabase → Project Settings → API. The anon key is meant
+   to be public (it is protected by row-level security). */
+const SUPABASE_URL='https://jgazimeilupqrxosdpyk.supabase.co';        // e.g. https://abcdxyz.supabase.co
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnYXppbWVpbHVwcXJ4b3NkcHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNjY2MDEsImV4cCI6MjA5Njk0MjYwMX0.ACLbbERFhznVm-x2KHu2ZOKLkMcClDR7qHWgCU-5fuQ';   // the "anon public" key
+const sb=(SUPABASE_URL&&SUPABASE_ANON_KEY&&window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
+/* anonymous per-browser voter id — no login, one stance per browser per idea */
+const VOTER=(function(){let v=localStorage.getItem('fbc_voter');
+  if(!v){v=(crypto.randomUUID&&crypto.randomUUID())||('v'+Date.now()+Math.random().toString(16).slice(2));localStorage.setItem('fbc_voter',v);}return v;})();
+let SUGG=[];
+
 /* ---------- storage ---------- */
 const KEY='flameback_crm_v1';
 const RMS=['Shashank','Priya Nair','Arjun Mehta','Divya Rao','Karan Shah'];
@@ -948,13 +1019,7 @@ function seed(){
       {id:6,name:'Vikram Singh',source:'Search',status:'New',stage:'L1',rm:'Shashank',type:'Call',count:1,comments:'Fresh inbound from website calculator tool.',follow:nextDays(1),hist:[h('Call',0)],out:false},
       {id:7,name:'Pooja Reddy',source:'Tools',status:'Not Interested',stage:'L1',rm:'Priya Nair',type:'Call',count:4,comments:'Said not looking right now.',follow:'',hist:[h('Call',-14),h('Call',-10),h('WhatsApp',-7),h('Call',-3)],out:true,outReason:'Not Interested'}
     ],
-    suggestions:[
-      {id:1,name:'Priya — Bangalore',title:'Auto-reminder on WhatsApp for follow-ups',desc:'When a follow-up date hits, ping the RM and optionally send a templated WhatsApp to the lead.',cat:'Automation',status:'Planned',votes:14,you:false},
-      {id:2,name:'Arjun',title:'Bulk import leads from CSV / Meta ads',desc:'Pull leads straight from Meta & Google ad forms into the pipeline without manual entry.',cat:'Integrations',status:'In Progress',votes:11,you:false},
-      {id:3,name:'Divya',title:'RM performance leaderboard',desc:'Weekly view of conversions L1→L4 per RM, with strike-rate on the Five-Strike rule.',cat:'Reporting',status:'Requested',votes:8,you:false},
-      {id:4,name:'Karan',title:'Document vault per lead',desc:'Attach KYC, agreements and proposals to each lead record.',cat:'Leads & Pipeline',status:'Requested',votes:6,you:false}
-    ],
-    nextId:8,nextSug:5
+    nextId:8
   };
 }
 function h(type,offset){return {type,when:dayStr(offset)};}
@@ -1011,8 +1076,14 @@ const TASK_TYPES={
   Investment:['Portfolio review','Rebalance portfolio','IPS review','Strategy change','Suspense reconciliation'],
   RM:['Schedule meeting','Quarterly review','Yearly review','Follow up','Collect document']
 };
+const TEAM_MEMBERS={
+  Compliance:['Neha Gupta','Imran Khan','Sara Thomas'],
+  Operations:['Ravi Menon','Deepak Verma','Pooja Nair'],
+  Investment:['Anjali Rao','Vikas Shah','Rhea Kapoor'],
+  RM:['Shashank','Priya Nair','Arjun Mehta','Divya Rao','Karan Shah']
+};
 function seedTasks(){
-  return [
+  const t=[
     tk('Open Zerodha (demat) account','Operations','Demat / Zerodha activation','FBC-1003','Shashank · RM','High','Open',2,'New client has no Zerodha account yet. Please initiate account opening so we can fund the SIP.'),
     tk('Verify KYC documents — DOB mismatch','Compliance','KYC document verification','FBC-1003','Shashank · RM','High','In Progress',1,'Please confirm DOB on PAN vs uploaded proof before we proceed to agreement.',[{by:'Neha · Compliance',text:'Uploaded proof shows DOB 1991-07-21 but KYC entry says 1990-07-21. Flagging back to RM to correct.',when:dayStr(0)}]),
     tk('Quarterly portfolio review','Investment','Portfolio review','FBC-1002','Divya · RM','Medium','Open',-3,'Q review is due. Please assess allocation vs IPS and share notes for the client call.'),
@@ -1022,8 +1093,23 @@ function seedTasks(){
     tk('Cheque collection from client','Operations','Cheque collection','FBC-1001','Karan · RM','Low','Done',-5,'Top-up cheque collected and deposited.'),
     tk('Yearly review meeting','RM','Yearly review','FBC-1001','Karan · RM','Medium','Open',20,'Schedule the annual review and send the performance pack.')
   ];
+  t[0].assignee='Deepak Verma';
+  t[1].assignee='Neha Gupta';
+  t[3].assignee='Pooja Nair';
+  t[5].assignee='Anjali Rao';
+  t[7].assignee='Shashank';
+  t[0].thread=[
+    {by:'Shashank · RM',text:'Raised to Operations and assigned to Deepak Verma.',when:dayStr(-3),sys:true},
+    {by:'Deepak Verma · Operations',text:'Will initiate Zerodha as soon as Compliance clears the DOB flag on this client.',when:dayStr(-1)}
+  ];
+  t[1].thread=[
+    {by:'Shashank · RM',text:'Raised to Compliance and assigned to Neha Gupta.',when:dayStr(-3),sys:true},
+    {by:'Neha · Compliance',text:'Uploaded proof shows DOB 1991-07-21 but KYC entry says 1990-07-21. Flagging back to RM to correct.',when:dayStr(-2)},
+    {by:'Neha Gupta · Compliance',text:'Status moved: Open → In Progress',when:dayStr(-1),sys:true}
+  ];
+  return t;
 }
-function tk(title,team,type,cid,from,priority,status,dueOff,notes,thread){return {id:0,title,team,type,cid,from,priority,status,due:dayStr(dueOff),notes,created:dayStr(-3),thread:thread||[]};}
+function tk(title,team,type,cid,from,priority,status,dueOff,notes,thread){return {id:0,title,team,type,cid,from,priority,status,due:dayStr(dueOff),notes,created:dayStr(-3),assignee:'',thread:thread||[]};}
 function ensureClientExtras(c){
   if(!c.uploaded){c.uploaded={namePan:c.kyc.namePan,pan:c.kyc.pan,dob:c.kyc.dob};if(c.cid==='FBC-1003')c.uploaded.dob='1991-07-21';}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
@@ -1100,7 +1186,7 @@ function go(v){
   if(v==='verification')renderVerification();
   if(v==='ips')renderIps();
   if(v==='out')renderOut();
-  if(v==='suggestions')renderSugg();
+  if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
 function switchRole(r){currentRole=r;applyRole();go('dashboard');}
 function applyRole(){
@@ -1247,31 +1333,102 @@ function renderOut(){
 }
 function restore(id){const l=DB.leads.find(x=>x.id===id);l.out=false;l.outReason='';if(l.status==='Not Interested')l.status='Cold';save();renderOut();toast('Lead restored to pipeline');}
 
-/* ---------- suggestions ---------- */
+/* ---------- suggestions (shared via Supabase) ---------- */
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function loadSugg(){
+  const list=document.getElementById('suggList');
+  if(!sb){list.innerHTML=setupPanel();badges();return;}
+  list.innerHTML='<div class="empty">Loading the shared board…</div>';
+  try{
+    const [{data:items,error:e1},{data:votes,error:e2}]=await Promise.all([
+      sb.from('suggestions').select('*'),
+      sb.from('votes').select('*')
+    ]);
+    if(e1||e2)throw(e1||e2);
+    const byId={};
+    (items||[]).forEach(it=>{byId[it.id]={id:it.id,title:it.title,description:it.description||'',category:it.category||'Other',author:it.author||'Anonymous',status:it.status||'Requested',agree:0,disagree:0,myStance:null};});
+    (votes||[]).forEach(v=>{const s=byId[v.suggestion_id];if(!s)return;if(v.stance==='agree')s.agree++;else if(v.stance==='disagree')s.disagree++;if(v.voter===VOTER)s.myStance=v.stance;});
+    SUGG=Object.values(byId);
+    renderSugg();
+  }catch(err){list.innerHTML=`<div class="empty">Couldn't reach the board.<br><span class="lead-sub">${esc(err.message||err)}</span></div>`;}
+  badges();
+}
 function renderSugg(){
+  const list=document.getElementById('suggList');
+  if(!sb){list.innerHTML=setupPanel();badges();return;}
   const order={'In Progress':0,'Planned':1,'Requested':2,'Shipped':3};
-  const rows=[...DB.suggestions].sort((a,b)=>(order[a.status]-order[b.status])||(b.votes-a.votes));
-  document.getElementById('suggList').innerHTML = rows.map(s=>`<div class="sugg-card">
-    <div class="vote" onclick="vote(${s.id})"><span class="up">▲</span><span class="n">${s.votes}</span><span style="font-size:10px;color:var(--muted)">${s.you?'voted':'vote'}</span></div>
+  const rows=[...SUGG].sort((a,b)=>(order[a.status]-order[b.status])||((b.agree-b.disagree)-(a.agree-a.disagree)));
+  list.innerHTML = rows.length? rows.map(s=>`<div class="sugg-card">
+    <div class="vote-col">
+      <button class="vbtn agree${s.myStance==='agree'?' active':''}" onclick="castVote('${s.id}','agree')" title="Agree">👍<span class="n">${s.agree}</span></button>
+      <button class="vbtn disagree${s.myStance==='disagree'?' active':''}" onclick="castVote('${s.id}','disagree')" title="Disagree">👎<span class="n">${s.disagree}</span></button>
+    </div>
     <div class="sugg-body" style="flex:1">
-      <h3>${s.title}</h3><p>${s.desc}</p>
+      <h3>${esc(s.title)}</h3><p>${esc(s.description)||'—'}</p>
       <div class="sugg-meta">
-        <span class="src">${s.cat}</span>
-        <span>by ${s.name}</span>
-        <select class="status-sel st-${s.status.replace(' ','')}" onchange="setStatus(${s.id},this.value)">
+        <span class="src">${esc(s.category)}</span>
+        <span>by ${esc(s.author)}</span>
+        <select class="status-sel st-${s.status.replace(' ','')}" onchange="setStatus('${s.id}',this.value)">
           ${['Requested','Planned','In Progress','Shipped'].map(o=>`<option ${o===s.status?'selected':''}>${o}</option>`).join('')}
         </select>
       </div>
-    </div></div>`).join('');
+    </div></div>`).join('')
+    : `<div class="empty">No suggestions yet — be the first to add one. 💡</div>`;
   badges();
 }
-function vote(id){const s=DB.suggestions.find(x=>x.id===id);s.votes+=s.you?-1:1;s.you=!s.you;save();renderSugg();}
-function setStatus(id,v){DB.suggestions.find(x=>x.id===id).status=v;save();renderSugg();toast('Status updated → '+v);}
-function addSuggestion(){
+function setupPanel(){
+  return `<div class="setup-panel">
+    <h3>Shared board not connected yet</h3>
+    <p>To let department heads add ideas and agree/disagree from their own machines, connect a free Supabase project:</p>
+    <ol>
+      <li>Create a project at <strong>supabase.com</strong>.</li>
+      <li>In the SQL editor, run the schema from <strong>CONTINUE_HERE.md</strong> (creates the <code>suggestions</code> &amp; <code>votes</code> tables).</li>
+      <li>Copy your <strong>Project URL</strong> and <strong>anon public key</strong> (Project Settings → API) into the <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> constants near the top of <code>index.html</code>.</li>
+      <li>Host the page and share the link with the dept heads.</li>
+    </ol>
+    <p class="lead-sub">Until then the rest of the CRM works normally — this panel only affects this board.</p>
+  </div>`;
+}
+async function castVote(id,stance){
+  if(!sb)return;
+  const s=SUGG.find(x=>String(x.id)===String(id));
+  try{
+    if(s&&s.myStance===stance){
+      await sb.from('votes').delete().match({suggestion_id:id,voter:VOTER});
+    }else{
+      await sb.from('votes').upsert({suggestion_id:id,voter:VOTER,stance},{onConflict:'suggestion_id,voter'});
+    }
+    await loadSugg();
+  }catch(err){toast('Vote failed: '+(err.message||err));}
+}
+async function setStatus(id,v){
+  if(!sb)return;
+  try{await sb.from('suggestions').update({status:v}).eq('id',id);await loadSugg();toast('Status updated → '+v);}
+  catch(err){toast('Update failed: '+(err.message||err));}
+}
+async function addSuggestion(){
+  if(!sb){toast('Connect Supabase first (see the board for steps)');return;}
   const title=document.getElementById('sTitle').value.trim();
   if(!title){toast('Add a feature title first');return;}
-  DB.suggestions.push({id:DB.nextSug++,name:document.getElementById('sName').value.trim()||'Anonymous',title,desc:document.getElementById('sDesc').value.trim()||'—',cat:document.getElementById('sCat').value,status:'Requested',votes:1,you:true});
-  save();['sName','sTitle','sDesc'].forEach(i=>document.getElementById(i).value='');renderSugg();toast('Thanks! Suggestion added to the board');
+  try{
+    await sb.from('suggestions').insert({
+      title,
+      description:document.getElementById('sDesc').value.trim(),
+      category:document.getElementById('sCat').value,
+      author:document.getElementById('sName').value.trim()||'Anonymous',
+      status:'Requested'
+    });
+    ['sName','sTitle','sDesc'].forEach(i=>document.getElementById(i).value='');
+    await loadSugg();
+    toast('Thanks! Suggestion added to the board');
+  }catch(err){toast('Could not add: '+(err.message||err));}
+}
+function subscribeSugg(){
+  if(!sb||subscribeSugg._done)return;subscribeSugg._done=true;
+  sb.channel('sugg-board')
+    .on('postgres_changes',{event:'*',schema:'public',table:'suggestions'},loadSugg)
+    .on('postgres_changes',{event:'*',schema:'public',table:'votes'},loadSugg)
+    .subscribe();
 }
 
 /* ---------- lead drawer ---------- */
@@ -1576,20 +1733,36 @@ function taskRow(t){return `<tr class="lead-row" onclick="openTask(${t.id})">
   <td><div class="lead-name">${t.title}</div><div class="lead-sub">${t.type}</div></td>
   <td>${cidCell(t.cid)}</td><td>${t.from.split('·')[0]}</td><td>${fmtDue(t.due)}</td><td>${statusSelect(t)}</td></tr>`;}
 
-function renderTasks(){
+let taskView='board';
+function setTaskView(v){taskView=v;
+  document.getElementById('vtBoard').classList.toggle('active',v==='board');
+  document.getElementById('vtList').classList.toggle('active',v==='list');
+  renderTasks();}
+function filteredTasks(){
   const R=ROLES[currentRole];
-  document.getElementById('tasksTitle').textContent=currentRole==='RM'?'Tasks & Requests':currentRole+' — Inbox';
   const inbox=document.getElementById('tInbox').value,fst=document.getElementById('tStatus').value,fp=document.getElementById('tPri').value,q=(document.getElementById('tSearch').value||'').toLowerCase();
-  let rows=DB.tasks.filter(t=>{
+  return DB.tasks.filter(t=>{
     if(inbox==='mine'&&t.team!==currentRole)return false;
+    if(inbox==='assigned'&&t.assignee!==R.name)return false;
     if(inbox==='raised'&&!t.from.includes(R.name))return false;
     if(fst&&t.status!==fst)return false;
     if(fp&&t.priority!==fp)return false;
     if(q&&!(t.title+t.type+t.notes+(t.cid||'')+clientName(t.cid)).toLowerCase().includes(q))return false;
     return true;
   });
+}
+function renderTasks(){
+  document.getElementById('tasksTitle').textContent=currentRole==='RM'?'Tasks & Requests':currentRole+' — Inbox';
+  const rows=filteredTasks();
+  const board=document.getElementById('tasksBoard'),tbl=document.getElementById('tasksTable');
+  if(taskView==='board'){board.classList.remove('hidden');tbl.classList.add('hidden');renderBoard(rows);}
+  else{board.classList.add('hidden');tbl.classList.remove('hidden');renderTaskList(rows);}
+  badges();
+}
+const TASK_STATUSES=['Open','In Progress','Blocked','Done'];
+function renderTaskList(rows){
   const order={'Blocked':0,'Open':1,'In Progress':2,'Done':3};
-  rows.sort((a,b)=>(order[a.status]-order[b.status])||(new Date(a.due)-new Date(b.due)));
+  rows=[...rows].sort((a,b)=>(order[a.status]-order[b.status])||(new Date(a.due)-new Date(b.due)));
   document.getElementById('tasksBody').innerHTML = rows.length? rows.map(t=>`<tr class="lead-row" onclick="openTask(${t.id})">
     <td>${priCell(t)}</td>
     <td><div class="lead-name">${t.title}</div><div class="lead-sub">${t.type}${t.thread&&t.thread.length?' · 💬 '+t.thread.length:''}</div></td>
@@ -1598,14 +1771,41 @@ function renderTasks(){
     <td>${t.assignee||'<span class="lead-sub">Unassigned</span>'}</td>
     <td>${fmtDue(t.due)}</td><td>${statusSelect(t)}</td></tr>`).join('')
     : `<tr><td colspan="7" class="empty">No tasks in this view.</td></tr>`;
-  badges();
 }
-function setTaskStatus(id,v){const t=DB.tasks.find(x=>x.id===id);t.status=v;save();rerender();toast('Status → '+v);}
+function renderBoard(rows){
+  const order={High:0,Medium:1,Low:2};
+  document.getElementById('tasksBoard').innerHTML=TASK_STATUSES.map(st=>{
+    const items=rows.filter(t=>t.status===st).sort((a,b)=>(order[a.priority]-order[b.priority])||(new Date(a.due)-new Date(b.due)));
+    return `<div class="kcol" ondragover="allowDrop(event,this)" ondragleave="this.classList.remove('drag-over')" ondrop="dropTask(event,this,'${st}')">
+      <div class="kcol-h stt-${st.replace(' ','')}">${st}<span class="cnt">${items.length}</span></div>
+      <div class="kcol-body">${items.map(kcard).join('')||'<div class="kempty">Drop a ticket here</div>'}</div>
+    </div>`;
+  }).join('');
+}
+function kcard(t){return `<div class="kcard p-${t.priority}" draggable="true" ondragstart="dragTask(event,${t.id})" ondragend="dragEnd(event)" onclick="openTask(${t.id})">
+  <h4>${t.title}</h4>
+  <div class="ksub">${t.type}${t.cid?' · '+t.cid:''}</div>
+  <div class="meta">
+    <span class="pri pri-${t.priority}"><i></i>${t.priority}</span>
+    <span class="team team-${t.team}">${t.team}</span>
+    <span class="who ${t.assignee?'':'un'}">${t.assignee||'Unassigned'}</span>
+  </div>
+  <div class="meta"><span style="font-size:11px">${fmtDue(t.due)}</span>${t.thread&&t.thread.length?`<span style="font-size:11px;color:var(--muted)">💬 ${t.thread.length}</span>`:''}</div>
+</div>`;}
+function dragTask(ev,id){ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='move';ev.currentTarget.classList.add('dragging');}
+function dragEnd(ev){ev.currentTarget.classList.remove('dragging');}
+function allowDrop(ev,el){ev.preventDefault();el.classList.add('drag-over');}
+function dropTask(ev,el,status){ev.preventDefault();el.classList.remove('drag-over');const id=+ev.dataTransfer.getData('text/plain');moveTask(id,status);}
+function moveTask(id,status){const t=DB.tasks.find(x=>x.id===id);if(!t||t.status===status)return;
+  const old=t.status;t.status=status;logTask(t,`Status moved: ${old} → ${status}`,true);save();renderTasks();toast('Moved → '+status);}
+function logTask(t,text,sys){t.thread=t.thread||[];t.thread.push({by:ROLES[currentRole].name+' · '+currentRole,text,when:dayStr(0),sys:!!sys});}
+function setTaskStatus(id,v){const t=DB.tasks.find(x=>x.id===id);if(t.status===v)return;
+  const old=t.status;t.status=v;logTask(t,`Status moved: ${old} → ${v}`,true);save();rerender();toast('Status → '+v);}
 function rerender(){const v=document.querySelector('#nav button.active').dataset.view;go(v);}
 
-let editingTask=null;
+let editingTask=null,origTeam='',origAssignee='';
 function openTask(id,prefill){
-  editingTask = id? DB.tasks.find(t=>t.id===id) : {id:null,title:'',team:(prefill&&prefill.team)||currentRole,type:'',cid:(prefill&&prefill.cid)||'',from:ROLES[currentRole].name+' · '+currentRole,priority:'Medium',status:'Open',due:'',notes:'',thread:[]};
+  editingTask = id? DB.tasks.find(t=>t.id===id) : {id:null,title:'',team:(prefill&&prefill.team)||currentRole,type:'',cid:(prefill&&prefill.cid)||'',from:ROLES[currentRole].name+' · '+currentRole,priority:'Medium',status:'Open',due:'',notes:'',assignee:'',thread:[]};
   if(prefill&&prefill.title)editingTask.title=prefill.title;
   if(prefill&&prefill.type)editingTask.type=prefill.type;
   const isNew=!id;
@@ -1617,32 +1817,56 @@ function openTask(id,prefill){
   document.getElementById('tmPri').value=editingTask.priority;
   document.getElementById('tmDue').value=editingTask.due;
   document.getElementById('tmNotes').value=editingTask.notes;
+  origTeam=editingTask.team;origAssignee=editingTask.assignee||'';
+  document.getElementById('tmReason').value='';
+  document.getElementById('tmReassignWrap').style.display='none';
   tmTypes();
   const tw=document.getElementById('tmThreadWrap');
   if(!isNew){tw.classList.remove('hidden');renderThread();}else tw.classList.add('hidden');
   document.getElementById('taskScrim').classList.add('open');
 }
 function tmTypes(){const team=document.getElementById('tmTeam').value;const sel=document.getElementById('tmType');
-  sel.innerHTML=TASK_TYPES[team].map(t=>`<option ${editingTask&&t===editingTask.type?'selected':''}>${t}</option>`).join('');}
+  sel.innerHTML=TASK_TYPES[team].map(t=>`<option ${editingTask&&t===editingTask.type?'selected':''}>${t}</option>`).join('');
+  tmPeople();tmReassignCheck();}
+function tmPeople(){const team=document.getElementById('tmTeam').value;const sel=document.getElementById('tmAssignee');
+  const cur=editingTask?editingTask.assignee:'';
+  sel.innerHTML='<option value="">— Unassigned (whole team) —</option>'+(TEAM_MEMBERS[team]||[]).map(n=>`<option ${n===cur?'selected':''}>${n}</option>`).join('');}
+function tmReassignCheck(){
+  const wrap=document.getElementById('tmReassignWrap');
+  if(!editingTask||editingTask.id===null){wrap.style.display='none';return;}
+  const changed=document.getElementById('tmTeam').value!==origTeam||document.getElementById('tmAssignee').value!==origAssignee;
+  wrap.style.display=changed?'block':'none';}
 function closeTask(){document.getElementById('taskScrim').classList.remove('open');editingTask=null;}
 function saveTask(){
   const title=document.getElementById('tmTitleInput').value.trim();
   if(!title){toast('Add a task title');return;}
+  const isNew=editingTask.id===null;
+  const newTeam=document.getElementById('tmTeam').value,newAssignee=document.getElementById('tmAssignee').value;
+  const reassigned=!isNew&&(newTeam!==origTeam||newAssignee!==origAssignee);
+  const reason=(document.getElementById('tmReason').value||'').trim();
+  if(reassigned&&!reason){toast('Add a reason for the reassignment');document.getElementById('tmReason').focus();return;}
   editingTask.title=title;
-  editingTask.team=document.getElementById('tmTeam').value;
+  editingTask.team=newTeam;
   editingTask.type=document.getElementById('tmType').value;
   editingTask.cid=document.getElementById('tmClient').value;
+  editingTask.assignee=newAssignee;
   editingTask.priority=document.getElementById('tmPri').value;
   editingTask.due=document.getElementById('tmDue').value;
   editingTask.notes=document.getElementById('tmNotes').value.trim();
-  if(editingTask.id===null){if(!DB.nextTask)DB.nextTask=DB.tasks.length+1;editingTask.id=DB.nextTask++;DB.tasks.push(editingTask);toast('Request raised → '+editingTask.team);}
-  else toast('Task saved');
+  if(isNew){if(!DB.nextTask)DB.nextTask=DB.tasks.length+1;editingTask.id=DB.nextTask++;DB.tasks.push(editingTask);toast('Request raised → '+editingTask.team);}
+  else{
+    if(reassigned){
+      const fromL=`${origTeam}${origAssignee?' · '+origAssignee:''}`,toL=`${newTeam}${newAssignee?' · '+newAssignee:''}`;
+      logTask(editingTask,`Reassigned ${fromL} → ${toL} — ${reason}`,true);
+    }
+    toast(reassigned?'Reassigned & saved':'Task saved');
+  }
   save();closeTask();rerender();
 }
 function renderThread(){
   const el=document.getElementById('tmThread');
-  const base=`<div class="msg"><span class="when">${fmtD(editingTask.created)}</span><div class="by">${editingTask.from.split('·')[0].trim()}</div>${editingTask.notes||'(no notes)'}</div>`;
-  el.innerHTML=base+(editingTask.thread||[]).map(m=>`<div class="msg"><span class="when">${fmtD(m.when)}</span><div class="by">${m.by}</div>${m.text}</div>`).join('');
+  const base=`<div class="msg"><span class="when">${fmtD(editingTask.created)}</span><div class="by">${editingTask.from.split('·')[0].trim()} · raised this</div>${editingTask.notes||'(no notes)'}</div>`;
+  el.innerHTML=base+(editingTask.thread||[]).map(m=>`<div class="msg${m.sys?' sys':''}"><span class="when">${fmtD(m.when)}</span><div class="by">${m.by}</div>${m.text}</div>`).join('');
 }
 function addComment(){
   const t=document.getElementById('tmReply').value.trim();if(!t)return;
@@ -1933,7 +2157,7 @@ function badges(){
   const c=counts();
   document.getElementById('navLeads').textContent=c.total;
   document.getElementById('navOut').textContent=c.out;
-  document.getElementById('navSugg').textContent=DB.suggestions.length;
+  document.getElementById('navSugg').textContent=SUGG.length;
   document.getElementById('navClients').textContent=DB.clients.length;
   document.getElementById('navTasks').textContent=DB.tasks.filter(t=>t.team===currentRole&&t.status!=='Done').length;
   document.getElementById('navVerif').textContent=DB.clients.filter(c=>c.compliance.status!=='Verified').length;
