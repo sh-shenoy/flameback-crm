@@ -348,6 +348,31 @@
   .btn.disabled{opacity:.45;cursor:not-allowed}
   .full{grid-column:1 / -1}
 
+  /* knowledge hub */
+  .hub-wrap{display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start}
+  .hub-toc{position:sticky;top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .hub-toc h4{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 8px 4px}
+  .hub-toc a{display:block;font-size:13px;color:var(--navy);padding:6px 9px;border-radius:7px;cursor:pointer;text-decoration:none;font-weight:500}
+  .hub-toc a:hover{background:#eef4f9}
+  .hub-sec{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 26px;box-shadow:var(--shadow);margin-bottom:18px;scroll-margin-top:14px}
+  .hub-sec>h2{font-size:19px;color:var(--navy);margin-bottom:6px}
+  .hub-sec h3{font-size:14px;color:var(--navy);margin:18px 0 8px}
+  .hub-sec p{font-size:13.5px;color:var(--ink);line-height:1.65;margin-bottom:8px}
+  .hub-sec ul,.hub-sec ol{padding-left:20px;margin:8px 0}
+  .hub-sec li{font-size:13.5px;color:var(--ink);line-height:1.6;margin-bottom:6px}
+  .hub-lead{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+  .hub-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  .hub-table th,.hub-table td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+  .hub-table th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;background:#fafbfd}
+  .hub-table td:first-child{font-weight:600;color:var(--navy);white-space:nowrap}
+  .hub-step{display:flex;gap:12px;margin-bottom:11px}
+  .hub-step .n{flex-shrink:0;width:25px;height:25px;border-radius:50%;background:var(--teal);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+  .hub-step .b{font-size:13.5px;line-height:1.55;color:var(--ink)}
+  .hub-step .b b{color:var(--navy)}
+  .hub-pill{display:inline-block;background:#eef4f9;border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;color:var(--navy)}
+  .hub-callout{background:#fff7e8;border:1px solid #f0dcae;border-radius:10px;padding:12px 15px;font-size:13px;color:#7a5a1a;margin:12px 0;line-height:1.6}
+  .hub-callout.tip{background:#eef9f6;border-color:#bfe3db;color:#1d5b50}
+
   /* onboarding flow diagram */
   .flow{max-width:560px;margin:0 auto}
   .fbox{background:#fdf6ef;border:1.5px solid #e8d4bf;border-radius:12px;padding:13px 18px;text-align:center;position:relative}
@@ -493,6 +518,7 @@
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
       <button data-view="out"><span class="ico">⛔</span> Out List <span class="count" id="navOut">0</span></button>
       <button data-view="suggestions"><span class="ico">💡</span> Feature Suggestions <span class="count" id="navSugg">0</span></button>
+      <button data-view="hub"><span class="ico">📖</span> Knowledge Hub</button>
     </nav>
     <div class="side-foot">
       Logged in as<br><strong style="color:#cdd8e6" id="roleName">Shashank</strong><br>
@@ -831,6 +857,230 @@
       </div>
     </section>
 
+    <!-- KNOWLEDGE HUB -->
+    <section id="view-hub" class="hidden">
+      <div class="page-head">
+        <div><h1>Knowledge Hub</h1><p>One place for how the CRM works — every team's duties, how leads and work flow, and how to do the common things. Got a doubt? Start here.</p></div>
+      </div>
+      <div class="hub-wrap">
+        <aside class="hub-toc">
+          <h4>On this page</h4>
+          <a onclick="hubGo('overview')">Overview</a>
+          <a onclick="hubGo('teams')">Teams &amp; people</a>
+          <a onclick="hubGo('duties')">Who does what</a>
+          <a onclick="hubGo('leadflow')">How a lead flows</a>
+          <a onclick="hubGo('fivestrike')">The Five-Strike Rule</a>
+          <a onclick="hubGo('assignment')">App sign-ups &amp; assignment</a>
+          <a onclick="hubGo('onboarding')">Onboarding &amp; the form</a>
+          <a onclick="hubGo('clients')">Active clients</a>
+          <a onclick="hubGo('tasks')">Tasks &amp; handoffs</a>
+          <a onclick="hubGo('compliance')">Compliance checks</a>
+          <a onclick="hubGo('reviews')">Reviews &amp; reminders</a>
+          <a onclick="hubGo('leadership')">Leadership view</a>
+          <a onclick="hubGo('howto')">How do I…?</a>
+          <a onclick="hubGo('glossary')">Glossary</a>
+        </aside>
+        <div class="hub-content">
+
+          <div class="hub-sec" id="hub-overview">
+            <h2>Overview — what this CRM is</h2>
+            <p class="hub-lead">Flameback CRM runs the full client journey for the wealth-management business: from a fresh lead, through onboarding, to an actively managed client — with every team working off the same record.</p>
+            <p>The whole platform is organised around three things: <b>Leads</b> (the sales pipeline), <b>Onboarding</b> (turning an interested person into a signed, funded client), and <b>Clients</b> (the people we now manage money for). Around those sit the supporting teams — Compliance, Operations, Investment — and a cross-team <b>Tasks &amp; Requests</b> system that lets anyone hand work to anyone with a full audit trail.</p>
+            <p>Use the <b>“Viewing as”</b> switcher (top-left) to see the CRM as each role. Each role only sees the menus relevant to their job. This Knowledge Hub is visible to everyone.</p>
+          </div>
+
+          <div class="hub-sec" id="hub-teams">
+            <h2>Teams &amp; people</h2>
+            <p>Every task and request can be assigned to a <b>team</b> and, within it, to a <b>specific person</b>.</p>
+            <table class="hub-table">
+              <thead><tr><th>Team</th><th>What they own</th><th>People</th></tr></thead>
+              <tbody>
+                <tr><td>Sales / RM</td><td>Leads, relationships, onboarding, reviews</td><td>Shashank, Priya Nair, Arjun Mehta, Divya Rao, Karan Shah</td></tr>
+                <tr><td>Lead Desk (Qualifier)</td><td>Qualify app sign-ups, assign the best-fit RM</td><td>Maya Sharma</td></tr>
+                <tr><td>Compliance</td><td>KYC / AML / PAN verification, flags, sign-off</td><td>Neha Gupta, Imran Khan, Sara Thomas</td></tr>
+                <tr><td>Operations</td><td>Account opening, demat, cheques, reconciliations</td><td>Ravi Menon, Deepak Verma, Pooja Nair</td></tr>
+                <tr><td>Investment</td><td>Portfolios, IPS, rebalancing, reviews</td><td>Anjali Rao, Vikas Shah, Rhea Kapoor</td></tr>
+                <tr><td>Leadership</td><td>Oversight of each department, intervention</td><td>Dept heads (Sales, Investment, Compliance, Operations)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="hub-sec" id="hub-duties">
+            <h2>Who does what — duties by role</h2>
+
+            <h3>Relationship Manager (RM)</h3>
+            <ul>
+              <li>Owns the lead end-to-end: logs every call/meeting/WhatsApp, keeps the status and stage current.</li>
+              <li>Drives onboarding — clicks <span class="hub-pill">Start onboarding</span>, fills the form with the client, picks the product fit, sends the agreement for e-sign.</li>
+              <li>Raises requests to Compliance / Operations / Investment when something is needed for their client.</li>
+              <li>Runs the client relationship after funding: review meetings, follow-ups, top-ups.</li>
+            </ul>
+
+            <h3>Qualifier (Lead Desk)</h3>
+            <ul>
+              <li>First touch for people who sign up in the app. Calls them, checks intent and fit.</li>
+              <li>Assigns the <b>best-fit RM</b> (by language / region / capacity / goal) and auto-creates the Google Meet invite.</li>
+              <li>Picks up <b>drop-offs</b> — if someone abandoned self-serve, the Qualifier routes them to an RM to finish.</li>
+            </ul>
+
+            <h3>Compliance</h3>
+            <ul>
+              <li>Verifies identity: Name vs PAN, PAN, DOB against uploaded documents.</li>
+              <li><b>Flags</b> mismatches and raises them back to the RM; <b>verifies</b> when clean.</li>
+              <li>Owns KYC / CKYC / AML / PEP and re-KYC. A client cannot be fully onboarded until Compliance signs off.</li>
+            </ul>
+
+            <h3>Operations</h3>
+            <ul>
+              <li>Opens bank &amp; demat (Zerodha) accounts, collects cheques, handles detail changes and login issues.</li>
+              <li>Reconciles suspense holdings and corporate actions with the custodian.</li>
+            </ul>
+
+            <h3>Investment</h3>
+            <ul>
+              <li>Builds and maintains each client's <b>IPS</b> (Investment Policy Statement) and target allocation.</li>
+              <li>Runs <b>quarterly portfolio reviews</b> and <b>annual IPS reviews</b>; rebalances when drift exceeds target.</li>
+              <li>Handles strategy changes and suspense reconciliation on the investment side.</li>
+            </ul>
+
+            <h3>Leadership / Dept Heads</h3>
+            <ul>
+              <li>See team throughput and a live <b>“Needs your attention”</b> list per department.</li>
+              <li>Intervene directly — reassign, escalate, write off a stuck lead, mark a review handled, nudge a team member. Every action is logged.</li>
+            </ul>
+          </div>
+
+          <div class="hub-sec" id="hub-leadflow">
+            <h2>How a lead flows</h2>
+            <p>A lead moves through four stages. The RM sets the stage; the CRM tracks the rest.</p>
+            <table class="hub-table">
+              <thead><tr><th>Stage</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td>L1 — Cold</td><td>Initial outreach. The <b>Five-Strike Rule</b> applies here.</td></tr>
+                <tr><td>L2 — Hot / Holding</td><td>Has shown interest or is in active consideration.</td></tr>
+                <tr><td>L3 — Onboarding</td><td>Proceeded to onboarding — KYC / paperwork in progress.</td></tr>
+                <tr><td>L4 — Pre-Investment</td><td>Onboarding done, first trades not yet deployed.</td></tr>
+              </tbody>
+            </table>
+            <p>Flow: <span class="hub-pill">Lead captured</span> → worked through L1–L4 → <span class="hub-pill">Onboarding</span> → <span class="hub-pill">Funded client</span>. Leads that go nowhere move to the <b>Out List</b> (with a reason) and can be revived later.</p>
+          </div>
+
+          <div class="hub-sec" id="hub-fivestrike">
+            <h2>The Five-Strike Rule</h2>
+            <p>At <b>L1 only</b>, if a lead has had <b>5 outreach attempts</b> (calls / messages) with no response or interest, the CRM flags it for review. The RM either records that the lead responded (keep) or moves it to the <b>Out List</b>.</p>
+            <div class="hub-callout">Leadership can see all five-strike leads in the <b>Head of Sales</b> view and write them off in one click.</div>
+          </div>
+
+          <div class="hub-sec" id="hub-assignment">
+            <h2>App sign-ups &amp; the Assignment Queue</h2>
+            <p>When someone signs up in the app they choose one of two paths:</p>
+            <ul>
+              <li><b>Self-serve</b> — they proceed on their own.</li>
+              <li><b>RM-assisted (“talk to us”)</b> — they want an advisor to walk them through.</li>
+            </ul>
+            <p>They can switch paths any time, and a self-serve drop-off becomes a recovery lead. New app sign-ups land in the <b>Assignment Queue</b> (Qualifier role):</p>
+            <div class="hub-step"><div class="n">1</div><div class="b">Qualifier opens the lead and reviews captured details &amp; intent.</div></div>
+            <div class="hub-step"><div class="n">2</div><div class="b">Picks the <b>best-fit RM</b> (a recommendation is shown with the reason).</div></div>
+            <div class="hub-step"><div class="n">3</div><div class="b">Confirms — the RM is assigned and a <b>Google Meet</b> invite is auto-created with the client, RM and Qualifier.</div></div>
+          </div>
+
+          <div class="hub-sec" id="hub-onboarding">
+            <h2>Onboarding &amp; the form</h2>
+            <p>The RM-assisted path is driven from the <b>Onboarding</b> menu. Each lead row has a <span class="hub-pill">Start onboarding</span> button (or <span class="hub-pill">Resume · X%</span> if a form already exists).</p>
+            <div class="hub-step"><div class="n">1</div><div class="b">Click <b>Start onboarding</b> — it asks for the client's <b>mobile number first</b>.</div></div>
+            <div class="hub-step"><div class="n">2</div><div class="b">Every form is <b>linked by mobile number</b>. If the client already started (self-serve, or with another RM) the <b>same form resumes</b> with everything pre-filled. For a known app lead the number auto-fills.</div></div>
+            <div class="hub-step"><div class="n">3</div><div class="b">Fill the long form — personal, contact, financial, objective, <b>advisory routing (product fit)</b>, risk profile, bank/demat, nominee, declarations. Progress shows live at the top.</div></div>
+            <div class="hub-step"><div class="n">4</div><div class="b"><b>Advisory routing:</b> based on the conversation the RM selects the product — <b>PMS Lite (RIA)</b>, <b>PMS</b>, or <b>International investing</b> — with a short rationale. If the client already chose in-app, it's pre-filled.</div></div>
+            <div class="hub-step"><div class="n">5</div><div class="b">At the end, send the <b>e-sign request</b> for the agreement (enabled once the form is mostly complete). That advances the client toward signed &amp; funded.</div></div>
+            <div class="hub-callout tip">Because forms are keyed by mobile, a dropped-off client never loses progress — whoever picks them up resumes the exact same form.</div>
+          </div>
+
+          <div class="hub-sec" id="hub-clients">
+            <h2>Active clients</h2>
+            <p>Once funded, a person becomes a <b>Client</b> with a unique Client ID. The profile has tabs: Overview, Investment &amp; SIP, Risk Profile &amp; Agreement, Strategies, KYC, Portfolio (synced from FBC-Admin), Invoices and Call Sync. An onboarding stepper shows where they are (Sign-up → Questionnaire → Agreement → KYC → Invested).</p>
+          </div>
+
+          <div class="hub-sec" id="hub-tasks">
+            <h2>Tasks &amp; handoffs — how to assign work</h2>
+            <p>Anything one team needs from another goes through <b>Tasks &amp; Requests</b>. This is the single place handoffs happen, with a full activity log.</p>
+            <h3>Raising a request</h3>
+            <div class="hub-step"><div class="n">1</div><div class="b">Open <b>Tasks &amp; Requests</b> → <b>+ New request</b> (or raise one from a client).</div></div>
+            <div class="hub-step"><div class="n">2</div><div class="b">Pick the <b>team</b>, the <b>task type</b>, and optionally a <b>specific person</b>. Set priority, due date, link the client, add notes.</div></div>
+            <div class="hub-step"><div class="n">3</div><div class="b">It lands in that team's inbox. Use <b>“Assigned to me”</b> to see what's yours.</div></div>
+            <h3>Working a ticket</h3>
+            <ul>
+              <li>The board has four columns — <b>Open · In Progress · Blocked · Done</b>. Drag a card between columns to change its status.</li>
+              <li>Post updates in the <b>Activity log</b>; status moves and reassignments are recorded there automatically.</li>
+              <li><b>Reassigning requires a reason</b> — changing the team or person reveals a required reason field, logged as part of the history.</li>
+            </ul>
+          </div>
+
+          <div class="hub-sec" id="hub-compliance">
+            <h2>Compliance checks</h2>
+            <p>In the <b>Verification</b> view, Compliance compares each client's entered details against uploaded documents — Name (as per PAN), PAN, DOB — plus agreement, questionnaire, KRA KYC and CKYC.</p>
+            <ul>
+              <li>If something doesn't match, <b>⚠ Raise to RM</b> sends it back to be corrected (a task is created).</li>
+              <li>When everything is clean, <b>Mark verified</b>. A client's compliance status is one of <span class="hub-pill">Verified</span> · <span class="hub-pill">Pending</span> · <span class="hub-pill">Flagged</span>.</li>
+            </ul>
+          </div>
+
+          <div class="hub-sec" id="hub-reviews">
+            <h2>Reviews &amp; reminders</h2>
+            <p>Every funded client has two cadences: an <b>annual IPS review</b> and a <b>quarterly portfolio review</b>. The <b>Reviews &amp; Reminders</b> view shows who is due <b>this week</b> so nothing slips. Reminders/emails go out <b>from the RM's own Gmail</b> via the composer.</p>
+          </div>
+
+          <div class="hub-sec" id="hub-leadership">
+            <h2>Leadership view</h2>
+            <p>The <b>Leadership</b> role has one screen with a department toggle (Sales / Investment / Compliance / Operations). For each department it shows:</p>
+            <ul>
+              <li><b>Team throughput</b> — how much work got done (tickets closed, outreach, meetings, reviews).</li>
+              <li><b>⚠ Needs your attention</b> — the escalation list: five-strike leads, overdue reviews, flagged clients, blocked tickets.</li>
+              <li><b>Scorecard</b> — output per person, to spot who is overloaded or stalled.</li>
+            </ul>
+            <p>Heads can act right there: reassign, escalate, write off, mark a review done, or nudge a team member — all logged.</p>
+          </div>
+
+          <div class="hub-sec" id="hub-howto">
+            <h2>How do I…?</h2>
+            <table class="hub-table">
+              <thead><tr><th>I want to…</th><th>Do this</th></tr></thead>
+              <tbody>
+                <tr><td>Add a lead</td><td>Leads → <b>+ Add Lead</b></td></tr>
+                <tr><td>Log a call/meeting</td><td>Open the lead → the quick-log buttons under Interactions</td></tr>
+                <tr><td>Start / resume onboarding</td><td>Onboarding → <b>Start onboarding</b> / <b>Resume</b> on the lead's row (or the lead drawer)</td></tr>
+                <tr><td>Choose the product</td><td>In the onboarding form → section 5, <b>Advisory routing — product fit</b></td></tr>
+                <tr><td>Send the agreement</td><td>End of the onboarding form → <b>Send e-sign request</b></td></tr>
+                <tr><td>Ask another team for something</td><td>Tasks &amp; Requests → <b>+ New request</b> → pick team &amp; person</td></tr>
+                <tr><td>See what's assigned to me</td><td>Tasks &amp; Requests → inbox filter <b>Assigned to me</b></td></tr>
+                <tr><td>Verify a client (Compliance)</td><td>Verification → review the checklist → <b>Mark verified</b> / <b>Raise to RM</b></td></tr>
+                <tr><td>See who's due for a review</td><td>Reviews &amp; Reminders</td></tr>
+                <tr><td>Switch which role I'm viewing</td><td>Top-left <b>“Viewing as”</b> dropdown</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="hub-sec" id="hub-glossary">
+            <h2>Glossary</h2>
+            <table class="hub-table">
+              <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td>L1–L4</td><td>Lead stages: Cold → Hot/Holding → Onboarding → Pre-Investment.</td></tr>
+                <tr><td>Five-Strike Rule</td><td>5 unanswered outreach attempts at L1 → flag for Out List.</td></tr>
+                <tr><td>IPS</td><td>Investment Policy Statement — the client's objective, target allocation, benchmark &amp; review schedule.</td></tr>
+                <tr><td>KYC / CKYC</td><td>Know Your Customer identity verification; CKYC is the central registry record.</td></tr>
+                <tr><td>AML / PEP</td><td>Anti-Money-Laundering screening / Politically Exposed Person check.</td></tr>
+                <tr><td>PMS</td><td>Portfolio Management Service — discretionary managed portfolio.</td></tr>
+                <tr><td>PMS Lite (RIA)</td><td>Advisory-led, lighter offering under a Registered Investment Adviser.</td></tr>
+                <tr><td>Suspense</td><td>Holdings/cash not yet reconciled to the client account (e.g. a corporate-action bonus).</td></tr>
+                <tr><td>Out List</td><td>Parked / dead leads, with a reason — revivable later.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -1152,12 +1402,12 @@ function call(off,note){const d=new Date();d.setDate(d.getDate()+off);d.setHours
 
 /* roles */
 const ROLES={
-  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','tasks','out','suggestions']},
-  Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','onboarding','calendar','tasks','suggestions']},
-  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions']},
-  Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions']},
-  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','tasks','clients','suggestions']},
-  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','tasks','verification','ips','reminders','calendar','leads','out','suggestions']}
+  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','tasks','out','suggestions','hub']},
+  Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','onboarding','calendar','tasks','suggestions','hub']},
+  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions','hub']},
+  Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
+  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','tasks','clients','suggestions','hub']},
+  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -1268,7 +1518,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','tasks','verification','ips','out','suggestions'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -2248,6 +2498,9 @@ function emailAgreement(cid){const c=DB.clients.find(x=>x.cid===cid);
     body:`Dear ${c.first},\n\nPlease find the link to e-sign your advisory agreement. Once signed, we'll proceed with onboarding.\n\n[Sign agreement]\n\nWarm regards,\n${c.rm}\nFlameback Capital`});}
 
 /* ---------- badges ---------- */
+/* ---------- Knowledge Hub ---------- */
+function hubGo(id){const el=document.getElementById('hub-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
+
 /* ---------- Onboarding form (linked by mobile) ---------- */
 const ONB_FORM=[
   {key:'personal',title:'1 · Personal details',fields:[
