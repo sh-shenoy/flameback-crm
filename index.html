@@ -764,10 +764,6 @@
           </div>
         </div>
         <div>
-          <div class="panel" style="padding:18px 20px;margin-bottom:18px">
-            <h2 style="font-size:14px;color:var(--navy);margin-bottom:14px">Funnel — where leads are right now</h2>
-            <div class="funnel" id="onbFunnel"></div>
-          </div>
           <div class="panel">
             <div class="panel-head"><h2>Leads in onboarding</h2></div>
             <table>
@@ -2111,11 +2107,6 @@ function confirmAssign(){
 
 function renderOnboarding(){
   const pop=active().filter(l=>l.onbStep!==undefined);
-  const max=Math.max(1,...ONB_STEPS.map((_,i)=>pop.filter(l=>l.onbStep===i).length));
-  document.getElementById('onbFunnel').innerHTML=ONB_STEPS.map((s,i)=>{
-    const n=pop.filter(l=>l.onbStep===i).length;
-    return `<div class="frow"><div class="fname">${s}</div><div class="fbar"><i style="width:${n/max*100}%"></i><span>${n}</span></div></div>`;
-  }).join('');
   const inOnb=pop.filter(l=>l.onbStep<7).sort((a,b)=>b.onbStep-a.onbStep);
   document.getElementById('onbBody').innerHTML = inOnb.length? inOnb.map(l=>{
     const f=l.phone?findForm(l.phone):null;
@@ -2285,22 +2276,26 @@ const ONB_FORM=[
     {k:'initial',l:'Initial investment (₹)'},
     {k:'sip',l:'Monthly SIP (₹)'}
   ]},
-  {key:'risk',title:'5 · Risk profile',fields:[
+  {key:'route',title:'5 · Advisory routing — product fit',fields:[
+    {k:'product',l:'Recommended product (RM selects based on the conversation)',t:'select',o:['PMS Lite (RIA)','PMS','International investing'],full:true},
+    {k:'rationale',l:'Why this fit — notes from the conversation',t:'area',full:true}
+  ]},
+  {key:'risk',title:'6 · Risk profile',fields:[
     {k:'q1',l:'If your portfolio dropped 20%, you would…',t:'select',o:['Sell everything','Sell some','Hold','Buy more']},
     {k:'q2',l:'Investment experience',t:'select',o:['None','Some','Experienced','Professional']},
     {k:'q3',l:'Risk appetite',t:'select',o:['Low','Moderate','High','Very high']},
     {k:'band',l:'Resulting risk band',t:'select',o:['Conservative','Moderate','Aggressive']}
   ]},
-  {key:'bank',title:'6 · Bank & demat',fields:[
+  {key:'bank',title:'7 · Bank & demat',fields:[
     {k:'bank',l:'Bank name'},{k:'acct',l:'Account number'},{k:'ifsc',l:'IFSC'},
     {k:'demat',l:'Demat / broker',t:'select',o:['Zerodha — to open','Zerodha — active','Other broker','None yet']}
   ]},
-  {key:'nominee',title:'7 · Nominee',fields:[
+  {key:'nominee',title:'8 · Nominee',fields:[
     {k:'nomName',l:'Nominee name'},
     {k:'nomRel',l:'Relationship',t:'select',o:['Spouse','Parent','Child','Sibling','Other']},
     {k:'nomShare',l:'Share %'}
   ]},
-  {key:'decl',title:'8 · Declarations & FATCA',fields:[
+  {key:'decl',title:'9 · Declarations & FATCA',fields:[
     {k:'pep',l:'Politically exposed person?',t:'select',o:['No','Yes']},
     {k:'taxres',l:'Tax resident of India only?',t:'select',o:['Yes','No']},
     {k:'consent',l:'Consents',t:'checks',o:['Terms & conditions','Privacy policy','Risk disclosure','Fee schedule'],full:true}
@@ -2312,7 +2307,8 @@ function seedForms(){
       personal:{fullName:'Rohit Bansal',dob:'1988-03-14',gender:'Male',pan:'AKLPB9921K',aadhaar:'4421',nationality:'Indian'},
       contact:{mobile:'+91 99888 17263',email:'rohit.b@email.com',addr:'B-204, Hiranandani Gardens, Powai',city:'Mumbai',state:'Maharashtra',pin:'400076'},
       financial:{occupation:'Salaried',income:'₹25–50L',networth:'₹50L–2Cr',sourceFunds:'Salary'},
-      objective:{goal:'Wealth creation',horizon:'5–10 yrs',initial:'1500000',sip:'50000'}
+      objective:{goal:'Wealth creation',horizon:'5–10 yrs',initial:'1500000',sip:'50000'},
+      route:{product:'PMS Lite (RIA)',rationale:'Salaried, ₹25–50L income, 5–10yr wealth-creation goal — start advisory-led with PMS Lite (RIA); revisit full PMS as the corpus grows. Chosen in-app during self-serve before drop-off.'}
     },
     status:'In progress',esign:null,started:dayStr(-5),lastSaved:dayStr(-5)}];
 }
@@ -2387,12 +2383,12 @@ function renderOnbForm(){
 function esignHtml(f){
   const pct=formProgress(f),ready=pct>=85;
   if(f.status==='E-sign sent'||f.status==='Signed'){
-    return `<div class="onb-sec"><div class="onb-sec-h"><span>9 · Agreement & e-sign</span></div>
+    return `<div class="onb-sec"><div class="onb-sec-h"><span>10 · Agreement & e-sign</span></div>
       <div class="esign-box sent"><div class="big">${f.status==='Signed'?'✅ Agreement signed':'✍️ E-sign request sent'}</div>
       <div class="onb-sub">Investment management agreement sent to <b>${esc(f.esign.sentTo)}</b> on ${fmtD(f.esign.when)} via DocuSign (simulated).</div>
       ${f.status==='E-sign sent'?`<button class="btn sm" style="margin-top:12px" onclick="markSigned()">Mark as signed (demo)</button>`:''}</div></div>`;
   }
-  return `<div class="onb-sec"><div class="onb-sec-h"><span>9 · Agreement & e-sign</span></div>
+  return `<div class="onb-sec"><div class="onb-sec-h"><span>10 · Agreement & e-sign</span></div>
     <div class="esign-box"><p><b>Send the agreement for e-signature</b></p>
     <div class="onb-sub" style="margin:6px 0 12px">${ready?'Form is complete enough — send the investment management agreement to the client for electronic signature.':`Finish the form first — ${pct}% complete, need 85%+ to send.`}</div>
     <button class="btn ${ready?'':'disabled'}" ${ready?'':'disabled'} onclick="sendEsign()">✍️ Send e-sign request for agreement</button></div></div>`;
