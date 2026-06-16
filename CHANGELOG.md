@@ -30,6 +30,11 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Investment team sees all clients, performance and the team calendar (not allotted clients), plus tasks.
 - Qualifier focuses on the assignment queue (onboarding tab removed; onboarding is RM-only).
 
+**Tags & content routing**
+- **Client tags** capture pain points / interests (Tax implications, Multi-generational dialogue, Retirement, Real estate, Succession, Children's education, ESG, Liquidity event, Sector focus, Market volatility, …). Add from a preset list or create your own.
+- **AI-suggested tags** — the profile suggests tags inferred from RM notes & meeting transcripts that the RM hasn't added yet; one click to accept.
+- **Content auto-routing** — Marketing uploads an article under **Content**, tags it, and it auto-delivers to every client carrying a matching tag. Each client profile shows the content shared with them; the article shows its reach.
+
 **Marketing**
 - New Marketing team role and view, centred on event planning.
 - **Audience Lists** — reusable, saved segments with **multi-select** filters (pick several cities, distributors, categories, etc. at once). Filter by **Category** (Direct/Retail, HNI/UHNI, Family Office, Corporate, Trust/HUF, NRI, Distributor, Wealth Manager, IFA/Referral, Institution), City, Zone, Account type, Distributor, RM, minimum AUM, and optionally include prospects. Live member preview. Channel partners (distributors, wealth managers, family offices, IFAs) are included in the audience pool.

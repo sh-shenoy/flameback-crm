@@ -389,6 +389,9 @@
   .chipset label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12px;cursor:pointer;background:#fff;color:var(--navy);text-transform:none;letter-spacing:0;font-weight:500}
   .chipset label:has(input:checked){background:#e6f4f1;border-color:#bfe3db;color:#13635f;font-weight:700}
   .chipset input{position:absolute;opacity:0;width:0;height:0}
+  .tagchip{display:inline-flex;align-items:center;gap:6px;background:#eef4f9;border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12px;font-weight:600;color:var(--navy);margin:0 6px 6px 0}
+  .tagchip .x{cursor:pointer;color:var(--muted);font-weight:700}
+  .tagchip.ai{background:#f3ecfb;border-color:#dccdf2;color:#6b3aa8;cursor:pointer}
   .pf-meta{display:grid;grid-template-columns:repeat(4,1fr)}
   .pf-meta>div{padding:12px 16px;border-right:1px solid var(--line)}
   .pf-meta>div:last-child{border-right:none}
@@ -582,6 +585,7 @@
       <button data-view="profiles"><span class="ico">🪪</span> Profiles</button>
       <button data-view="events"><span class="ico">🎟️</span> Events</button>
       <button data-view="lists"><span class="ico">🗂️</span> Audience Lists</button>
+      <button data-view="content"><span class="ico">📰</span> Content</button>
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> Verification <span class="count" id="navVerif">0</span></button>
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
@@ -1175,7 +1179,20 @@
         <div class="avatar" id="pfAvatar">—</div>
         <div style="flex:1"><div class="page-head" style="margin:0"><div><h1 id="pfName" style="font-size:20px">Profile</h1><p id="pfSub">—</p></div></div></div>
       </div>
-      <div class="kv" style="margin:14px 0 18px"><div class="pf-meta" id="pfMeta"></div></div>
+      <div class="kv" style="margin:14px 0 14px"><div class="pf-meta" id="pfMeta"></div></div>
+      <div class="kv" style="margin-bottom:18px"><div class="kv-h">Pain points &amp; interests <span class="lead-sub">— tags route relevant content to this client automatically</span></div>
+        <div style="padding:12px 14px">
+          <div id="pfTags" class="chipset"></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <select id="pfAddTag" class="filter"></select>
+            <button class="btn ghost sm" onclick="pfAddSelectedTag()">+ Add</button>
+            <input id="pfNewTag" placeholder="create a new tag…" style="flex:1;min-width:150px">
+            <button class="btn ghost sm" onclick="pfCreateTag()">Create &amp; add</button>
+          </div>
+          <div id="pfAiTags" style="margin-top:12px"></div>
+          <div id="pfMatched" style="margin-top:14px"></div>
+        </div>
+      </div>
       <div class="tabs" id="pfTabs">
         <button class="active" data-ptab="accounts">Accounts</button>
         <button data-ptab="comm">Communication</button>
@@ -1200,6 +1217,12 @@
       <div class="page-head"><div><h1>Audience Lists</h1><p>Reusable groups of people. Filter clients by city, zone, account type, distributor, RM or AUM — or list distributors. Attach lists to events.</p></div>
         <button class="btn" onclick="openList()">➕ Create list</button></div>
       <div class="panel"><table><thead><tr><th>List</th><th>Categories</th><th>Filters</th><th>Members</th><th></th></tr></thead><tbody id="listsBody"></tbody></table></div>
+    </section>
+    <!-- CONTENT (marketing) -->
+    <section id="view-content" class="hidden">
+      <div class="page-head"><div><h1>Content</h1><p>Upload articles and marketing material, tag them by client pain points / interests — they auto-deliver to every client carrying a matching tag.</p></div>
+        <button class="btn" onclick="openArticle()">➕ Add article</button></div>
+      <div class="panel"><table><thead><tr><th>Article</th><th>Tags</th><th>Date</th><th>Reach</th><th></th></tr></thead><tbody id="contentBody"></tbody></table></div>
     </section>
 
   </main>
@@ -1447,6 +1470,17 @@
   </div>
 </div>
 
+<div class="modal-scrim" id="articleScrim"><div class="modal">
+  <div class="modal-h"><h2 id="artModalTitle">Add article</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeArticle()">×</button></div>
+  <div class="modal-b">
+    <div class="field"><label>Title</label><input id="artName" placeholder="e.g. Tax-efficient harvesting before March 31"></div>
+    <div class="field"><label>Summary / link <span class="lead-sub">(simulated upload)</span></label><textarea id="artSummary" placeholder="Short summary or a link to the PDF / article…"></textarea></div>
+    <div class="field"><label>Tags <span class="lead-sub">— this content auto-delivers to clients carrying any of these tags</span></label><div class="chipset" id="artTags"></div></div>
+    <div class="onb-sub" id="artReach" style="margin-top:8px"></div>
+  </div>
+  <div class="modal-f"><button class="btn ghost" onclick="closeArticle()">Cancel</button><button class="btn" onclick="saveArticle()">Save &amp; deliver</button></div>
+</div></div>
+
 <div class="modal-scrim" id="listScrim"><div class="modal">
   <div class="modal-h"><h2 id="listModalTitle">Create list</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeList()">×</button></div>
   <div class="modal-b">
@@ -1674,7 +1708,7 @@ const ROLES={
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
-  Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','calendar','tasks','suggestions','hub']}
+  Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -1806,6 +1840,14 @@ function migrate(){
     DB.events=seedEvents();DB.nextEvent=DB.events.length+1;
     DB.marketingV2=true;
   }
+  if(!DB.tags){DB.tags=seedTags();}
+  if(!DB.tagsV1){
+    const tagMap={'FBC-1007':['Multi-generational / family dialogue','Real estate'],'FBC-1004':['Retirement planning'],'FBC-1002':['Sector focus']};
+    const noteMap={'FBC-1007':'Son disagrees with the equity-heavy thesis and wants more real estate exposure. Also worried about tax on an upcoming property sale.'};
+    DB.clients.forEach(c=>{if(tagMap[c.cid]&&!c.tags)c.tags=tagMap[c.cid].slice();if(noteMap[c.cid]&&!c.profileNotes)c.profileNotes=noteMap[c.cid];});
+    DB.articles=seedArticles();DB.nextArticle=DB.articles.length+1;
+    DB.tagsV1=true;
+  }
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -1815,7 +1857,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','content','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1831,6 +1873,7 @@ function go(v){
   if(v==='profiles')renderProfiles();
   if(v==='events')renderEvents();
   if(v==='lists')renderLists();
+  if(v==='content')renderContent();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
 function switchRole(r){currentRole=r;applyRole();go(ROLES[r].nav[0]);}
@@ -2862,6 +2905,66 @@ function sendMtg(){
   toast(isMeet?'📅 Meeting scheduled · Google Meet link created · invite emailed via Google Calendar':'📞 Call scheduled · reminder added to your calendar');
 }
 
+/* ---------- Client tags (pain points) + content routing ---------- */
+function seedTags(){return ['Tax implications','Multi-generational / family dialogue','Retirement planning','Real estate','Succession / estate planning','Children education','ESG / sustainable investing','Liquidity event','Sector focus','Market volatility','Philanthropy','NRI / cross-border'];}
+function seedArticles(){return [
+  {id:1,title:'Tax-efficient harvesting before March 31',summary:'How to book losses and rebalance ahead of year-end.',tags:['Tax implications'],date:dayStr(-10)},
+  {id:2,title:'Navigating family conversations about wealth',summary:'A framework for multi-generational alignment when heirs disagree.',tags:['Multi-generational / family dialogue'],date:dayStr(-5)},
+  {id:3,title:'Adding real estate to a diversified portfolio',summary:'REITs vs direct property — trade-offs for HNI portfolios.',tags:['Real estate'],date:dayStr(-2)}
+];}
+const TAG_KEYWORDS=[
+  ['Tax implications',['tax','capital gain','ltcg','stcg','harvest']],
+  ['Retirement planning',['retire','retirement','pension','superannuat']],
+  ['Real estate',['real estate','property','flat','land','realty']],
+  ['Multi-generational / family dialogue',['son','daughter','family','generation','wife','father','heir','children','disagree']],
+  ['Children education',['college','education','school','university','kids']],
+  ['ESG / sustainable investing',['esg','sustainable','green','climate']],
+  ['Liquidity event',['sale','liquidity','exit','ipo','stake']],
+  ['Succession / estate planning',['will','estate','succession','nominee','inherit']],
+  ['Market volatility',['volatil','crash','correction','nervous','worried about the market']]
+];
+function personStore(p){return (p.accounts&&p.accounts[0])||(p.leads&&p.leads[0])||null;}
+function personTags(p){const set=new Set();(p.accounts||[]).forEach(c=>(c.tags||[]).forEach(t=>set.add(t)));(p.leads||[]).forEach(l=>(l.tags||[]).forEach(t=>set.add(t)));return [...set];}
+function suggestTags(p){const store=personStore(p);const notes=((store&&store.profileNotes)||'').toLowerCase();const cmts=(p.leads||[]).map(l=>l.comments||'').join(' ').toLowerCase();const blob=notes+' '+cmts;const have=personTags(p);const out=[];TAG_KEYWORDS.forEach(function(e){if(have.indexOf(e[0])<0&&e[1].some(k=>blob.indexOf(k)>=0))out.push(e[0]);});return out.slice(0,5);}
+function renderPfTags(p){
+  const tags=personTags(p);
+  document.getElementById('pfTags').innerHTML=tags.length?tags.map(t=>'<span class="tagchip">'+esc(t)+' <span class="x" onclick="pfRemoveTag(\''+t.replace(/'/g,"")+'\')">×</span></span>').join(''):'<span class="lead-sub">No tags yet — add the client\'s pain points / interests, or accept an AI suggestion below.</span>';
+  const avail=(DB.tags||[]).filter(t=>tags.indexOf(t)<0);
+  document.getElementById('pfAddTag').innerHTML='<option value="">Pick an existing tag…</option>'+avail.map(t=>'<option>'+esc(t)+'</option>').join('');
+  document.getElementById('pfNewTag').value='';
+  const sugg=suggestTags(p);
+  document.getElementById('pfAiTags').innerHTML=sugg.length?('<div class="lead-sub" style="margin-bottom:6px">✨ AI-suggested from notes &amp; meeting transcripts — RM to confirm:</div>'+sugg.map(t=>'<span class="tagchip ai" onclick="pfAcceptTag(\''+t.replace(/'/g,"")+'\')">✨ '+esc(t)+' &nbsp;+ accept</span>').join('')):'';
+  const arts=(DB.articles||[]).filter(a=>(a.tags||[]).some(t=>tags.indexOf(t)>=0));
+  document.getElementById('pfMatched').innerHTML='<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">📨 Content auto-shared with this client (matched by tags)</div>'+(arts.length?arts.map(a=>'<div class="doc-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span class="nm">📄 '+esc(a.title)+'</span> <span class="lead-sub">'+(a.tags||[]).join(', ')+' · '+fmtD(a.date)+'</span></div>').join(''):'<span class="lead-sub">No matching content yet.</span>');
+}
+function pfAddTag(t){const s=personStore(CURRENT_PROFILE);if(!s)return;s.tags=s.tags||[];if(s.tags.indexOf(t)<0)s.tags.push(t);if((DB.tags||[]).indexOf(t)<0){DB.tags=DB.tags||[];DB.tags.push(t);}save();renderPfTags(CURRENT_PROFILE);}
+function pfAddSelectedTag(){const v=document.getElementById('pfAddTag').value;if(v)pfAddTag(v);else toast('Pick a tag');}
+function pfCreateTag(){const v=(document.getElementById('pfNewTag').value||'').trim();if(v){pfAddTag(v);toast('Tag created: '+v);}else toast('Type a tag name');}
+function pfAcceptTag(t){pfAddTag(t);toast('Tag added: '+t);}
+function pfRemoveTag(t){const p=CURRENT_PROFILE;(p.accounts||[]).concat(p.leads||[]).forEach(o=>{if(o.tags)o.tags=o.tags.filter(x=>x!==t);});save();renderPfTags(p);}
+function articleReach(a){const set=new Set();DB.clients.forEach(c=>{if((c.tags||[]).some(t=>(a.tags||[]).indexOf(t)>=0))set.add(digits(c.contact)||c.cid);});return set.size;}
+function renderContent(){
+  const arts=DB.articles||[];
+  document.getElementById('contentBody').innerHTML=arts.length?arts.map(a=>{const r=articleReach(a);return '<tr><td class="lead-name">'+esc(a.title)+'</td><td class="lead-sub">'+((a.tags||[]).join(', ')||'—')+'</td><td>'+(a.date?fmtD(a.date):'—')+'</td><td><b>'+r+'</b> client'+(r!==1?'s':'')+'</td><td style="white-space:nowrap"><button class="btn ghost sm" onclick="openArticle('+a.id+')">Edit</button> <button class="btn ghost sm" onclick="viewReach('+a.id+')">Who</button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty">No articles yet — add one and tag it; it auto-delivers to matching clients.</td></tr>';
+  badges();
+}
+function viewReach(id){const a=(DB.articles||[]).find(x=>x.id===id);if(!a)return;const seen=new Set(),names=[];DB.clients.forEach(c=>{if((c.tags||[]).some(t=>(a.tags||[]).indexOf(t)>=0)){const k=digits(c.contact)||c.cid;if(!seen.has(k)){seen.add(k);names.push(c.holder||(c.first+' '+c.last));}}});toast(a.title+' → '+(names.join(', ')||'no matching clients yet'));}
+let EDIT_ART=null;
+function openArticle(id){
+  EDIT_ART=id?(DB.articles||[]).find(x=>x.id===id):null;
+  const a=EDIT_ART||{title:'',summary:'',tags:[]};
+  document.getElementById('artModalTitle').textContent=EDIT_ART?'Edit article':'Add article';
+  document.getElementById('artName').value=a.title||'';
+  document.getElementById('artSummary').value=a.summary||'';
+  document.getElementById('artTags').innerHTML=(DB.tags||[]).map(t=>'<label><input type="checkbox" value="'+esc(t)+'" '+((a.tags||[]).indexOf(t)>=0?'checked':'')+' onchange="artReach()"> '+t+'</label>').join('');
+  artReach();
+  document.getElementById('articleScrim').classList.add('open');
+}
+function closeArticle(){document.getElementById('articleScrim').classList.remove('open');EDIT_ART=null;}
+function artTagsSelected(){return [...document.querySelectorAll('#artTags input:checked')].map(c=>c.value);}
+function artReach(){const tags=artTagsSelected();const set=new Set();DB.clients.forEach(c=>{if((c.tags||[]).some(t=>tags.indexOf(t)>=0))set.add(digits(c.contact)||c.cid);});document.getElementById('artReach').textContent=tags.length?('📨 Auto-delivers to '+set.size+' client'+(set.size!==1?'s':'')+' with matching tags'):'Add tags to target clients by their pain points / interests.';}
+function saveArticle(){const title=(document.getElementById('artName').value||'').trim();if(!title){toast('Title needed');return;}const o={title,summary:document.getElementById('artSummary').value,tags:artTagsSelected(),date:dayStr(0)};if(EDIT_ART){Object.assign(EDIT_ART,o);}else{if(!DB.nextArticle)DB.nextArticle=((DB.articles||[]).length+1);DB.articles=DB.articles||[];DB.articles.push(Object.assign({id:DB.nextArticle++},o));}save();closeArticle();renderContent();toast('Article saved & delivered to matching clients');}
+
 /* ---------- Marketing: audience lists + events ---------- */
 const MKT_CATEGORIES=['Direct / Retail','HNI / UHNI','Family Office','Corporate Account','Trust / HUF','NRI','Distributor','Wealth Manager','IFA / Referral','Institution'];
 function zoneOf(city){const c=(city||'').toLowerCase();
@@ -3036,8 +3139,8 @@ function renderProfilePage(){
     `<div><span class="k">Date of birth</span><span class="v">${p.dob?fmtD(p.dob):'—'}</span></div>`+
     `<div><span class="k">RM</span><span class="v">${p.rm||'unassigned'}</span></div>`+
     `<div><span class="k">Source</span><span class="v">${p.source||'—'}</span></div>`+
-    `<div><span class="k">Marketing tags</span><span class="v"><span class="lead-sub">from marketing — coming soon</span></span></div>`;
-  renderPfAccounts(p);renderPfComm(p);renderPfTimeline(p);renderPfNotes(p);
+    `<div><span class="k">Accounts</span><span class="v">${p.accounts.length}</span></div>`;
+  renderPfTags(p);renderPfAccounts(p);renderPfComm(p);renderPfTimeline(p);renderPfNotes(p);
   document.querySelectorAll('#pfTabs button').forEach((x,i)=>x.classList.toggle('active',i===0));
   document.querySelectorAll('.ptab-pane').forEach((x,i)=>x.classList.toggle('active',x.id==='ptab-accounts'));
 }
