@@ -385,6 +385,10 @@
   .ptag.pt-pms{background:#e7eefb;color:#2f54a8;border-color:#c7d6f3}
   .ptag.pt-intl{background:#f3ecfb;color:#6b3aa8;border-color:#dccdf2}
   .rel-chip{display:inline-block;font-size:10px;font-weight:700;background:#fdf0e3;color:#a96a16;border:1px solid #f0dcae;border-radius:10px;padding:0 7px;vertical-align:middle}
+  .chipset{display:flex;flex-wrap:wrap;gap:6px}
+  .chipset label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12px;cursor:pointer;background:#fff;color:var(--navy);text-transform:none;letter-spacing:0;font-weight:500}
+  .chipset label:has(input:checked){background:#e6f4f1;border-color:#bfe3db;color:#13635f;font-weight:700}
+  .chipset input{position:absolute;opacity:0;width:0;height:0}
   .pf-meta{display:grid;grid-template-columns:repeat(4,1fr)}
   .pf-meta>div{padding:12px 16px;border-right:1px solid var(--line)}
   .pf-meta>div:last-child{border-right:none}
@@ -1195,7 +1199,7 @@
     <section id="view-lists" class="hidden">
       <div class="page-head"><div><h1>Audience Lists</h1><p>Reusable groups of people. Filter clients by city, zone, account type, distributor, RM or AUM — or list distributors. Attach lists to events.</p></div>
         <button class="btn" onclick="openList()">➕ Create list</button></div>
-      <div class="panel"><table><thead><tr><th>List</th><th>Audience</th><th>Filters</th><th>Members</th><th></th></tr></thead><tbody id="listsBody"></tbody></table></div>
+      <div class="panel"><table><thead><tr><th>List</th><th>Categories</th><th>Filters</th><th>Members</th><th></th></tr></thead><tbody id="listsBody"></tbody></table></div>
     </section>
 
   </main>
@@ -1446,25 +1450,19 @@
 <div class="modal-scrim" id="listScrim"><div class="modal">
   <div class="modal-h"><h2 id="listModalTitle">Create list</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeList()">×</button></div>
   <div class="modal-b">
-    <div class="field"><label>List name</label><input id="lsName" placeholder="e.g. Bangalore — PMS clients"></div>
-    <div class="field"><label>Who are the members?</label><select id="lsAudience" onchange="lsAudienceChange()"><option>Clients</option><option>Distributors</option></select></div>
+    <div class="field"><label>List name</label><input id="lsName" placeholder="e.g. Bangalore + Hyderabad — PMS & Family Offices"></div>
+    <div class="field"><label>Categories <span class="lead-sub">— who are the members? pick any</span></label><div class="chipset" id="lsCats"></div></div>
+    <div class="field"><label>Cities <span class="lead-sub">— pick any</span></label><div class="chipset" id="lsCities"></div></div>
+    <div class="field"><label>Zones</label><div class="chipset" id="lsZones"></div></div>
+    <div class="field"><label>Account types</label><div class="chipset" id="lsAccounts"></div></div>
+    <div class="field"><label>Distributors</label><div class="chipset" id="lsDists"></div></div>
+    <div class="field"><label>RMs</label><div class="chipset" id="lsRMs"></div></div>
     <div class="grid2">
-      <div class="field"><label>City</label><select id="lsCity" onchange="lsPreview()"></select></div>
-      <div class="field"><label>Zone</label><select id="lsZone" onchange="lsPreview()"><option>All</option><option>North</option><option>South</option><option>West</option><option>East</option></select></div>
-    </div>
-    <div id="lsClientFilters">
-      <div class="grid2">
-        <div class="field"><label>Account type</label><select id="lsAccount" onchange="lsPreview()"><option>All</option><option>PMS</option><option>PMS Lite (RIA)</option><option>International investing</option></select></div>
-        <div class="field"><label>Distributor</label><select id="lsDist" onchange="lsPreview()"></select></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>RM</label><select id="lsRM" onchange="lsPreview()"></select></div>
-        <div class="field"><label>Minimum AUM</label><select id="lsMin" onchange="lsPreview()"><option value="0">Any</option><option value="5000000">&ge; ₹50L</option><option value="10000000">&ge; ₹1Cr</option><option value="20000000">&ge; ₹2Cr</option></select></div>
-      </div>
-      <div class="field"><label class="checks" style="text-transform:none;letter-spacing:0;font-weight:500"><input type="checkbox" id="lsProspects" onchange="lsPreview()"> Include prospects (leads), not just clients</label></div>
+      <div class="field"><label>Minimum AUM</label><select id="lsMin" onchange="lsPreview()"><option value="0">Any</option><option value="5000000">&ge; ₹50L</option><option value="10000000">&ge; ₹1Cr</option><option value="20000000">&ge; ₹2Cr</option></select></div>
+      <div class="field"><label class="checks" style="text-transform:none;letter-spacing:0;font-weight:500"><input type="checkbox" id="lsProspects" onchange="lsPreview()"> Include prospects (leads)</label></div>
     </div>
     <div class="section-h">Preview <span class="lead-sub" id="lsCount"></span></div>
-    <div id="lsPreviewBox" style="background:#f6f9fc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;max-height:190px;overflow:auto"></div>
+    <div id="lsPreviewBox" style="background:#f6f9fc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;max-height:180px;overflow:auto"></div>
   </div>
   <div class="modal-f"><button class="btn ghost" onclick="closeList()">Cancel</button><button class="btn" onclick="saveList()">Save list</button></div>
 </div></div>
@@ -1799,6 +1797,14 @@ function migrate(){
     DB.lists=seedLists();DB.nextList=DB.lists.length+1;
     DB.events=seedEvents();DB.nextEvent=DB.events.length+1;
     DB.marketingV1=true;
+  }
+  if(!DB.marketingV2){
+    const segMap={'FBC-1001':'HNI / UHNI','FBC-1002':'Direct / Retail','FBC-1003':'Direct / Retail','FBC-1004':'HNI / UHNI','FBC-1005':'NRI','FBC-1006':'Corporate Account','FBC-1007':'Family Office','FBC-1008':'Family Office','FBC-1009':'Family Office'};
+    DB.clients.forEach(c=>{if(!c.segment)c.segment=segMap[c.cid]||'Direct / Retail';});
+    DB.distributors=seedDistributors();
+    DB.lists=seedLists();DB.nextList=DB.lists.length+1;
+    DB.events=seedEvents();DB.nextEvent=DB.events.length+1;
+    DB.marketingV2=true;
   }
   save();
 }
@@ -2857,6 +2863,7 @@ function sendMtg(){
 }
 
 /* ---------- Marketing: audience lists + events ---------- */
+const MKT_CATEGORIES=['Direct / Retail','HNI / UHNI','Family Office','Corporate Account','Trust / HUF','NRI','Distributor','Wealth Manager','IFA / Referral','Institution'];
 function zoneOf(city){const c=(city||'').toLowerCase();
   if(/bangalore|bengaluru|chennai|hyderabad|kochi|coimbatore|mysore/.test(c))return 'South';
   if(/delhi|gurgaon|gurugram|noida|chandigarh|jaipur|lucknow/.test(c))return 'North';
@@ -2864,86 +2871,94 @@ function zoneOf(city){const c=(city||'').toLowerCase();
   if(/kolkata|bhubaneswar|guwahati|patna|ranchi/.test(c))return 'East';
   return 'Other';}
 function seedDistributors(){return [
-  {name:'ABC Wealth',city:'Bangalore',email:'partners@abcwealth.in'},
-  {name:'ABC Wealth',city:'Mumbai',email:'mumbai@abcwealth.in'},
-  {name:'PineBridge Distributors',city:'Chennai',email:'hello@pinebridge.in'},
-  {name:'XYZ Capital',city:'Hyderabad',email:'desk@xyzcapital.in'},
-  {name:'Summit Partners',city:'Bangalore',email:'contact@summitpartners.in'},
-  {name:'NorthStar Advisors',city:'Delhi',email:'team@northstar.in'}
+  {name:'ABC Wealth',city:'Bangalore',email:'partners@abcwealth.in',type:'Distributor'},
+  {name:'PineBridge Distributors',city:'Chennai',email:'hello@pinebridge.in',type:'Distributor'},
+  {name:'XYZ Capital',city:'Hyderabad',email:'desk@xyzcapital.in',type:'Wealth Manager'},
+  {name:'Summit Partners',city:'Bangalore',email:'contact@summitpartners.in',type:'Wealth Manager'},
+  {name:'NorthStar Advisors',city:'Delhi',email:'team@northstar.in',type:'IFA / Referral'},
+  {name:'Meridian Family Office',city:'Mumbai',email:'office@meridianfo.in',type:'Family Office'},
+  {name:'Anchor IFA Network',city:'Bangalore',email:'hello@anchorifa.in',type:'IFA / Referral'}
 ];}
-function seedLists(){let id=1;const mk=(name,audience,f)=>Object.assign({id:id++,name,audience},f);
+function seedLists(){let id=1;const mk=(name,f)=>Object.assign({id:id++,name,categories:[],cities:[],zones:[],accounts:[],distributors:[],rms:[],minVal:0,includeProspects:false},f);
   return [
-    mk('Bangalore — PMS','Clients',{city:'Bangalore',zone:'All',account:'PMS',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
-    mk('PMS — South zone','Clients',{city:'All',zone:'South',account:'PMS',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
-    mk('RIA — Bangalore','Clients',{city:'Bangalore',zone:'All',account:'PMS Lite (RIA)',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
-    mk('ALL Bangalore','Clients',{city:'Bangalore',zone:'All',account:'All',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
-    mk('ABC Wealth — all clients','Clients',{city:'All',zone:'All',account:'All',distributor:'ABC Wealth',rm:'All',minVal:0,includeProspects:false}),
-    mk('Bangalore — all distributors','Distributors',{city:'Bangalore',zone:'All'})
+    mk('Bangalore — PMS',{cities:['Bangalore'],accounts:['PMS']}),
+    mk('PMS — South zone',{zones:['South'],accounts:['PMS']}),
+    mk('RIA — Bangalore',{cities:['Bangalore'],accounts:['PMS Lite (RIA)']}),
+    mk('ALL Bangalore',{cities:['Bangalore']}),
+    mk('ABC Wealth — all clients',{distributors:['ABC Wealth']}),
+    mk('Family Offices — all',{categories:['Family Office']}),
+    mk('Distributors & Wealth Managers',{categories:['Distributor','Wealth Manager']})
   ];}
 function seedEvents(){return [{id:1,name:'Bangalore PMS Investor Meet',lead:'Tanvi Shah',colead:'Shashank',date:dayStr(20),venue:'Taj MG Road, Bangalore',groups:[1,3]}];}
 function distinctCities(){const set=new Set(['Bangalore','Mumbai','Delhi','Chennai','Hyderabad','Pune','Kolkata']);DB.clients.forEach(c=>{if(c.kyc&&c.kyc.city)set.add(c.kyc.city);});(DB.distributors||[]).forEach(d=>set.add(d.city));return [...set].sort();}
-function distinctDistributors(){const set=new Set(['Direct']);DB.clients.forEach(c=>{if(c.distributor)set.add(c.distributor);});(DB.distributors||[]).forEach(d=>set.add(d.name));return [...set].sort();}
+function distinctDistributors(){const set=new Set(['Direct']);DB.clients.forEach(c=>{if(c.distributor)set.add(c.distributor);});(DB.distributors||[]).forEach(d=>{if(d.type==='Distributor')set.add(d.name);});return [...set].sort();}
+function inSet(arr,val){return !arr||arr.length===0||arr.indexOf(val)>=0;}
 function resolveList(list){
-  if(list.audience==='Distributors'){
-    return (DB.distributors||[]).filter(d=>!list.city||list.city==='All'||d.city===list.city).map(d=>({name:d.name,email:d.email,sub:d.city+' · Distributor'}));
-  }
-  const out=[];
+  const out=[],anyAcct=list.accounts&&list.accounts.length,anyDist=list.distributors&&list.distributors.length,anyRm=list.rms&&list.rms.length,anyCity=list.cities&&list.cities.length,anyZone=list.zones&&list.zones.length;
   DB.clients.forEach(c=>{
-    const city=(c.kyc&&c.kyc.city)||'',dist=c.distributor||'Direct';
-    if(list.account&&list.account!=='All'&&c.product!==list.account)return;
-    if(list.city&&list.city!=='All'&&city!==list.city)return;
-    if(list.zone&&list.zone!=='All'&&zoneOf(city)!==list.zone)return;
-    if(list.distributor&&list.distributor!=='All'&&dist!==list.distributor)return;
-    if(list.rm&&list.rm!=='All'&&c.rm!==list.rm)return;
+    const city=(c.kyc&&c.kyc.city)||'',cat=c.segment||'Direct / Retail',dist=c.distributor||'Direct';
+    if(!inSet(list.categories,cat))return;
+    if(!inSet(list.cities,city))return;
+    if(!inSet(list.zones,zoneOf(city)))return;
+    if(anyAcct&&list.accounts.indexOf(c.product)<0)return;
+    if(anyDist&&list.distributors.indexOf(dist)<0)return;
+    if(anyRm&&list.rms.indexOf(c.rm)<0)return;
     if(list.minVal&&!(c.portfolio&&c.portfolio.current>=list.minVal))return;
-    out.push({name:(c.first+' '+(c.last||'')).trim(),email:c.email,sub:(city||'—')+' · '+(c.product||'—')+' · '+dist});
+    out.push({name:(c.first+' '+(c.last||'')).trim(),email:c.email,sub:cat+' · '+(city||'—')+' · '+(c.product||'—')});
   });
-  if(list.includeProspects){
+  (DB.distributors||[]).forEach(d=>{
+    if(anyAcct||anyDist||anyRm||list.minVal)return;
+    const cat=d.type||'Distributor';
+    if(!inSet(list.categories,cat))return;
+    if(!inSet(list.cities,d.city))return;
+    if(!inSet(list.zones,zoneOf(d.city)))return;
+    out.push({name:d.name,email:d.email,sub:cat+' · '+d.city});
+  });
+  if(list.includeProspects&&!anyAcct&&!anyDist&&!anyCity&&!anyZone){
     DB.leads.filter(l=>!l.out&&!(l.appUser&&!l.qualified)).forEach(l=>{
-      if(list.account&&list.account!=='All')return;
-      if(list.city&&list.city!=='All')return;
-      if(list.zone&&list.zone!=='All')return;
-      if(list.distributor&&list.distributor!=='All')return;
-      if(list.rm&&list.rm!=='All'&&l.rm!==list.rm)return;
+      if(anyRm&&list.rms.indexOf(l.rm)<0)return;
       out.push({name:l.name,email:l.email||'',sub:'Prospect · '+(l.stage||'')});
     });
   }
   return out;
 }
-function listSummary(l){
-  if(l.audience==='Distributors')return 'Distributors · City: '+(l.city||'All');
-  const p=[];if(l.city&&l.city!=='All')p.push(l.city);if(l.zone&&l.zone!=='All')p.push(l.zone+' zone');if(l.account&&l.account!=='All')p.push(l.account);if(l.distributor&&l.distributor!=='All')p.push(l.distributor);if(l.rm&&l.rm!=='All')p.push('RM '+l.rm);if(l.minVal)p.push('AUM ≥ '+fmtINR(l.minVal));if(l.includeProspects)p.push('+prospects');
-  return p.length?p.join(' · '):'All clients';
-}
+function listSummary(l){const p=[];
+  if(l.categories&&l.categories.length)p.push(l.categories.join(' / '));
+  if(l.cities&&l.cities.length)p.push(l.cities.join(' / '));
+  if(l.zones&&l.zones.length)p.push(l.zones.join(' / ')+' zone');
+  if(l.accounts&&l.accounts.length)p.push(l.accounts.join(' / '));
+  if(l.distributors&&l.distributors.length)p.push(l.distributors.join(' / '));
+  if(l.rms&&l.rms.length)p.push('RM '+l.rms.join('/'));
+  if(l.minVal)p.push('AUM ≥ '+fmtINR(l.minVal));
+  if(l.includeProspects)p.push('+prospects');
+  return p.length?p.join(' · '):'Everyone';}
 function renderLists(){
   const lists=DB.lists||[];
-  document.getElementById('listsBody').innerHTML=lists.length?lists.map(l=>`<tr><td class="lead-name">${l.name}</td><td><span class="src">${l.audience}</span></td><td class="lead-sub">${listSummary(l)}</td><td><b>${resolveList(l).length}</b></td><td style="white-space:nowrap"><button class="btn ghost sm" onclick="openList(${l.id})">Edit</button> <button class="btn ghost sm" onclick="delList(${l.id})">Delete</button></td></tr>`).join(''):`<tr><td colspan="5" class="empty">No lists yet — create one to segment your audience.</td></tr>`;
+  document.getElementById('listsBody').innerHTML=lists.length?lists.map(l=>`<tr><td class="lead-name">${l.name}</td><td class="lead-sub">${(l.categories&&l.categories.length)?l.categories.join(', '):'All'}</td><td class="lead-sub">${listSummary(l)}</td><td><b>${resolveList(l).length}</b></td><td style="white-space:nowrap"><button class="btn ghost sm" onclick="openList(${l.id})">Edit</button> <button class="btn ghost sm" onclick="delList(${l.id})">Delete</button></td></tr>`).join(''):`<tr><td colspan="5" class="empty">No lists yet — create one to segment your audience.</td></tr>`;
   badges();
 }
 let EDIT_LIST=null;
+function chipset(id,opts,sel){document.getElementById(id).innerHTML=opts.map(o=>'<label><input type="checkbox" value="'+esc(o)+'" '+(sel.indexOf(o)>=0?'checked':'')+' onchange="lsPreview()"> '+o+'</label>').join('');}
+function chipVals(id){return [...document.querySelectorAll('#'+id+' input:checked')].map(c=>c.value);}
 function openList(id){
   EDIT_LIST=id?(DB.lists||[]).find(x=>x.id===id):null;
   document.getElementById('listModalTitle').textContent=EDIT_LIST?'Edit list':'Create list';
-  document.getElementById('lsCity').innerHTML=['All'].concat(distinctCities()).map(c=>`<option>${c}</option>`).join('');
-  document.getElementById('lsDist').innerHTML=['All'].concat(distinctDistributors()).map(d=>`<option>${d}</option>`).join('');
-  document.getElementById('lsRM').innerHTML=['All'].concat(RMS).map(r=>`<option>${r}</option>`).join('');
-  const l=EDIT_LIST||{name:'',audience:'Clients',city:'All',zone:'All',account:'All',distributor:'All',rm:'All',minVal:0,includeProspects:false};
+  const l=EDIT_LIST||{name:'',categories:[],cities:[],zones:[],accounts:[],distributors:[],rms:[],minVal:0,includeProspects:false};
   document.getElementById('lsName').value=l.name||'';
-  document.getElementById('lsAudience').value=l.audience||'Clients';
-  document.getElementById('lsCity').value=l.city||'All';
-  document.getElementById('lsZone').value=l.zone||'All';
-  document.getElementById('lsAccount').value=l.account||'All';
-  document.getElementById('lsDist').value=l.distributor||'All';
-  document.getElementById('lsRM').value=l.rm||'All';
+  chipset('lsCats',MKT_CATEGORIES,l.categories||[]);
+  chipset('lsCities',distinctCities(),l.cities||[]);
+  chipset('lsZones',['North','South','West','East'],l.zones||[]);
+  chipset('lsAccounts',['PMS','PMS Lite (RIA)','International investing'],l.accounts||[]);
+  chipset('lsDists',distinctDistributors(),l.distributors||[]);
+  chipset('lsRMs',RMS,l.rms||[]);
   document.getElementById('lsMin').value=String(l.minVal||0);
   document.getElementById('lsProspects').checked=!!l.includeProspects;
-  lsAudienceChange();
+  lsPreview();
   document.getElementById('listScrim').classList.add('open');
 }
 function closeList(){document.getElementById('listScrim').classList.remove('open');EDIT_LIST=null;}
-function lsAudienceChange(){document.getElementById('lsClientFilters').style.display=document.getElementById('lsAudience').value==='Distributors'?'none':'block';lsPreview();}
-function readListForm(){return {audience:document.getElementById('lsAudience').value,city:document.getElementById('lsCity').value,zone:document.getElementById('lsZone').value,account:document.getElementById('lsAccount').value,distributor:document.getElementById('lsDist').value,rm:document.getElementById('lsRM').value,minVal:+document.getElementById('lsMin').value,includeProspects:document.getElementById('lsProspects').checked};}
-function lsPreview(){const l=readListForm();const m=resolveList(l);document.getElementById('lsCount').textContent='— '+m.length+' member'+(m.length!==1?'s':'');document.getElementById('lsPreviewBox').innerHTML=m.length?m.slice(0,40).map(x=>`<div style="padding:3px 0"><b>${x.name}</b> <span class="lead-sub">${x.email||''} · ${x.sub}</span></div>`).join('')+(m.length>40?`<div class="lead-sub" style="margin-top:6px">…and ${m.length-40} more</div>`:''):'<span class="lead-sub">No members match these filters.</span>';}
+function readListForm(){return {categories:chipVals('lsCats'),cities:chipVals('lsCities'),zones:chipVals('lsZones'),accounts:chipVals('lsAccounts'),distributors:chipVals('lsDists'),rms:chipVals('lsRMs'),minVal:+document.getElementById('lsMin').value,includeProspects:document.getElementById('lsProspects').checked};}
+function lsPreview(){const l=readListForm();const m=resolveList(l);document.getElementById('lsCount').textContent='— '+m.length+' member'+(m.length!==1?'s':'');document.getElementById('lsPreviewBox').innerHTML=m.length?m.slice(0,40).map(x=>'<div style="padding:3px 0"><b>'+x.name+'</b> <span class="lead-sub">'+(x.email||'')+' · '+x.sub+'</span></div>').join('')+(m.length>40?'<div class="lead-sub" style="margin-top:6px">…and '+(m.length-40)+' more</div>':''):'<span class="lead-sub">No members match these filters.</span>';}
 function saveList(){const name=(document.getElementById('lsName').value||'').trim();if(!name){toast('Name the list');return;}const f=readListForm();if(EDIT_LIST){Object.assign(EDIT_LIST,f,{name});}else{if(!DB.nextList)DB.nextList=((DB.lists||[]).length+1);DB.lists=DB.lists||[];DB.lists.push(Object.assign({id:DB.nextList++,name},f));}save();closeList();renderLists();toast('List saved');}
 function delList(id){DB.lists=(DB.lists||[]).filter(x=>x.id!==id);save();renderLists();toast('List deleted');}
 function renderEvents(){

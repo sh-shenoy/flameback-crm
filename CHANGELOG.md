@@ -32,7 +32,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 **Marketing**
 - New Marketing team role and view, centred on event planning.
-- **Audience Lists** — reusable, saved segments. Build a list by filtering Clients (city, zone, account type, distributor, RM, minimum AUM, optionally include prospects) or by listing Distributors (by city). Live member preview. Examples seeded: Bangalore-PMS, PMS-South-zone, RIA-Bangalore, ALL-Bangalore, ABC-Wealth clients, Bangalore distributors.
+- **Audience Lists** — reusable, saved segments with **multi-select** filters (pick several cities, distributors, categories, etc. at once). Filter by **Category** (Direct/Retail, HNI/UHNI, Family Office, Corporate, Trust/HUF, NRI, Distributor, Wealth Manager, IFA/Referral, Institution), City, Zone, Account type, Distributor, RM, minimum AUM, and optionally include prospects. Live member preview. Channel partners (distributors, wealth managers, family offices, IFAs) are included in the audience pool.
 - **Events** — name the event, assign a lead and co-lead, attach one or more audience lists as groups, set date/venue; shows the unique invitee count (deduped across groups).
 
 **Knowledge Hub**
