@@ -562,6 +562,7 @@
         <option value="Compliance">Compliance Team</option>
         <option value="Operations">Operations Team</option>
         <option value="Investment">Investment Team</option>
+        <option value="Marketing">Marketing Team</option>
         <option value="Owner">Leadership — Dept Heads</option>
       </select>
     </div>
@@ -575,6 +576,8 @@
       <button data-view="reminders"><span class="ico">🔔</span> Reviews & Reminders <span class="count" id="navRem">0</span></button>
       <button data-view="clients"><span class="ico">💼</span> Clients <span class="count" id="navClients">0</span></button>
       <button data-view="profiles"><span class="ico">🪪</span> Profiles</button>
+      <button data-view="events"><span class="ico">🎟️</span> Events</button>
+      <button data-view="lists"><span class="ico">🗂️</span> Audience Lists</button>
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> Verification <span class="count" id="navVerif">0</span></button>
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
@@ -1181,6 +1184,20 @@
       <div class="ptab-pane" id="ptab-notes"></div>
     </section>
 
+    <!-- EVENTS (marketing) -->
+    <section id="view-events" class="hidden">
+      <div class="page-head"><div><h1>Events</h1><p>Plan events and campaigns — name it, assign a lead and co-lead, and attach audience groups (saved lists).</p></div>
+        <button class="btn" onclick="openEvent()">➕ Plan an event</button></div>
+      <div class="panel"><table><thead><tr><th>Event</th><th>Lead</th><th>Co-lead</th><th>Date</th><th>Groups</th><th>Invitees</th><th></th></tr></thead><tbody id="eventsBody"></tbody></table></div>
+    </section>
+
+    <!-- AUDIENCE LISTS (marketing) -->
+    <section id="view-lists" class="hidden">
+      <div class="page-head"><div><h1>Audience Lists</h1><p>Reusable groups of people. Filter clients by city, zone, account type, distributor, RM or AUM — or list distributors. Attach lists to events.</p></div>
+        <button class="btn" onclick="openList()">➕ Create list</button></div>
+      <div class="panel"><table><thead><tr><th>List</th><th>Audience</th><th>Filters</th><th>Members</th><th></th></tr></thead><tbody id="listsBody"></tbody></table></div>
+    </section>
+
   </main>
 </div>
 
@@ -1426,6 +1443,50 @@
   </div>
 </div>
 
+<div class="modal-scrim" id="listScrim"><div class="modal">
+  <div class="modal-h"><h2 id="listModalTitle">Create list</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeList()">×</button></div>
+  <div class="modal-b">
+    <div class="field"><label>List name</label><input id="lsName" placeholder="e.g. Bangalore — PMS clients"></div>
+    <div class="field"><label>Who are the members?</label><select id="lsAudience" onchange="lsAudienceChange()"><option>Clients</option><option>Distributors</option></select></div>
+    <div class="grid2">
+      <div class="field"><label>City</label><select id="lsCity" onchange="lsPreview()"></select></div>
+      <div class="field"><label>Zone</label><select id="lsZone" onchange="lsPreview()"><option>All</option><option>North</option><option>South</option><option>West</option><option>East</option></select></div>
+    </div>
+    <div id="lsClientFilters">
+      <div class="grid2">
+        <div class="field"><label>Account type</label><select id="lsAccount" onchange="lsPreview()"><option>All</option><option>PMS</option><option>PMS Lite (RIA)</option><option>International investing</option></select></div>
+        <div class="field"><label>Distributor</label><select id="lsDist" onchange="lsPreview()"></select></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>RM</label><select id="lsRM" onchange="lsPreview()"></select></div>
+        <div class="field"><label>Minimum AUM</label><select id="lsMin" onchange="lsPreview()"><option value="0">Any</option><option value="5000000">&ge; ₹50L</option><option value="10000000">&ge; ₹1Cr</option><option value="20000000">&ge; ₹2Cr</option></select></div>
+      </div>
+      <div class="field"><label class="checks" style="text-transform:none;letter-spacing:0;font-weight:500"><input type="checkbox" id="lsProspects" onchange="lsPreview()"> Include prospects (leads), not just clients</label></div>
+    </div>
+    <div class="section-h">Preview <span class="lead-sub" id="lsCount"></span></div>
+    <div id="lsPreviewBox" style="background:#f6f9fc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;max-height:190px;overflow:auto"></div>
+  </div>
+  <div class="modal-f"><button class="btn ghost" onclick="closeList()">Cancel</button><button class="btn" onclick="saveList()">Save list</button></div>
+</div></div>
+
+<div class="modal-scrim" id="eventScrim"><div class="modal">
+  <div class="modal-h"><h2>Plan an event</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeEvent()">×</button></div>
+  <div class="modal-b">
+    <div class="field"><label>Event name</label><input id="evName" placeholder="e.g. Bangalore PMS investor meet"></div>
+    <div class="grid2">
+      <div class="field"><label>Lead</label><select id="evLead"></select></div>
+      <div class="field"><label>Co-lead</label><select id="evColead"></select></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Date</label><input type="date" id="evDate"></div>
+      <div class="field"><label>Venue / format</label><input id="evVenue" placeholder="e.g. Taj MG Road, Bangalore / Webinar"></div>
+    </div>
+    <div class="field"><label>Groups — audience lists to invite</label><div class="checks" id="evGroups" style="display:block"></div></div>
+    <div class="onb-sub" id="evCount" style="margin-top:6px"></div>
+  </div>
+  <div class="modal-f"><button class="btn ghost" onclick="closeEvent()">Cancel</button><button class="btn" onclick="saveEvent()">Save event</button></div>
+</div></div>
+
 <div class="modal-scrim" id="onbHubScrim">
   <div class="modal">
     <div class="modal-h"><h2>Onboarding — household</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeOnbHub()">×</button></div>
@@ -1614,7 +1675,8 @@ const ROLES={
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','calendar','tasks','suggestions','hub']},
-  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']}
+  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
+  Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','calendar','tasks','suggestions','hub']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -1630,7 +1692,8 @@ const TEAM_MEMBERS={
   Compliance:['Neha Gupta','Imran Khan','Sara Thomas'],
   Operations:['Ravi Menon','Deepak Verma','Pooja Nair'],
   Investment:['Anjali Rao','Vikas Shah','Rhea Kapoor'],
-  RM:['Shashank','Priya Nair','Arjun Mehta','Divya Rao','Karan Shah']
+  RM:['Shashank','Priya Nair','Arjun Mehta','Divya Rao','Karan Shah'],
+  Marketing:['Tanvi Shah','Rohan Kapoor','Sneha Iyer']
 };
 function seedTasks(){
   const t=[
@@ -1728,6 +1791,15 @@ function migrate(){
     const hh=demoHousehold();hh.forEach(ensureClientExtras);DB.clients.push(...hh);
     DB.demoHouseholdV1=true;
   }
+  if(!DB.distributors){DB.distributors=seedDistributors();}
+  if(!DB.marketingV1){
+    const distMap={'FBC-1001':'Direct','FBC-1002':'ABC Wealth','FBC-1003':'Direct','FBC-1004':'XYZ Capital','FBC-1005':'ABC Wealth','FBC-1006':'PineBridge Distributors','FBC-1007':'ABC Wealth','FBC-1008':'ABC Wealth','FBC-1009':'ABC Wealth'};
+    const cityMap={'FBC-1004':'Bangalore','FBC-1005':'Hyderabad','FBC-1006':'Chennai','FBC-1007':'Bangalore','FBC-1008':'Bangalore','FBC-1009':'Bangalore'};
+    DB.clients.forEach(c=>{if(!c.distributor)c.distributor=distMap[c.cid]||'Direct';if(cityMap[c.cid]&&c.kyc)c.kyc.city=cityMap[c.cid];});
+    DB.lists=seedLists();DB.nextList=DB.lists.length+1;
+    DB.events=seedEvents();DB.nextEvent=DB.events.length+1;
+    DB.marketingV1=true;
+  }
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -1737,7 +1809,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1751,6 +1823,8 @@ function go(v){
   if(v==='ips')renderIps();
   if(v==='out')renderOut();
   if(v==='profiles')renderProfiles();
+  if(v==='events')renderEvents();
+  if(v==='lists')renderLists();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
 function switchRole(r){currentRole=r;applyRole();go(ROLES[r].nav[0]);}
@@ -2781,6 +2855,127 @@ function sendMtg(){
   save();closeMtg();go('calendar');
   toast(isMeet?'📅 Meeting scheduled · Google Meet link created · invite emailed via Google Calendar':'📞 Call scheduled · reminder added to your calendar');
 }
+
+/* ---------- Marketing: audience lists + events ---------- */
+function zoneOf(city){const c=(city||'').toLowerCase();
+  if(/bangalore|bengaluru|chennai|hyderabad|kochi|coimbatore|mysore/.test(c))return 'South';
+  if(/delhi|gurgaon|gurugram|noida|chandigarh|jaipur|lucknow/.test(c))return 'North';
+  if(/mumbai|pune|ahmedabad|surat|nagpur|nashik/.test(c))return 'West';
+  if(/kolkata|bhubaneswar|guwahati|patna|ranchi/.test(c))return 'East';
+  return 'Other';}
+function seedDistributors(){return [
+  {name:'ABC Wealth',city:'Bangalore',email:'partners@abcwealth.in'},
+  {name:'ABC Wealth',city:'Mumbai',email:'mumbai@abcwealth.in'},
+  {name:'PineBridge Distributors',city:'Chennai',email:'hello@pinebridge.in'},
+  {name:'XYZ Capital',city:'Hyderabad',email:'desk@xyzcapital.in'},
+  {name:'Summit Partners',city:'Bangalore',email:'contact@summitpartners.in'},
+  {name:'NorthStar Advisors',city:'Delhi',email:'team@northstar.in'}
+];}
+function seedLists(){let id=1;const mk=(name,audience,f)=>Object.assign({id:id++,name,audience},f);
+  return [
+    mk('Bangalore — PMS','Clients',{city:'Bangalore',zone:'All',account:'PMS',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
+    mk('PMS — South zone','Clients',{city:'All',zone:'South',account:'PMS',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
+    mk('RIA — Bangalore','Clients',{city:'Bangalore',zone:'All',account:'PMS Lite (RIA)',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
+    mk('ALL Bangalore','Clients',{city:'Bangalore',zone:'All',account:'All',distributor:'All',rm:'All',minVal:0,includeProspects:false}),
+    mk('ABC Wealth — all clients','Clients',{city:'All',zone:'All',account:'All',distributor:'ABC Wealth',rm:'All',minVal:0,includeProspects:false}),
+    mk('Bangalore — all distributors','Distributors',{city:'Bangalore',zone:'All'})
+  ];}
+function seedEvents(){return [{id:1,name:'Bangalore PMS Investor Meet',lead:'Tanvi Shah',colead:'Shashank',date:dayStr(20),venue:'Taj MG Road, Bangalore',groups:[1,3]}];}
+function distinctCities(){const set=new Set(['Bangalore','Mumbai','Delhi','Chennai','Hyderabad','Pune','Kolkata']);DB.clients.forEach(c=>{if(c.kyc&&c.kyc.city)set.add(c.kyc.city);});(DB.distributors||[]).forEach(d=>set.add(d.city));return [...set].sort();}
+function distinctDistributors(){const set=new Set(['Direct']);DB.clients.forEach(c=>{if(c.distributor)set.add(c.distributor);});(DB.distributors||[]).forEach(d=>set.add(d.name));return [...set].sort();}
+function resolveList(list){
+  if(list.audience==='Distributors'){
+    return (DB.distributors||[]).filter(d=>!list.city||list.city==='All'||d.city===list.city).map(d=>({name:d.name,email:d.email,sub:d.city+' · Distributor'}));
+  }
+  const out=[];
+  DB.clients.forEach(c=>{
+    const city=(c.kyc&&c.kyc.city)||'',dist=c.distributor||'Direct';
+    if(list.account&&list.account!=='All'&&c.product!==list.account)return;
+    if(list.city&&list.city!=='All'&&city!==list.city)return;
+    if(list.zone&&list.zone!=='All'&&zoneOf(city)!==list.zone)return;
+    if(list.distributor&&list.distributor!=='All'&&dist!==list.distributor)return;
+    if(list.rm&&list.rm!=='All'&&c.rm!==list.rm)return;
+    if(list.minVal&&!(c.portfolio&&c.portfolio.current>=list.minVal))return;
+    out.push({name:(c.first+' '+(c.last||'')).trim(),email:c.email,sub:(city||'—')+' · '+(c.product||'—')+' · '+dist});
+  });
+  if(list.includeProspects){
+    DB.leads.filter(l=>!l.out&&!(l.appUser&&!l.qualified)).forEach(l=>{
+      if(list.account&&list.account!=='All')return;
+      if(list.city&&list.city!=='All')return;
+      if(list.zone&&list.zone!=='All')return;
+      if(list.distributor&&list.distributor!=='All')return;
+      if(list.rm&&list.rm!=='All'&&l.rm!==list.rm)return;
+      out.push({name:l.name,email:l.email||'',sub:'Prospect · '+(l.stage||'')});
+    });
+  }
+  return out;
+}
+function listSummary(l){
+  if(l.audience==='Distributors')return 'Distributors · City: '+(l.city||'All');
+  const p=[];if(l.city&&l.city!=='All')p.push(l.city);if(l.zone&&l.zone!=='All')p.push(l.zone+' zone');if(l.account&&l.account!=='All')p.push(l.account);if(l.distributor&&l.distributor!=='All')p.push(l.distributor);if(l.rm&&l.rm!=='All')p.push('RM '+l.rm);if(l.minVal)p.push('AUM ≥ '+fmtINR(l.minVal));if(l.includeProspects)p.push('+prospects');
+  return p.length?p.join(' · '):'All clients';
+}
+function renderLists(){
+  const lists=DB.lists||[];
+  document.getElementById('listsBody').innerHTML=lists.length?lists.map(l=>`<tr><td class="lead-name">${l.name}</td><td><span class="src">${l.audience}</span></td><td class="lead-sub">${listSummary(l)}</td><td><b>${resolveList(l).length}</b></td><td style="white-space:nowrap"><button class="btn ghost sm" onclick="openList(${l.id})">Edit</button> <button class="btn ghost sm" onclick="delList(${l.id})">Delete</button></td></tr>`).join(''):`<tr><td colspan="5" class="empty">No lists yet — create one to segment your audience.</td></tr>`;
+  badges();
+}
+let EDIT_LIST=null;
+function openList(id){
+  EDIT_LIST=id?(DB.lists||[]).find(x=>x.id===id):null;
+  document.getElementById('listModalTitle').textContent=EDIT_LIST?'Edit list':'Create list';
+  document.getElementById('lsCity').innerHTML=['All'].concat(distinctCities()).map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('lsDist').innerHTML=['All'].concat(distinctDistributors()).map(d=>`<option>${d}</option>`).join('');
+  document.getElementById('lsRM').innerHTML=['All'].concat(RMS).map(r=>`<option>${r}</option>`).join('');
+  const l=EDIT_LIST||{name:'',audience:'Clients',city:'All',zone:'All',account:'All',distributor:'All',rm:'All',minVal:0,includeProspects:false};
+  document.getElementById('lsName').value=l.name||'';
+  document.getElementById('lsAudience').value=l.audience||'Clients';
+  document.getElementById('lsCity').value=l.city||'All';
+  document.getElementById('lsZone').value=l.zone||'All';
+  document.getElementById('lsAccount').value=l.account||'All';
+  document.getElementById('lsDist').value=l.distributor||'All';
+  document.getElementById('lsRM').value=l.rm||'All';
+  document.getElementById('lsMin').value=String(l.minVal||0);
+  document.getElementById('lsProspects').checked=!!l.includeProspects;
+  lsAudienceChange();
+  document.getElementById('listScrim').classList.add('open');
+}
+function closeList(){document.getElementById('listScrim').classList.remove('open');EDIT_LIST=null;}
+function lsAudienceChange(){document.getElementById('lsClientFilters').style.display=document.getElementById('lsAudience').value==='Distributors'?'none':'block';lsPreview();}
+function readListForm(){return {audience:document.getElementById('lsAudience').value,city:document.getElementById('lsCity').value,zone:document.getElementById('lsZone').value,account:document.getElementById('lsAccount').value,distributor:document.getElementById('lsDist').value,rm:document.getElementById('lsRM').value,minVal:+document.getElementById('lsMin').value,includeProspects:document.getElementById('lsProspects').checked};}
+function lsPreview(){const l=readListForm();const m=resolveList(l);document.getElementById('lsCount').textContent='— '+m.length+' member'+(m.length!==1?'s':'');document.getElementById('lsPreviewBox').innerHTML=m.length?m.slice(0,40).map(x=>`<div style="padding:3px 0"><b>${x.name}</b> <span class="lead-sub">${x.email||''} · ${x.sub}</span></div>`).join('')+(m.length>40?`<div class="lead-sub" style="margin-top:6px">…and ${m.length-40} more</div>`:''):'<span class="lead-sub">No members match these filters.</span>';}
+function saveList(){const name=(document.getElementById('lsName').value||'').trim();if(!name){toast('Name the list');return;}const f=readListForm();if(EDIT_LIST){Object.assign(EDIT_LIST,f,{name});}else{if(!DB.nextList)DB.nextList=((DB.lists||[]).length+1);DB.lists=DB.lists||[];DB.lists.push(Object.assign({id:DB.nextList++,name},f));}save();closeList();renderLists();toast('List saved');}
+function delList(id){DB.lists=(DB.lists||[]).filter(x=>x.id!==id);save();renderLists();toast('List deleted');}
+function renderEvents(){
+  const evs=DB.events||[];
+  document.getElementById('eventsBody').innerHTML=evs.length?evs.map(e=>{
+    const gnames=(e.groups||[]).map(id=>{const l=(DB.lists||[]).find(x=>x.id===id);return l?l.name:'?';});
+    return `<tr><td class="lead-name">${e.name}</td><td>${e.lead||'—'}</td><td>${e.colead||'—'}</td><td>${e.date?fmtD(e.date):'—'}</td><td class="lead-sub">${gnames.join(', ')||'—'}</td><td><b>${eventInvitees(e)}</b></td><td><button class="btn ghost sm" onclick="openEvent(${e.id})">Edit</button></td></tr>`;
+  }).join(''):`<tr><td colspan="7" class="empty">No events yet — plan one to get started.</td></tr>`;
+  badges();
+}
+function eventInvitees(e){const seen=new Set();(e.groups||[]).forEach(id=>{const l=(DB.lists||[]).find(x=>x.id===id);if(l)resolveList(l).forEach(m=>seen.add(m.email||m.name));});return seen.size;}
+let EDIT_EVENT=null;
+function openEvent(id){
+  EDIT_EVENT=id?(DB.events||[]).find(x=>x.id===id):null;
+  const members=[].concat.apply([],Object.values(TEAM_MEMBERS));
+  document.getElementById('evLead').innerHTML=members.map(n=>`<option>${n}</option>`).join('');
+  document.getElementById('evColead').innerHTML=members.map(n=>`<option>${n}</option>`).join('');
+  document.getElementById('evGroups').innerHTML=(DB.lists||[]).length?(DB.lists).map(l=>`<label style="display:block;margin-bottom:5px"><input type="checkbox" value="${l.id}" onchange="evRecount()"> ${l.name} <span class="lead-sub">(${resolveList(l).length})</span></label>`).join(''):'<span class="lead-sub">No lists yet — create some in Audience Lists first.</span>';
+  const e=EDIT_EVENT||{name:'',lead:(ROLES[currentRole]&&ROLES[currentRole].name)||members[0],colead:members[1]||members[0],date:'',venue:'',groups:[]};
+  document.getElementById('evName').value=e.name||'';
+  document.getElementById('evLead').value=e.lead||members[0];
+  document.getElementById('evColead').value=e.colead||members[0];
+  document.getElementById('evDate').value=e.date||'';
+  document.getElementById('evVenue').value=e.venue||'';
+  (e.groups||[]).forEach(id=>{const cb=document.querySelector('#evGroups input[value="'+id+'"]');if(cb)cb.checked=true;});
+  evRecount();
+  document.getElementById('eventScrim').classList.add('open');
+}
+function closeEvent(){document.getElementById('eventScrim').classList.remove('open');EDIT_EVENT=null;}
+function evGroupsSelected(){return [...document.querySelectorAll('#evGroups input:checked')].map(c=>+c.value);}
+function evRecount(){const g=evGroupsSelected();const seen=new Set();g.forEach(id=>{const l=(DB.lists||[]).find(x=>x.id===id);if(l)resolveList(l).forEach(m=>seen.add(m.email||m.name));});document.getElementById('evCount').textContent=g.length?('📨 '+seen.size+' unique invitees across '+g.length+' group'+(g.length>1?'s':'')):'Select one or more groups to see the invitee count.';}
+function saveEvent(){const name=(document.getElementById('evName').value||'').trim();if(!name){toast('Name the event');return;}const ev={name,lead:document.getElementById('evLead').value,colead:document.getElementById('evColead').value,date:document.getElementById('evDate').value,venue:document.getElementById('evVenue').value,groups:evGroupsSelected()};if(EDIT_EVENT){Object.assign(EDIT_EVENT,ev);}else{if(!DB.nextEvent)DB.nextEvent=((DB.events||[]).length+1);DB.events=DB.events||[];DB.events.push(Object.assign({id:DB.nextEvent++},ev));}save();closeEvent();renderEvents();toast('Event saved');}
 
 /* ---------- Profiles (unified leads + clients, person-level) ---------- */
 function cagr(c){const inv=c.portfolio.invested,cur=c.portfolio.current;if(!inv||!cur)return 0;const yrs=Math.max(0.5,(Date.now()-new Date(c.signup).getTime())/(365*864e5));return (Math.pow(cur/inv,1/yrs)-1)*100;}

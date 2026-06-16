@@ -30,6 +30,11 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Investment team sees all clients, performance and the team calendar (not allotted clients), plus tasks.
 - Qualifier focuses on the assignment queue (onboarding tab removed; onboarding is RM-only).
 
+**Marketing**
+- New Marketing team role and view, centred on event planning.
+- **Audience Lists** — reusable, saved segments. Build a list by filtering Clients (city, zone, account type, distributor, RM, minimum AUM, optionally include prospects) or by listing Distributors (by city). Live member preview. Examples seeded: Bangalore-PMS, PMS-South-zone, RIA-Bangalore, ALL-Bangalore, ABC-Wealth clients, Bangalore distributors.
+- **Events** — name the event, assign a lead and co-lead, attach one or more audience lists as groups, set date/venue; shows the unique invitee count (deduped across groups).
+
 **Knowledge Hub**
 - Added a team handoff flow diagram (Qualifier → RM → Operations / Compliance → Investment → ongoing reviews).
 
