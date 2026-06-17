@@ -51,6 +51,9 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**Compliance — form-facing KYC files**
+- Reworked the compliance officer's Verification view into a per-client KYC & Compliance File: the account-opening form (name, email, mobile, address), uploaded KYC documents (PAN card, Aadhaar card, bank proof) with view + match checks, CKYC, KRA, and the agreement/disclosure/risk section (Client Disclosure accepted, risk profile + communicated, DIGIO-signed agreement PDF, welcome kit). Verify / flag-to-RM per client.
+
 **Inbox (Gmail-linked)**
 - Every role now has an Inbox (Inbox / Sent tabs) showing email to and from their address. The existing Gmail composer now delivers into it; opening a mail marks it read and Reply pre-fills to the sender. Unread count shows on the sidebar. Seeded with sample mail across RM, distributor and client addresses.
 
