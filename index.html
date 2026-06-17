@@ -406,6 +406,13 @@
   .rp-doc table{width:100%;font-size:12.5px;margin:5px 0}
   .rp-doc td{padding:3px 2px;border-bottom:1px solid var(--line)}
   .rp-invoice{margin-top:10px;background:#fff7e8;border:1px solid #f0dcae;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#7a5a1a}
+  .dot{display:inline-block;width:13px;height:13px;border-radius:50%;vertical-align:middle}
+  .dot.green{background:var(--green)}.dot.amber{background:var(--warm)}.dot.red{background:var(--hot)}
+  .comp-table th{text-align:center;font-size:11px}
+  .comp-table th:first-child,.comp-table td:first-child{text-align:left}
+  .comp-table td{text-align:center}
+  .trail{padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.5}
+  @media print{.sidebar{display:none!important}.app{display:block!important}.main{padding:16px!important}.modal-scrim,#nav{display:none!important}}
   .pf-meta{display:grid;grid-template-columns:repeat(4,1fr)}
   .pf-meta>div{padding:12px 16px;border-right:1px solid var(--line)}
   .pf-meta>div:last-child{border-right:none}
@@ -607,6 +614,7 @@
       <button data-view="diststrategies"><span class="ico">📈</span> Strategies</button>
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> Verification <span class="count" id="navVerif">0</span></button>
+      <button data-view="compreport"><span class="ico">📋</span> SEBI Report</button>
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
       <button data-view="out"><span class="ico">⛔</span> Out List <span class="count" id="navOut">0</span></button>
       <button data-view="suggestions"><span class="ico">💡</span> Feature Suggestions <span class="count" id="navSugg">0</span></button>
@@ -1282,6 +1290,13 @@
       <div class="page-head"><div><h1>Client Reports</h1><p>Monthly, half-yearly and tax reports — view and send to each client. Delivery, open and acknowledgement receipts are logged.</p></div></div>
       <div class="panel"><table><thead><tr><th>Client</th><th>Last monthly</th><th>Last half-yearly</th><th>Last tax</th><th></th></tr></thead><tbody id="reportsBody"></tbody></table></div>
     </section>
+    <!-- MONTHLY SEBI COMPLIANCE REPORT -->
+    <section id="view-compreport" class="hidden">
+      <div class="page-head"><div><h1>Monthly SEBI Compliance Report</h1><p id="crStamp">—</p></div><button class="btn" onclick="exportCompReportPdf()">⬇ Export PDF</button></div>
+      <div class="cards" id="crCards"></div>
+      <div class="panel"><div class="panel-head"><h2>Client compliance — SEBI items i–x</h2><span class="lead-sub"><span class="dot green"></span> complete &nbsp;<span class="dot amber"></span> pending &nbsp;<span class="dot red"></span> missing</span></div>
+        <table class="comp-table"><thead><tr id="crHead"></tr></thead><tbody id="crBody"></tbody></table></div>
+    </section>
 
   </main>
 </div>
@@ -1601,6 +1616,12 @@
     <div class="modal-f"><button class="btn ghost" onclick="closeOnbHub()">Done</button></div>
   </div>
 </div>
+<div class="modal-scrim" id="drillScrim"><div class="modal wide">
+  <div class="modal-h"><h2 id="drillTitle">Client compliance record</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeDrill()">×</button></div>
+  <div class="modal-b" id="drillBody"></div>
+  <div class="modal-f"><button class="btn ghost" onclick="closeDrill()">Close</button></div>
+</div></div>
+
 <div class="modal-scrim" id="reportScrim"><div class="modal wide">
   <div class="modal-h"><h2 id="rpTitle">Reports</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeReports()">×</button></div>
   <div class="modal-b" id="rpBody"></div>
@@ -1774,7 +1795,7 @@ function demoHousehold(){
 const ROLES={
   RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
-  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions','hub']},
+  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Officer',nav:['dashboard','verification','compreport','tasks','clients','suggestions','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
@@ -1861,6 +1882,8 @@ function ensureClientExtras(c){
     halfyearly:{lastSent:dayStr(-80),receipts:[{event:'Delivered',date:dayStr(-80)},{event:'Opened',date:dayStr(-78)}]},
     tax:{lastSent:dayStr(-60),receipts:[{event:'Delivered',date:dayStr(-60)},{event:'Opened',date:dayStr(-58)},{event:'Acknowledged',date:dayStr(-55)}]}
   }:{monthly:{lastSent:'',receipts:[]},halfyearly:{lastSent:'',receipts:[]},tax:{lastSent:'',receipts:[]}};
+  if(c.advice===undefined)c.advice=c.funded?{rationale:'Advisory recommendation aligned to a '+((c.ips&&c.ips.riskBand)||'Moderate')+' risk profile and the client stated goals.',signedOn:(c.ips&&c.ips.lastReview)||c.signup,by:c.rm}:null;
+  if(!c.tradeLog)c.tradeLog=c.funded?[{date:(c.ips&&c.ips.lastReview)||c.signup,advice:'Deploy into '+((c.strategies&&c.strategies[0])||'Flameback Multicap'),approvalToken:'APPR-'+c.cid+'-001',orderId:'NSE'+genDemat(c.cid).slice(0,8),confirm:'Sent'}]:[];
 }
 
 function seedAppLeads(){
@@ -1949,7 +1972,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','tasks','verification','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','tasks','verification','compreport','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1964,6 +1987,7 @@ function go(v){
   if(v==='out')renderOut();
   if(v==='profiles')renderProfiles();
   if(v==='reports')renderReports();
+  if(v==='compreport')renderCompReport();
   if(v==='events')renderEvents();
   if(v==='lists')renderLists();
   if(v==='content')renderContent();
@@ -3142,6 +3166,67 @@ function sendReport(t){const c=DB.clients.find(x=>x.cid===REPORT_CID);if(!c)retu
   DB.emails=DB.emails||[];if(!DB.nextEmail)DB.nextEmail=(DB.emails.length+1);
   DB.emails.push({id:DB.nextEmail++,from:(ROLES[currentRole]&&ROLES[currentRole].email)||'rm@flamebackcapital.com',to:c.email,subject:titles[t]+' — '+c.first+' '+c.last,body:'Hi '+c.first+',\n\nPlease find your '+t+' report.'+(t==='monthly'?' The fee invoice for the period is attached to this email.':'')+'\n\nFlameback Capital',date:new Date().toISOString(),read:false});
   save();renderReportsModal();toast(titles[t]+' sent · delivery & open receipts logged');}
+
+/* ---------- Monthly SEBI compliance report ---------- */
+const SEBI_REG='INA000012345';
+function maskPan4(p){p=p||'';return p.length>4?('••••••'+p.slice(-4)):'—';}
+function maskAad4(a){const d=(a||'').replace(/\s/g,'');return d.length>4?('•••• •••• '+d.slice(-4)):'—';}
+function sebiItems(c){
+  const okCkyc=c.kyc.kra==='Verified'&&!/pending/i.test(c.kyc.ckyc);
+  const corr=((c.calls&&c.calls.length)||((DB.emails||[]).some(e=>e.to===c.email||e.from===c.email)));
+  return [
+    {k:'i',label:'Client agreement',status:c.signed?'green':(c.questionnaire?'amber':'red')},
+    {k:'ii',label:'Client disclosure document',status:c.disclosure?'green':'amber'},
+    {k:'iii',label:'Risk profile questionnaire',status:(c.riskProfile&&c.riskProfile.communicated)?'green':(c.riskProfile?'amber':'red')},
+    {k:'iv',label:'Boarding letter / welcome kit',status:c.welcomeKit?'green':'amber'},
+    {k:'v',label:'Rationale for investment advice',status:c.advice?'green':(c.funded?'amber':'red')},
+    {k:'vi',label:'KYC & CKYC documents',status:okCkyc?'green':(/pending/i.test(c.kyc.ckyc)?'amber':'red')},
+    {k:'vii',label:'Client correspondence',status:corr?'green':'amber'},
+    {k:'viii',label:'Suitability assessment / financial plan',status:(c.suitability&&c.suitability.preparedOn)?'green':'amber'},
+    {k:'ix',label:'Investment advice record',status:(c.tradeLog&&c.tradeLog.length)?'green':(c.funded?'amber':'red')},
+    {k:'x',label:'Invoice issued',status:(c.invoices&&c.invoices.length)?'green':'amber'}
+  ];
+}
+function clientCompliance(c){const it=sebiItems(c);if(it.some(x=>x.status==='red'))return 'gap';if(it.some(x=>x.status==='amber'))return 'pending';return 'complete';}
+function renderCompReport(){
+  const cl=DB.clients;
+  const complete=cl.filter(c=>clientCompliance(c)==='complete').length;
+  const pending=cl.filter(c=>clientCompliance(c)==='pending').length;
+  const gaps=cl.filter(c=>clientCompliance(c)==='gap').length;
+  document.getElementById('crStamp').innerHTML='Flameback Capital · <b>SEBI Reg. '+SEBI_REG+'</b> · all active clients · generated '+new Date().toLocaleString('en-IN');
+  document.getElementById('crCards').innerHTML=
+    dcard('Active clients',cl.length,'On the books','var(--teal)',100)+
+    dcard('Fully compliant',complete,'All SEBI items + reports','var(--green)',cl.length?complete/cl.length*100:0)+
+    dcard('Pending items',pending,'One or more in progress','var(--warm)',0)+
+    dcard('Gaps — action needed',gaps,'One or more items missing','var(--hot)',0);
+  document.getElementById('crHead').innerHTML='<th>Client</th>'+['i','ii','iii','iv','v','vi','vii','viii','ix','x'].map(h=>'<th>'+h+'</th>').join('')+'<th></th>';
+  document.getElementById('crBody').innerHTML=cl.map(c=>{const it=sebiItems(c);
+    return `<tr class="lead-row" onclick="openDrill('${c.cid}')"><td class="lead-name">${c.first} ${c.last} <span class="cid">${c.cid}</span></td>`+
+      it.map(x=>`<td><span class="dot ${x.status}" title="${x.k}. ${x.label} — ${x.status}"></span></td>`).join('')+
+      `<td><button class="btn ghost sm" onclick="event.stopPropagation();openDrill('${c.cid}')">Open</button></td></tr>`;}).join('');
+  badges();
+}
+function exportCompReportPdf(){toast('Generating PDF — Flameback Capital · SEBI '+SEBI_REG+' (use the print dialog → Save as PDF)');setTimeout(function(){window.print();},400);}
+function docLink(label,url){const real=/^https?:/.test(url||'');return `<div class="kv-row"><span class="lab">${label}</span><span>${url?`<a class="meet-link" href="${real?url:'#'}" ${real?'target="_blank"':'onclick="toast(\'Opening '+String(url).replace(/'/g,'')+' (demo)\');return false"'}>📄 Open</a>`:'<span class="lead-sub">—</span>'}</span></div>`;}
+let DRILL_CID=null;
+function openDrill(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;DRILL_CID=cid;
+  document.getElementById('drillTitle').textContent=c.first+' '+c.last+' · '+c.cid+' — compliance record';
+  const it=sebiItems(c);
+  const grid=`<div class="kv" style="margin-bottom:14px"><div class="kv-h">SEBI items (i–x)</div><div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 16px">${it.map(x=>`<span style="font-size:12px"><span class="dot ${x.status}"></span> ${x.k}. ${x.label}</span>`).join('')}</div></div>`;
+  const idn=`<div class="kv" style="margin-bottom:14px"><div class="kv-h">Client identity</div>${kvr('Full name',c.first+' '+c.last)}${kvr('Email',c.email)}${kvr('CKYC number',c.kyc.ckyc)}${kvr('PAN',maskPan4(c.kyc.pan))}${kvr('Aadhaar',maskAad4(c.kyc.aadhaar))}${kvr('RM assigned',c.rm)}${kvr('Client since',fmtD(c.signup))}</div>`;
+  const docs=`<div class="kv" style="margin-bottom:14px"><div class="kv-h">Document links</div>${docLink('Signed agreement (DIGIO)',c.agreementUrl)}${docLink('Risk questionnaire responses',c.riskProfile&&c.riskProfile.category?'Risk_'+c.cid+'.pdf':'')}${docLink('Suitability assessment',c.suitability&&c.suitability.doc)}${docLink('Latest financial plan (IPS)',c.suitability&&c.suitability.doc)}</div>`;
+  const trades=c.tradeLog||[];
+  const trail=`<div class="kv" style="margin-bottom:14px"><div class="kv-h">Trade & advice audit trail</div><div style="padding:6px 14px">${trades.length?trades.map(t=>`<div class="trail"><b>${fmtD(t.date)}</b> — ${t.advice}<div class="lead-sub">approval token ${t.approvalToken} · broker order ${t.orderId} · trade confirmation email: <b>${t.confirm}</b></div></div>`).join(''):'<span class="lead-sub">No advice records.</span>'}</div></div>`;
+  const reps=c.reports||{};
+  const dispatch=`<div class="kv" style="margin-bottom:14px"><div class="kv-h">Report dispatch log</div><table style="width:100%;font-size:12.5px"><thead><tr><th style="text-align:left;padding:6px 14px">Report</th><th style="text-align:left">Sent</th><th style="text-align:left">Receipts</th></tr></thead><tbody>${['monthly','halfyearly','tax'].map(k=>{const r=reps[k]||{};return `<tr><td style="padding:6px 14px">${k}</td><td>${r.lastSent?fmtD(r.lastSent):'—'}</td><td class="lead-sub">${(r.receipts||[]).map(x=>x.event).join(', ')||'—'}</td></tr>`;}).join('')}</tbody></table></div>`;
+  const corr=[];(c.calls||[]).forEach(cl=>corr.push({d:cl.when,t:'Call',x:cl.note}));
+  (DB.emails||[]).filter(e=>e.to===c.email||e.from===c.email).forEach(e=>corr.push({d:e.date,t:'Email',x:(e.from===c.email?'from client: ':'to client: ')+e.subject}));
+  corr.sort((a,b)=>new Date(b.d)-new Date(a.d));
+  const comm=`<div class="kv"><div class="kv-h">Correspondence log</div><div style="padding:6px 14px">${corr.length?corr.map(e=>`<div class="trail"><b>${e.t}</b> — ${e.x} <span class="lead-sub">· ${fmtDateTime(e.d)}</span></div>`).join(''):'<span class="lead-sub">No correspondence logged.</span>'}</div></div>`;
+  document.getElementById('drillBody').innerHTML=grid+idn+docs+trail+dispatch+comm;
+  document.getElementById('drillScrim').classList.add('open');
+}
+function closeDrill(){document.getElementById('drillScrim').classList.remove('open');DRILL_CID=null;}
 
 /* ---------- Inbox (Gmail-linked) ---------- */
 function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}

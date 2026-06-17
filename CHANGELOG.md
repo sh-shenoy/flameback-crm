@@ -51,6 +51,9 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**Monthly SEBI compliance report**
+- New compliance report (compliance officer): header with Flameback's SEBI registration number + generation timestamp, exportable to PDF. Four summary metrics (active clients, fully compliant, pending, gaps). A client-level table with green/amber/red status for all ten SEBI mandatory items (i–x). Click any client for a drill-down: identity (PAN/Aadhaar masked to last 4), document links, trade & advice audit trail (approval token, broker order ID, confirmation status), report dispatch log, and correspondence log.
+
 **Client Reports console**
 - New Client Reports page: for each client, view and send the **Monthly** (holdings summary, trades, P&L, valuation, advisor commentary + attached fee invoice), **Half-yearly**, and **Tax** (STCG / LTCG / dividend income, ITR-ready) reports. Each send logs **delivery, open and acknowledgement receipts** in the CRM and posts the report to the client's inbox. Scoped per role (RM/Distributor see their own clients; Investment/Leadership see all).
 
