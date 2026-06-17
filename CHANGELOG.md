@@ -53,7 +53,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 **Distributor / Wealth Manager portal**
 - New external partner role with its own scoped view (seeded as ABC Wealth).
-- Dashboard: welcome, AUM with Flameback (invested + current), net gain, number of clients, and a client list — plus a "Your Flameback relationship" contact card.
+- Dashboard: the same RM-style dashboard we give our own RMs, scoped to the partner's clients — cards for clients, AUM, net gain and reviews-due-this-week, a client panel, and a "Reach out to your Flameback RM" contact card (call / email / WhatsApp). Only difference vs an internal RM: the RM they contact is us.
 - Clients page: all of the partner's clients with city, AUM and CAGR; click through to a full client profile (personal details incl. DOB/profession, portfolio, IPS, reports).
 - Strategies page: the strategies the partner can access, each with 1Y / 3Y CAGR / since-inception performance and the partner's AUM + client count in it.
 - Contact button to call / email / WhatsApp the partner's Flameback RM.

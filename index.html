@@ -1737,7 +1737,7 @@ const ROLES={
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
   Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
-  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['distdash','distclients','diststrategies']}
+  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','diststrategies']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -2002,6 +2002,21 @@ function renderDash(){
     P.innerHTML=panelTable('Reviews due this week','Open reminders →',"go('reminders')",
       ['Client','Risk band','Annual review','Quarterly review'],
       due.length?due.map(c=>`<tr class="lead-row" onclick="go('reminders')"><td class="lead-name">${c.first} ${c.last}</td><td>${c.ips.riskBand}</td><td>${fmtDue(c.ips.nextAnnualReview)}</td><td>${fmtDue(c.ips.nextQuarterlyReview)}</td></tr>`).join(''):`<tr><td colspan="4" class="empty">No reviews due.</td></tr>`);
+  }
+  else if(currentRole==='Distributor'){
+    const cs=distClients();
+    const inv=cs.reduce((s,c)=>s+(c.portfolio.invested||0),0),cur=cs.reduce((s,c)=>s+(c.portfolio.current||0),0),ret=inv?((cur-inv)/inv*100):0;
+    const revDue=cs.filter(c=>c.funded&&c.ips&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview)));
+    T.textContent=distName()+' — Dashboard';S.textContent='Your clients with Flameback · RM: '+DIST_RM.name;
+    A.innerHTML='<button class="btn" onclick="distEmail()">\ud83d\udcde Contact your RM</button>';
+    C.innerHTML=`${dcard('Clients',cs.length,'active accounts','var(--teal)',100)}
+      ${dcard('AUM (current)',fmtINR(cur),'with Flameback','var(--navy)',100)}
+      ${dcard('Net gain',fmtINR(cur-inv),ret.toFixed(1)+'% return','var(--green)',Math.min(100,ret*4))}
+      ${dcard('Reviews due this week',revDue.length,'Annual + quarterly','var(--warm)',0)}`;
+    P.innerHTML=panelTable('Your clients','View all clients \u2192',"go('distclients')",
+      ['Client','City','AUM (current)','CAGR','Next review'],
+      cs.length?cs.map(c=>{const nr=[c.ips&&c.ips.nextQuarterlyReview,c.ips&&c.ips.nextAnnualReview].filter(Boolean).sort()[0];return `<tr class="lead-row" onclick="openClient('${c.cid}')"><td class="lead-name">${c.first} ${c.last}</td><td>${(c.kyc&&c.kyc.city)||'\u2014'}</td><td>${fmtINR(c.portfolio.current)}</td><td>${cagr(c).toFixed(1)}%</td><td>${nr?fmtDue(nr):'\u2014'}</td></tr>`;}).join(''):`<tr><td colspan="5" class="empty">No clients yet.</td></tr>`)
+      +`<div class="panel" style="padding:18px 20px;margin-top:18px"><h2 style="font-size:14px;color:var(--navy);margin-bottom:12px">Reach out to your Flameback RM</h2>${distContactCard()}</div>`;
   }
   badges();
 }
