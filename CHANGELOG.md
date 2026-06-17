@@ -51,6 +51,9 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**Client Reports console**
+- New Client Reports page: for each client, view and send the **Monthly** (holdings summary, trades, P&L, valuation, advisor commentary + attached fee invoice), **Half-yearly**, and **Tax** (STCG / LTCG / dividend income, ITR-ready) reports. Each send logs **delivery, open and acknowledgement receipts** in the CRM and posts the report to the client's inbox. Scoped per role (RM/Distributor see their own clients; Investment/Leadership see all).
+
 **Compliance — form-facing KYC files**
 - Reworked the compliance officer's Verification view into a per-client KYC & Compliance File: the account-opening form (name, email, mobile, address), uploaded KYC documents (PAN card, Aadhaar card, bank proof) with view + match checks, CKYC, KRA, and the agreement/disclosure/risk section (Client Disclosure accepted, risk profile + communicated, DIGIO-signed agreement PDF, welcome kit). Verify / flag-to-RM per client.
 - Stage 3 added: Suitability assessment (IPS) — prepared, document link, sent-to-client with one-click email — and demat/trading access logging (broker, masked account no., read-only access type, date granted; grant/revoke events logged as correspondence).

@@ -402,6 +402,10 @@
   .ei-snip{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chk-sec{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--teal);font-weight:700;padding:11px 16px 5px;border-top:1px solid var(--line);margin-top:4px;background:#fafbfd}
   .demat-log{margin-top:6px;font-size:11.5px;color:var(--muted);line-height:1.6}
+  .rp-doc{font-size:12.5px;line-height:1.6}
+  .rp-doc table{width:100%;font-size:12.5px;margin:5px 0}
+  .rp-doc td{padding:3px 2px;border-bottom:1px solid var(--line)}
+  .rp-invoice{margin-top:10px;background:#fff7e8;border:1px solid #f0dcae;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#7a5a1a}
   .pf-meta{display:grid;grid-template-columns:repeat(4,1fr)}
   .pf-meta>div{padding:12px 16px;border-right:1px solid var(--line)}
   .pf-meta>div:last-child{border-right:none}
@@ -594,6 +598,7 @@
       <button data-view="reminders"><span class="ico">🔔</span> Reviews & Reminders <span class="count" id="navRem">0</span></button>
       <button data-view="clients"><span class="ico">💼</span> Clients <span class="count" id="navClients">0</span></button>
       <button data-view="profiles"><span class="ico">🪪</span> Profiles</button>
+      <button data-view="reports"><span class="ico">📑</span> Client Reports</button>
       <button data-view="events"><span class="ico">🎟️</span> Events</button>
       <button data-view="lists"><span class="ico">🗂️</span> Audience Lists</button>
       <button data-view="content"><span class="ico">📰</span> Content</button>
@@ -1272,6 +1277,11 @@
         <div id="inboxList"></div>
       </div>
     </section>
+    <!-- CLIENT REPORTS -->
+    <section id="view-reports" class="hidden">
+      <div class="page-head"><div><h1>Client Reports</h1><p>Monthly, half-yearly and tax reports — view and send to each client. Delivery, open and acknowledgement receipts are logged.</p></div></div>
+      <div class="panel"><table><thead><tr><th>Client</th><th>Last monthly</th><th>Last half-yearly</th><th>Last tax</th><th></th></tr></thead><tbody id="reportsBody"></tbody></table></div>
+    </section>
 
   </main>
 </div>
@@ -1591,6 +1601,12 @@
     <div class="modal-f"><button class="btn ghost" onclick="closeOnbHub()">Done</button></div>
   </div>
 </div>
+<div class="modal-scrim" id="reportScrim"><div class="modal wide">
+  <div class="modal-h"><h2 id="rpTitle">Reports</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeReports()">×</button></div>
+  <div class="modal-b" id="rpBody"></div>
+  <div class="modal-f"><button class="btn ghost" onclick="closeReports()">Close</button></div>
+</div></div>
+
 <div class="modal-scrim" id="mtgScrim">
   <div class="modal">
     <div class="modal-h"><h2>Schedule meeting / call</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeMtg()">×</button></div>
@@ -1756,14 +1772,14 @@ function demoHousehold(){
 
 /* roles */
 const ROLES={
-  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','tasks','out','suggestions','hub']},
+  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Team',nav:['dashboard','verification','tasks','clients','suggestions','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
-  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','calendar','tasks','suggestions','hub']},
-  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
+  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','calendar','tasks','suggestions','hub']},
+  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
   Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
-  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','calendar','reminders','ips','diststrategies']}
+  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','reports','calendar','reminders','ips','diststrategies']}
 };
 Object.values(ROLES).forEach(r=>{if(r.nav.indexOf('inbox')<0)r.nav.push('inbox');});
 let currentRole='RM';
@@ -1840,6 +1856,11 @@ function ensureClientExtras(c){
     if(c.funded){const broker=c.zerodha==='Yes'?'Zerodha':'Groww';c.demat={status:'Active',broker,account:genDemat(c.cid),accessType:'Read-only',grantedOn:c.signup,log:[{event:'Read-only access granted · '+broker,date:c.signup}]};}
     else c.demat={status:'Not granted',broker:'',account:'',accessType:'',grantedOn:'',log:[]};
   }
+  if(!c.reports)c.reports=c.funded?{
+    monthly:{lastSent:dayStr(-16),receipts:[{event:'Delivered',date:dayStr(-16)},{event:'Opened',date:dayStr(-15)}]},
+    halfyearly:{lastSent:dayStr(-80),receipts:[{event:'Delivered',date:dayStr(-80)},{event:'Opened',date:dayStr(-78)}]},
+    tax:{lastSent:dayStr(-60),receipts:[{event:'Delivered',date:dayStr(-60)},{event:'Opened',date:dayStr(-58)},{event:'Acknowledged',date:dayStr(-55)}]}
+  }:{monthly:{lastSent:'',receipts:[]},halfyearly:{lastSent:'',receipts:[]},tax:{lastSent:'',receipts:[]}};
 }
 
 function seedAppLeads(){
@@ -1928,7 +1949,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','content','distdash','distclients','diststrategies','tasks','verification','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','tasks','verification','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1942,6 +1963,7 @@ function go(v){
   if(v==='ips')renderIps();
   if(v==='out')renderOut();
   if(v==='profiles')renderProfiles();
+  if(v==='reports')renderReports();
   if(v==='events')renderEvents();
   if(v==='lists')renderLists();
   if(v==='content')renderContent();
@@ -3076,6 +3098,50 @@ function renderDistStrategies(){
   }).join('');
   badges();
 }
+
+/* ---------- Client reports (monthly / half-yearly / tax) ---------- */
+let REPORT_CID=null;
+function taxFY(){const d=new Date();const y=d.getMonth()>=3?d.getFullYear():d.getFullYear()-1;return (y-1)+'-'+String(y).slice(2);}
+function rpCommentary(c){const r=c.portfolio.absReturn;return r>=10?'Strong period — portfolio outperformed its benchmark; staying the course with a slight trim to high-beta names.':r>=0?'Steady period in line with the benchmark; maintaining allocation per your IPS.':'A soft period for the broader market; allocation unchanged, using the dip to rebalance toward target.';}
+function reportContent(c,type){
+  const inv=c.portfolio.invested,cur=c.portfolio.current,pnl=cur-inv;
+  if(type==='tax'){const stcg=Math.round(cur*0.012),ltcg=Math.round(cur*0.031),div=Math.round(cur*0.008);
+    return `<div class="rp-doc"><b>Tax report — FY ${taxFY()}</b> · ITR-ready<table><tr><td>Short-term capital gains (STCG)</td><td style="text-align:right"><b>${fmtINR(stcg)}</b></td></tr><tr><td>Long-term capital gains (LTCG)</td><td style="text-align:right"><b>${fmtINR(ltcg)}</b></td></tr><tr><td>Dividend income</td><td style="text-align:right"><b>${fmtINR(div)}</b></td></tr></table><div class="lead-sub">Schedule CG (STCG/LTCG) + Schedule OS (dividends), formatted for ITR filing.</div></div>`;}
+  const trades=(c.portfolio.holdings||[]).slice(0,3).map((h,i)=>(i%2?'SELL ':'BUY ')+h[0]+' · '+fmtINR(Math.round(h[1]*0.1)));
+  return `<div class="rp-doc">
+    <div><b>Current valuation:</b> ${fmtINR(cur)} &middot; <b>Invested:</b> ${fmtINR(inv)} &middot; <b>P&amp;L:</b> <span style="color:${pnl>=0?'var(--green)':'var(--hot)'}">${pnl>=0?'+':''}${fmtINR(pnl)} (${inv?(pnl/inv*100).toFixed(1):0}%)</span></div>
+    <div style="margin-top:8px"><b>Holdings summary</b><table>${(c.portfolio.holdings||[]).map(h=>`<tr><td>${h[0]}</td><td style="text-align:right">${fmtINR(h[2])}</td></tr>`).join('')||'<tr><td>No holdings</td></tr>'}</table></div>
+    <div style="margin-top:8px"><b>${type==='monthly'?"This month's":"Half-year"} trades</b><div class="lead-sub">${trades.join(' &middot; ')||'No trades in the period'}</div></div>
+    <div style="margin-top:8px"><b>Advisor commentary</b><div class="lead-sub">${rpCommentary(c)}</div></div>
+    ${type==='monthly'?`<div class="rp-invoice">📎 Fee invoice attached &middot; Advisory fee for the period: <b>${fmtINR(Math.round(cur*0.0025))}</b></div>`:''}
+  </div>`;
+}
+function renderReports(){
+  const cs=mine(DB.clients);
+  document.getElementById('reportsBody').innerHTML=cs.length?cs.map(c=>{const r=c.reports||{};const ls=k=>r[k]&&r[k].lastSent?fmtD(r[k].lastSent):'<span class="lead-sub">never</span>';
+    return `<tr class="lead-row" onclick="openReports('${c.cid}')"><td class="lead-name">${c.first} ${c.last} <span class="cid">${c.cid}</span></td><td>${ls('monthly')}</td><td>${ls('halfyearly')}</td><td>${ls('tax')}</td><td><button class="btn ghost sm" onclick="event.stopPropagation();openReports('${c.cid}')">View &amp; send</button></td></tr>`;}).join(''):`<tr><td colspan="5" class="empty">No clients.</td></tr>`;
+  badges();
+}
+function openReports(cid){REPORT_CID=cid;renderReportsModal();document.getElementById('reportScrim').classList.add('open');}
+function closeReports(){document.getElementById('reportScrim').classList.remove('open');REPORT_CID=null;}
+function renderReportsModal(){
+  const c=DB.clients.find(x=>x.cid===REPORT_CID);if(!c)return;
+  document.getElementById('rpTitle').textContent='Reports — '+c.first+' '+c.last;
+  const types=[['monthly','Monthly report','By the 1st of each month · holdings, trades, P&L, valuation, commentary + fee invoice'],['halfyearly','Half-yearly report','End of September & end of March'],['tax','Tax report','April each year, for the preceding FY · STCG, LTCG, dividends · ITR-ready']];
+  document.getElementById('rpBody').innerHTML=types.map(t=>{const r=(c.reports&&c.reports[t[0]])||{receipts:[]};
+    return `<div class="acct-card"><div class="acct-head" style="cursor:default"><div class="l"><b>${t[1]}</b> <span class="lead-sub">${t[2]}</span></div>
+      <div style="display:flex;gap:8px"><button class="btn ghost sm" onclick="toggleRpView('${t[0]}')">👁 View</button><button class="btn sm" onclick="sendReport('${t[0]}')">✉ Send</button></div></div>
+      <div class="acct-body" id="rpv-${t[0]}" style="display:none">${reportContent(c,t[0])}</div>
+      <div style="padding:9px 16px"><span class="lead-sub">Last sent: ${r.lastSent?fmtD(r.lastSent):'never'}</span>${(r.receipts||[]).length?`<div class="demat-log">${r.receipts.slice(-4).map(x=>'• '+x.event+' — '+fmtD(x.date)).join('<br>')}</div>`:''}</div>
+    </div>`;}).join('');
+}
+function toggleRpView(t){const el=document.getElementById('rpv-'+t);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+function sendReport(t){const c=DB.clients.find(x=>x.cid===REPORT_CID);if(!c)return;c.reports=c.reports||{};const r=c.reports[t]=c.reports[t]||{receipts:[]};
+  r.lastSent=dayStr(0);r.receipts=r.receipts||[];r.receipts.push({event:'Delivered',date:dayStr(0)});r.receipts.push({event:'Opened',date:dayStr(0)});if(t==='tax')r.receipts.push({event:'Acknowledged',date:dayStr(0)});
+  const titles={monthly:'Monthly portfolio report + fee invoice',halfyearly:'Half-yearly portfolio report',tax:'Tax report (ITR-ready) — FY '+taxFY()};
+  DB.emails=DB.emails||[];if(!DB.nextEmail)DB.nextEmail=(DB.emails.length+1);
+  DB.emails.push({id:DB.nextEmail++,from:(ROLES[currentRole]&&ROLES[currentRole].email)||'rm@flamebackcapital.com',to:c.email,subject:titles[t]+' — '+c.first+' '+c.last,body:'Hi '+c.first+',\n\nPlease find your '+t+' report.'+(t==='monthly'?' The fee invoice for the period is attached to this email.':'')+'\n\nFlameback Capital',date:new Date().toISOString(),read:false});
+  save();renderReportsModal();toast(titles[t]+' sent · delivery & open receipts logged');}
 
 /* ---------- Inbox (Gmail-linked) ---------- */
 function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}
