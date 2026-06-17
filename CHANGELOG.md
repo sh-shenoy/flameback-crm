@@ -48,3 +48,12 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Onboarding form linked by mobile number (resume self-serve drop-offs), with advisory routing (PMS Lite (RIA) / PMS / International) and an e-sign request for the agreement.
 - Leadership / owner view with per-department throughput, "needs your attention" escalations, and per-person scorecards.
 - Leads pipeline (L1–L4, Five-Strike rule, Out list), assignment queue, tasks & requests board, compliance verification, portfolios & IPS, reviews & reminders, and a shared feature-suggestions board.
+
+## 2026-06-16
+
+**Distributor / Wealth Manager portal**
+- New external partner role with its own scoped view (seeded as ABC Wealth).
+- Dashboard: welcome, AUM with Flameback (invested + current), net gain, number of clients, and a client list — plus a "Your Flameback relationship" contact card.
+- Clients page: all of the partner's clients with city, AUM and CAGR; click through to a full client profile (personal details incl. DOB/profession, portfolio, IPS, reports).
+- Strategies page: the strategies the partner can access, each with 1Y / 3Y CAGR / since-inception performance and the partner's AUM + client count in it.
+- Contact button to call / email / WhatsApp the partner's Flameback RM.

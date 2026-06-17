@@ -570,6 +570,7 @@
         <option value="Operations">Operations Team</option>
         <option value="Investment">Investment Team</option>
         <option value="Marketing">Marketing Team</option>
+        <option value="Distributor">Distributor / Wealth Manager</option>
         <option value="Owner">Leadership — Dept Heads</option>
       </select>
     </div>
@@ -586,6 +587,9 @@
       <button data-view="events"><span class="ico">🎟️</span> Events</button>
       <button data-view="lists"><span class="ico">🗂️</span> Audience Lists</button>
       <button data-view="content"><span class="ico">📰</span> Content</button>
+      <button data-view="distdash"><span class="ico">🏠</span> Dashboard</button>
+      <button data-view="distclients"><span class="ico">👥</span> Clients</button>
+      <button data-view="diststrategies"><span class="ico">📈</span> Strategies</button>
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> Verification <span class="count" id="navVerif">0</span></button>
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
@@ -713,7 +717,7 @@
 
     <!-- CLIENT PROFILE -->
     <section id="view-clientProfile" class="hidden">
-      <button class="back-link" onclick="go('clients')">← Back to clients</button>
+      <button class="back-link" onclick="backToClients()">← Back to clients</button>
       <div class="profile-top">
         <div class="avatar" id="cpAvatar">—</div>
         <div style="flex:1">
@@ -1225,6 +1229,30 @@
       <div class="panel"><table><thead><tr><th>Article</th><th>Tags</th><th>Date</th><th>Reach</th><th></th></tr></thead><tbody id="contentBody"></tbody></table></div>
     </section>
 
+    <!-- DISTRIBUTOR DASHBOARD -->
+    <section id="view-distdash" class="hidden">
+      <div class="page-head"><div><h1 id="ddWelcome">Welcome</h1><p>Your Flameback partnership at a glance.</p></div>
+        <button class="btn" onclick="distEmail()">📞 Contact RM</button></div>
+      <div class="cards" id="ddCards"></div>
+      <div class="two-col" style="grid-template-columns:2fr 1fr;align-items:start">
+        <div class="panel"><div class="panel-head"><h2>Your clients</h2></div>
+          <table><thead><tr><th>Client</th><th>City</th><th>AUM (current)</th><th>CAGR</th></tr></thead><tbody id="ddClients"></tbody></table></div>
+        <div class="panel" style="padding:18px 20px"><h2 style="font-size:14px;color:var(--navy);margin-bottom:12px">Your Flameback relationship</h2><div id="ddContact"></div></div>
+      </div>
+    </section>
+
+    <!-- DISTRIBUTOR CLIENTS -->
+    <section id="view-distclients" class="hidden">
+      <div class="page-head"><div><h1>Clients</h1><p>All clients you have introduced to Flameback. Click a client for their full profile.</p></div></div>
+      <div class="panel"><table><thead><tr><th>Client ID</th><th>Client</th><th>City</th><th>AUM (current)</th><th>CAGR</th><th>Product</th></tr></thead><tbody id="distClientsBody"></tbody></table></div>
+    </section>
+
+    <!-- DISTRIBUTOR STRATEGIES -->
+    <section id="view-diststrategies" class="hidden">
+      <div class="page-head"><div><h1>Strategies</h1><p>Flameback strategies available to you, with live performance.</p></div></div>
+      <div class="cards" id="distStratCards"></div>
+    </section>
+
   </main>
 </div>
 
@@ -1708,7 +1736,8 @@ const ROLES={
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
-  Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']}
+  Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
+  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['distdash','distclients','diststrategies']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -1857,7 +1886,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','content','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','content','distdash','distclients','diststrategies','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1874,6 +1903,9 @@ function go(v){
   if(v==='events')renderEvents();
   if(v==='lists')renderLists();
   if(v==='content')renderContent();
+  if(v==='distdash')renderDistDash();
+  if(v==='distclients')renderDistClients();
+  if(v==='diststrategies')renderDistStrategies();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
 function switchRole(r){currentRole=r;applyRole();go(ROLES[r].nav[0]);}
@@ -2304,6 +2336,7 @@ function paintTabs(){
       <div class="kv-h">Client Information <span class="sync-badge">⟳ FBC-Admin</span></div>
       ${kvr('Date of Sign-up',fmtD(c.signup))}
       ${kvr('First Name',c.first)}${kvr('Last Name',c.last)}
+      ${kvr('Date of Birth',c.kyc&&c.kyc.dob?fmtD(c.kyc.dob):'—')}${kvr('Profession',(c.kyc&&c.kyc.profession)||'—')}
       ${kvr('Contact Number',c.contact)}
       ${kvr('WhatsApp Number',c.sameWa?c.contact+' <span class="lead-sub">(same as contact)</span>':(c.whatsapp||'—'))}
       ${kvr('Email',c.email)}${kvr('Country',c.country)}${kvr('Postal Code',c.postal)}
@@ -2903,6 +2936,53 @@ function sendMtg(){
   DB.meetings.push({id:DB.nextMtg++,title,rm:ROLES[currentRole].name,when:date+'T'+time,dur:+document.getElementById('mtDur').value,attendees:att,meet:isMeet?MT_MEET:'',status:'Scheduled'});
   save();closeMtg();go('calendar');
   toast(isMeet?'📅 Meeting scheduled · Google Meet link created · invite emailed via Google Calendar':'📞 Call scheduled · reminder added to your calendar');
+}
+
+/* ---------- Distributor / Wealth Manager portal ---------- */
+const DIST_RM={name:'Karan Shah',email:'karan@flamebackcapital.com',phone:'+91 98200 55512',role:'Partner Desk · Relationship Manager'};
+function distName(){return (ROLES.Distributor&&ROLES.Distributor.name)||'';}
+function distClients(){return DB.clients.filter(c=>c.distributor===distName());}
+function backToClients(){go(currentRole==='Distributor'?'distclients':'clients');}
+function distEmail(){openEmail({to:DIST_RM.email,subject:'Partner query — '+distName(),body:'Hi '+DIST_RM.name+',\n\n'});}
+function distContactCard(){return '<div style="font-size:13px"><b>'+DIST_RM.name+'</b><div class="lead-sub">'+DIST_RM.role+'</div>'+
+  '<div class="lead-sub" style="margin-top:8px">📞 '+DIST_RM.phone+'<br>✉ '+DIST_RM.email+'</div>'+
+  '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'+
+  '<button class="btn sm" onclick="toast(\'Calling '+DIST_RM.name+'…\')">📞 Call</button>'+
+  '<button class="btn ghost sm" onclick="distEmail()">✉ Email</button>'+
+  '<button class="btn ghost sm" onclick="toast(\'Opening WhatsApp…\')">💬 WhatsApp</button></div></div>';}
+function renderDistDash(){
+  const cs=distClients();
+  const inv=cs.reduce((s,c)=>s+(c.portfolio.invested||0),0),cur=cs.reduce((s,c)=>s+(c.portfolio.current||0),0);
+  const ret=inv?((cur-inv)/inv*100):0;
+  document.getElementById('ddWelcome').textContent='Welcome, '+distName();
+  document.getElementById('ddCards').innerHTML=
+    dcard('AUM with Flameback',fmtINR(cur),'current value','var(--green)',100)+
+    dcard('Total invested',fmtINR(inv),'across '+cs.length+' client'+(cs.length!==1?'s':''),'var(--teal)',100)+
+    dcard('Net gain',fmtINR(cur-inv),ret.toFixed(1)+'% return','var(--green)',Math.min(100,ret*4))+
+    dcard('Clients',cs.length,'active accounts','var(--navy)',100);
+  document.getElementById('ddClients').innerHTML=cs.length?cs.map(c=>'<tr class="lead-row" onclick="openClient(\''+c.cid+'\')"><td class="lead-name">'+c.first+' '+c.last+'</td><td>'+((c.kyc&&c.kyc.city)||'—')+'</td><td>'+fmtINR(c.portfolio.current)+'</td><td>'+cagr(c).toFixed(1)+'%</td></tr>').join(''):'<tr><td colspan="4" class="empty">No clients yet.</td></tr>';
+  document.getElementById('ddContact').innerHTML=distContactCard();
+  badges();
+}
+function renderDistClients(){
+  const cs=distClients();
+  document.getElementById('distClientsBody').innerHTML=cs.length?cs.map(c=>'<tr class="lead-row" onclick="openClient(\''+c.cid+'\')"><td><span class="cid">'+c.cid+'</span></td><td class="lead-name">'+c.first+' '+c.last+'</td><td>'+((c.kyc&&c.kyc.city)||'—')+'</td><td>'+fmtINR(c.portfolio.current)+'</td><td>'+cagr(c).toFixed(1)+'%</td><td>'+productTag(c.product)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No clients yet.</td></tr>';
+  badges();
+}
+function stratPerf(name){let h=0;for(let i=0;i<name.length;i++)h+=name.charCodeAt(i);return {oneY:(8+h%12)+(h%10)/10,threeY:(11+h%9)+(h%7)/10,since:(12+h%8)+(h%5)/10};}
+function renderDistStrategies(){
+  const cs=distClients();
+  document.getElementById('distStratCards').innerHTML=STRATEGIES.map(st=>{
+    const holders=cs.filter(c=>(c.strategies||[]).indexOf(st)>=0);
+    const aum=holders.reduce((s,c)=>s+(c.portfolio.current||0),0);const pf=stratPerf(st);
+    return '<div class="card" style="text-align:left"><div class="k">'+st+'</div>'+
+      '<div style="display:flex;gap:18px;margin-top:12px">'+
+      '<div><div class="lead-sub">1Y</div><div style="font-weight:800;color:var(--green)">+'+pf.oneY.toFixed(1)+'%</div></div>'+
+      '<div><div class="lead-sub">3Y CAGR</div><div style="font-weight:800;color:var(--green)">+'+pf.threeY.toFixed(1)+'%</div></div>'+
+      '<div><div class="lead-sub">Since incep.</div><div style="font-weight:800;color:var(--navy)">+'+pf.since.toFixed(1)+'%</div></div></div>'+
+      '<div class="lead-sub" style="margin-top:12px">'+holders.length+' of your clients · '+fmtINR(aum)+' AUM</div></div>';
+  }).join('');
+  badges();
 }
 
 /* ---------- Client tags (pain points) + content routing ---------- */
