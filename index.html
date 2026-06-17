@@ -392,6 +392,14 @@
   .tagchip{display:inline-flex;align-items:center;gap:6px;background:#eef4f9;border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12px;font-weight:600;color:var(--navy);margin:0 6px 6px 0}
   .tagchip .x{cursor:pointer;color:var(--muted);font-weight:700}
   .tagchip.ai{background:#f3ecfb;border-color:#dccdf2;color:#6b3aa8;cursor:pointer}
+  .email-item{border-bottom:1px solid var(--line);padding:12px 16px;cursor:pointer}
+  .email-item:hover{background:#f6f9fc}
+  .email-item.unread{background:#fbfdff}
+  .email-item.unread .ei-who,.email-item.unread .ei-subj{font-weight:800}
+  .ei-top{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}
+  .ei-who{color:var(--navy);font-weight:600}
+  .ei-subj{font-size:14px;color:var(--navy);margin-top:3px}
+  .ei-snip{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pf-meta{display:grid;grid-template-columns:repeat(4,1fr)}
   .pf-meta>div{padding:12px 16px;border-right:1px solid var(--line)}
   .pf-meta>div:last-child{border-right:none}
@@ -596,6 +604,7 @@
       <button data-view="out"><span class="ico">⛔</span> Out List <span class="count" id="navOut">0</span></button>
       <button data-view="suggestions"><span class="ico">💡</span> Feature Suggestions <span class="count" id="navSugg">0</span></button>
       <button data-view="hub"><span class="ico">📖</span> Knowledge Hub</button>
+      <button data-view="inbox"><span class="ico">📧</span> Inbox <span class="count" id="navInbox">0</span></button>
     </nav>
     <div class="side-foot">
       Logged in as<br><strong style="color:#cdd8e6" id="roleName">Shashank</strong><br>
@@ -1252,6 +1261,15 @@
       <div class="page-head"><div><h1>Strategies</h1><p>Flameback strategies available to you, with live performance.</p></div></div>
       <div class="cards" id="distStratCards"></div>
     </section>
+    <!-- INBOX -->
+    <section id="view-inbox" class="hidden">
+      <div class="page-head"><div><h1>Inbox</h1><p>Your email, synced with Gmail — messages to and from you across the firm.</p></div>
+        <button class="btn" onclick="openEmail({})">✉ Compose</button></div>
+      <div class="panel">
+        <div class="tabs" id="inboxTabs"><button class="active" data-itab="inbox" onclick="inboxTab('inbox')">Inbox</button><button data-itab="sent" onclick="inboxTab('sent')">Sent</button></div>
+        <div id="inboxList"></div>
+      </div>
+    </section>
 
   </main>
 </div>
@@ -1444,6 +1462,12 @@
 </div>
 
 <!-- EMAIL COMPOSER MODAL -->
+<div class="modal-scrim" id="mailScrim"><div class="modal">
+  <div class="modal-h"><h2 id="mailSubject">Email</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeMail()">×</button></div>
+  <div class="modal-b"><div class="lead-sub" id="mailMeta"></div><div id="mailBody" style="margin-top:12px;white-space:pre-wrap;font-size:13.5px;line-height:1.6;color:var(--ink)"></div></div>
+  <div class="modal-f"><button class="btn ghost" onclick="closeMail()">Close</button><button class="btn" onclick="replyMail()">↩ Reply</button></div>
+</div></div>
+
 <div class="modal-scrim" id="emailScrim">
   <div class="modal" style="width:560px">
     <div class="modal-h"><h2>Compose email</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeEmail()">×</button></div>
@@ -1739,6 +1763,7 @@ const ROLES={
   Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
   Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','calendar','reminders','ips','diststrategies']}
 };
+Object.values(ROLES).forEach(r=>{if(r.nav.indexOf('inbox')<0)r.nav.push('inbox');});
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
 function emailOf(name){return RM_EMAILS[name]||(ROLES[currentRole]&&Object.values(ROLES).find(r=>r.name===name)?Object.values(ROLES).find(r=>r.name===name).email:(name||'user').split(' ')[0].toLowerCase()+'@flamebackcapital.com');}
@@ -1877,6 +1902,7 @@ function migrate(){
     DB.articles=seedArticles();DB.nextArticle=DB.articles.length+1;
     DB.tagsV1=true;
   }
+  if(!DB.emails){DB.emails=seedEmails();DB.nextEmail=DB.emails.length+1;}
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -1886,7 +1912,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','content','distdash','distclients','diststrategies','tasks','verification','ips','out','suggestions','hub'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','events','lists','content','distdash','distclients','diststrategies','tasks','verification','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1906,6 +1932,7 @@ function go(v){
   if(v==='distdash')renderDistDash();
   if(v==='distclients')renderDistClients();
   if(v==='diststrategies')renderDistStrategies();
+  if(v==='inbox')renderInbox();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
 function switchRole(r){currentRole=r;applyRole();go(ROLES[r].nav[0]);}
@@ -2899,7 +2926,7 @@ function openEmail(o){
   document.getElementById('emailScrim').classList.add('open');
 }
 function closeEmail(){document.getElementById('emailScrim').classList.remove('open');}
-function sendEmail(){const from=document.getElementById('emFrom').value;closeEmail();toast('Email sent from '+from);}
+function sendEmail(){const from=document.getElementById('emFrom').value,to=document.getElementById('emTo').value,subject=document.getElementById('emSubject').value,body=document.getElementById('emBody').value;DB.emails=DB.emails||[];if(!DB.nextEmail)DB.nextEmail=(DB.emails.length+1);DB.emails.push({id:DB.nextEmail++,from,to,subject,body,date:new Date().toISOString(),read:true});save();closeEmail();toast('Email sent from '+from);badges();}
 function emailReview(cid,type){const c=DB.clients.find(x=>x.cid===cid);
   openEmail({from:emailOf(c.rm),to:c.email,subject:(type==='annual'?'Your annual portfolio review is due':'Your quarterly portfolio review'),
     body:`Dear ${c.first},\n\nIt's time for your ${type==='annual'?'annual Investment Policy review':'quarterly portfolio review'}. I'd like to schedule a short call to walk you through performance and any adjustments.\n\nPlease let me know a convenient time, or use the calendar link I'll share.\n\nWarm regards,\n${c.rm}\nFlameback Capital`});}
@@ -3004,6 +3031,37 @@ function renderDistStrategies(){
   }).join('');
   badges();
 }
+
+/* ---------- Inbox (Gmail-linked) ---------- */
+function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}
+function emailMatch(to,me){return (to||'').toLowerCase().indexOf((me||'__').toLowerCase())>=0;}
+function fmtDateTime(d){try{return new Date(d).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return d;}}
+function seedEmails(){const t=(n,h)=>{const d=new Date();d.setDate(d.getDate()+n);d.setHours(h||10,30,0,0);return d.toISOString();};
+  return [
+    {id:1,from:'rajesh.khanna@email.com',to:'shashank@flamebackcapital.com',subject:'Question on my PMS allocation',body:'Hi Shashank,\n\nCould we review the equity weight in my PMS account? My son feels we are a touch aggressive.\n\nRegards,\nRajesh',date:t(-1,9),read:false},
+    {id:2,from:'maya@flamebackcapital.com',to:'shashank@flamebackcapital.com',subject:'New lead assigned — Rohit Bansal',body:'Assigned Rohit Bansal to you. He stalled at the risk-profile step — please resume onboarding.',date:t(-2,14),read:true},
+    {id:3,from:'shashank@flamebackcapital.com',to:'rajesh.khanna@email.com',subject:'Re: Question on my PMS allocation',body:'Happy to walk through it on a call — proposing Thursday 4pm. I will share the allocation vs your IPS beforehand.',date:t(0,11),read:true},
+    {id:4,from:'karan@flamebackcapital.com',to:'partners@abcwealth.in',subject:'Q2 statements for your clients',body:'Hi ABC Wealth team,\n\nQ2 portfolio statements for your clients are ready. Would you like a joint review call?\n\nKaran',date:t(-1,10),read:false},
+    {id:5,from:'neha.verma@email.com',to:'partners@abcwealth.in',subject:'Thanks for the introduction',body:'Thank you for connecting me with Flameback — very happy with the onboarding experience.',date:t(-3,16),read:true},
+    {id:6,from:'tanvi@flamebackcapital.com',to:'partners@abcwealth.in',subject:'Invite — Bangalore PMS Investor Meet',body:'You and your Bangalore clients are invited to our PMS investor meet. RSVP inside.',date:t(-1,12),read:false}
+  ];}
+let INBOX_TAB='inbox',CURRENT_MAIL=null;
+function inboxTab(t){INBOX_TAB=t;renderInbox();}
+function renderInbox(){
+  const me=myEmail();const all=DB.emails||[];
+  document.querySelectorAll('#inboxTabs button').forEach(b=>b.classList.toggle('active',b.dataset.itab===INBOX_TAB));
+  const list=(INBOX_TAB==='sent'?all.filter(e=>e.from===me):all.filter(e=>emailMatch(e.to,me))).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('inboxList').innerHTML=list.length?list.map(e=>'<div class="email-item '+((INBOX_TAB==='inbox'&&!e.read)?'unread':'')+'" onclick="openMail('+e.id+')"><div class="ei-top"><span class="ei-who">'+esc(INBOX_TAB==='sent'?('To: '+e.to):e.from)+'</span><span>'+fmtDateTime(e.date)+'</span></div><div class="ei-subj">'+esc(e.subject||'(no subject)')+'</div><div class="ei-snip">'+esc((e.body||'').replace(/\n/g,' ').slice(0,110))+'</div></div>').join(''):'<div class="empty" style="padding:24px">'+(INBOX_TAB==='sent'?'No sent mail.':'Inbox zero 🎉')+'</div>';
+  badges();
+}
+function openMail(id){const e=(DB.emails||[]).find(x=>x.id===id);if(!e)return;CURRENT_MAIL=e;e.read=true;save();
+  document.getElementById('mailSubject').textContent=e.subject||'(no subject)';
+  document.getElementById('mailMeta').innerHTML='<b>From:</b> '+esc(e.from)+' &nbsp; <b>To:</b> '+esc(e.to)+'<br><span class="lead-sub">'+fmtDateTime(e.date)+'</span>';
+  document.getElementById('mailBody').textContent=e.body||'';
+  document.getElementById('mailScrim').classList.add('open');}
+function closeMail(){document.getElementById('mailScrim').classList.remove('open');renderInbox();}
+function replyMail(){const e=CURRENT_MAIL;if(!e)return;document.getElementById('mailScrim').classList.remove('open');
+  openEmail({to:e.from,from:myEmail(),subject:/^re:/i.test(e.subject||'')?e.subject:'Re: '+(e.subject||''),body:'\n\n--- On '+fmtDateTime(e.date)+', '+e.from+' wrote ---\n'+(e.body||'')});}
 
 /* ---------- Client tags (pain points) + content routing ---------- */
 function seedTags(){return ['Tax implications','Multi-generational / family dialogue','Retirement planning','Real estate','Succession / estate planning','Children education','ESG / sustainable investing','Liquidity event','Sector focus','Market volatility','Philanthropy','NRI / cross-border'];}
@@ -3701,6 +3759,7 @@ function badges(){
   document.getElementById('navAssign').textContent=DB.leads.filter(l=>l.appUser&&!l.qualified).length;
   document.getElementById('navOnb').textContent=mine(active()).filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
   document.getElementById('navCal').textContent=myMeetings().filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
+  document.getElementById('navInbox').textContent=(DB.emails||[]).filter(e=>!e.read&&emailMatch(e.to,myEmail())).length;
   document.getElementById('navRem').textContent=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
   const no=document.getElementById('navOwner');if(no)no.textContent=OWNER_DEPTS.reduce((n,d)=>n+deptAttn(d.key).length,0);
 }

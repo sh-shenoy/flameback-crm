@@ -51,6 +51,9 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**Inbox (Gmail-linked)**
+- Every role now has an Inbox (Inbox / Sent tabs) showing email to and from their address. The existing Gmail composer now delivers into it; opening a mail marks it read and Reply pre-fills to the sender. Unread count shows on the sidebar. Seeded with sample mail across RM, distributor and client addresses.
+
 **Distributor / Wealth Manager portal**
 - New external partner role with its own scoped view (seeded as ABC Wealth).
 - Dashboard: the same RM-style dashboard we give our own RMs, scoped to the partner's clients — cards for clients, AUM, net gain and reviews-due-this-week, a client panel, and a "Reach out to your Flameback RM" contact card (call / email / WhatsApp). Only difference vs an internal RM: the RM they contact is us.
