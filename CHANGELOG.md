@@ -57,3 +57,4 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Clients page: all of the partner's clients with city, AUM and CAGR; click through to a full client profile (personal details incl. DOB/profession, portfolio, IPS, reports).
 - Strategies page: the strategies the partner can access, each with 1Y / 3Y CAGR / since-inception performance and the partner's AUM + client count in it.
 - Contact button to call / email / WhatsApp the partner's Flameback RM.
+- Partners get the RM action tools for their own book too: **Calendar** (schedule meetings with their clients — and their Flameback RM — generating a Google Meet invite), **Reviews & Reminders** (IPS reviews due) and **Portfolios & IPS** (review IPS) — all scoped to their clients.

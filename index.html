@@ -1737,7 +1737,7 @@ const ROLES={
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
   Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
-  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','diststrategies']}
+  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','calendar','reminders','ips','diststrategies']}
 };
 let currentRole='RM';
 const RM_EMAILS={'Shashank':'shashank@flamebackcapital.com','Priya Nair':'priya@flamebackcapital.com','Arjun Mehta':'arjun@flamebackcapital.com','Divya Rao':'divya@flamebackcapital.com','Karan Shah':'karan@flamebackcapital.com'};
@@ -1930,7 +1930,7 @@ function fmtDate(s){if(!s)return '<span style="color:#aab2bd">—</span>';const 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function active(){return DB.leads.filter(l=>!l.out);}
 /* RM sees only their own records; everyone else (and Leadership) sees all */
-function mine(list){return currentRole==='RM'?list.filter(x=>x&&x.rm===ROLES.RM.name):list;}
+function mine(list){if(currentRole==='RM')return list.filter(x=>x&&x.rm===ROLES.RM.name);if(currentRole==='Distributor')return list.filter(x=>x&&x.distributor===distName());return list;}
 function counts(){const a=mine(active());return{total:a.length,L1:a.filter(l=>l.stage==='L1').length,L2:a.filter(l=>l.stage==='L2').length,L3:a.filter(l=>l.stage==='L3').length,L4:a.filter(l=>l.stage==='L4').length,hot:a.filter(l=>l.status==='Hot').length,out:mine(DB.leads).filter(l=>l.out).length};}
 
 /* ---------- dashboard ---------- */
@@ -2674,7 +2674,7 @@ function raiseDiscrepancy(cid){
 /* ---------- investment: portfolios & IPS ---------- */
 function weekDue(s){if(!s)return false;const d=new Date(s);const lim=new Date();lim.setDate(lim.getDate()+7);return d<=lim;}
 function renderIps(){
-  const funded=DB.clients.filter(c=>c.funded);
+  const funded=mine(DB.clients).filter(c=>c.funded);
   const aum=funded.reduce((s,c)=>s+c.portfolio.current,0);
   const dueWk=funded.filter(c=>weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview));
   const avg=funded.length?(funded.reduce((s,c)=>s+c.portfolio.absReturn,0)/funded.length).toFixed(1):0;
@@ -2790,10 +2790,9 @@ function calcConflicts(list){
   return conf;
 }
 function renderCalendar(){
-  const isRM=currentRole==='RM';
-  document.getElementById('calTitle').textContent=isRM?'My Calendar — '+ROLES.RM.name:'Team Calendar';
-  let list=DB.meetings.slice();
-  if(isRM)list=list.filter(m=>m.rm===ROLES.RM.name);
+  const isRM=currentRole==='RM',isDist=currentRole==='Distributor';
+  document.getElementById('calTitle').textContent=isRM?'My Calendar — '+ROLES.RM.name:(isDist?'My Calendar — '+distName():'Team Calendar');
+  let list=myMeetings().slice();
   const conf=calcConflicts(DB.meetings);
   list.sort((x,y)=>new Date(x.when)-new Date(y.when));
   const byDay={};list.forEach(m=>{const k=new Date(m.when).toDateString();(byDay[k]=byDay[k]||[]).push(m);});
@@ -2915,12 +2914,14 @@ let MT_PEEPS=[],MT_MEET='';
 function teamOf(n){for(const t in TEAM_MEMBERS)if(TEAM_MEMBERS[t].includes(n))return t;return 'Team';}
 function openMtg(){
   MT_PEEPS=[];
-  DB.clients.forEach(c=>MT_PEEPS.push({n:c.first+' '+c.last,role:'Client'}));
-  active().filter(l=>!(l.appUser&&!l.qualified)).forEach(l=>MT_PEEPS.push({n:l.name,role:'Lead'}));
-  Object.keys(TEAM_MEMBERS).forEach(t=>TEAM_MEMBERS[t].forEach(n=>MT_PEEPS.push({n,role:t})));
+  const isDist=currentRole==='Distributor';
+  (isDist?distClients():DB.clients).forEach(c=>MT_PEEPS.push({n:c.first+' '+c.last,role:'Client'}));
+  if(isDist){MT_PEEPS.push({n:DIST_RM.name,role:'Flameback RM'});}
+  else{active().filter(l=>!(l.appUser&&!l.qualified)).forEach(l=>MT_PEEPS.push({n:l.name,role:'Lead'}));
+    Object.keys(TEAM_MEMBERS).forEach(t=>TEAM_MEMBERS[t].forEach(n=>MT_PEEPS.push({n,role:t})));}
   document.getElementById('mtWith').innerHTML='<option value="">— none —</option>'+MT_PEEPS.map((x,i)=>`<option value="${i}">${x.n} · ${x.role}</option>`).join('');
   const me=ROLES[currentRole].name;
-  const members=[].concat.apply([],Object.values(TEAM_MEMBERS)).filter(n=>n!==me);
+  const members=isDist?[DIST_RM.name]:[].concat.apply([],Object.values(TEAM_MEMBERS)).filter(n=>n!==me);
   document.getElementById('mtTeam').innerHTML=members.map(n=>`<label><input type="checkbox" value="${n}" onchange="mtPreview()"> ${n}</label>`).join('');
   document.getElementById('mtTitle').value='';
   const d=new Date();d.setDate(d.getDate()+1);document.getElementById('mtDate').value=d.toISOString().slice(0,10);
@@ -2957,6 +2958,8 @@ function sendMtg(){
 const DIST_RM={name:'Karan Shah',email:'karan@flamebackcapital.com',phone:'+91 98200 55512',role:'Partner Desk · Relationship Manager'};
 function distName(){return (ROLES.Distributor&&ROLES.Distributor.name)||'';}
 function distClients(){return DB.clients.filter(c=>c.distributor===distName());}
+function distClientNames(){return distClients().map(c=>c.first+' '+c.last);}
+function myMeetings(){if(currentRole==='RM')return DB.meetings.filter(m=>m.rm===ROLES.RM.name);if(currentRole==='Distributor'){const names=distClientNames();return DB.meetings.filter(m=>m.rm===distName()||(m.attendees||[]).some(a=>names.indexOf(a.n)>=0));}return DB.meetings;}
 function backToClients(){go(currentRole==='Distributor'?'distclients':'clients');}
 function distEmail(){openEmail({to:DIST_RM.email,subject:'Partner query — '+distName(),body:'Hi '+DIST_RM.name+',\n\n'});}
 function distContactCard(){return '<div style="font-size:13px"><b>'+DIST_RM.name+'</b><div class="lead-sub">'+DIST_RM.role+'</div>'+
@@ -3695,7 +3698,7 @@ function badges(){
   document.getElementById('navIps').textContent=DB.clients.filter(c=>c.funded&&c.ips.nextReview&&new Date(c.ips.nextReview)<=new Date()).length;
   document.getElementById('navAssign').textContent=DB.leads.filter(l=>l.appUser&&!l.qualified).length;
   document.getElementById('navOnb').textContent=mine(active()).filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
-  document.getElementById('navCal').textContent=mine(DB.meetings).filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
+  document.getElementById('navCal').textContent=myMeetings().filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
   document.getElementById('navRem').textContent=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
   const no=document.getElementById('navOwner');if(no)no.textContent=OWNER_DEPTS.reduce((n,d)=>n+deptAttn(d.key).length,0);
 }
