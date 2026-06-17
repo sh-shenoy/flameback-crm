@@ -1807,12 +1807,12 @@ function demoHousehold(){
 
 /* roles */
 const ROLES={
-  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','tasks','out','suggestions','hub']},
+  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','invoices','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','tasks','clients','suggestions','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
-  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','calendar','tasks','suggestions','hub']},
-  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
+  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','invoices','calendar','tasks','suggestions','hub']},
+  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','invoices','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
   Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
   Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','reports','invoices','calendar','reminders','ips','diststrategies']}
 };
@@ -2544,11 +2544,11 @@ function paintTabs(){
     </tbody></table></div>`;
 
   // INVOICES
-  document.getElementById('tab-invoices').innerHTML=`<div class="panel"><div class="panel-head"><h2>Client Invoices <span class="sync-badge">⟳ FBC-Admin</span></h2></div>
+  document.getElementById('tab-invoices').innerHTML=`<div class="panel"><div class="panel-head"><h2>Client Invoices <span class="sync-badge">⟳ FBC-Admin</span></h2><button class="btn ghost sm" onclick="dlClientInvoicesCsv('${c.cid}')">⬇ Download all (CSV)</button></div>
     <table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
     ${c.invoices.length?c.invoices.map(i=>`<tr><td>${fmtD(i.date)}</td><td>${i.desc}</td><td style="font-weight:700">${fmtINR(i.amount)}</td>
       <td>${i.status==='Paid'?'<span class="tag-done">Paid</span>':'<span class="tag-pend">'+i.status+'</span>'}</td>
-      <td><button class="btn ghost sm" onclick="toast('Downloading invoice (PDF)…')">⬇ Download</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No invoices generated yet.</td></tr>'}
+      <td><button class="btn ghost sm" onclick="dlInvoice('${c.cid}','${i.date}','${(i.desc||'').replace(/'/g,'')}',${i.amount},'${i.status}')">⬇ Download</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No invoices generated yet.</td></tr>'}
     </tbody></table></div>`;
 
   // CALLS
@@ -3140,12 +3140,15 @@ function renderInvoices(){
   document.getElementById('invBody').innerHTML=rows.length?rows.map((r,i)=>`<tr><td>${fmtD(r.date)}</td><td class="lead-name">${r.client} <span class="cid">${r.cid}</span></td><td>${r.desc}</td><td>${fmtINR(r.amount)}</td><td><span class="verdict v-${r.status==='Paid'?'Verified':'Pending'}">${r.status}</span></td><td><button class="btn ghost sm" onclick="downloadInvoice(${i})">⬇ Download</button></td></tr>`).join(''):`<tr><td colspan="6" class="empty">No invoices yet.</td></tr>`;
   badges();
 }
-function downloadInvoice(i){const r=(window.__inv||[])[i];if(!r)return;
-  const ref='INV-'+r.cid+'-'+String(r.date||'').replace(/-/g,'');
-  const gst=Math.round((r.amount||0)*0.18/1.18),base=(r.amount||0)-gst;
-  const body=['FLAMEBACK CAPITAL PVT LTD','SEBI Reg. INA000012345  ·  GSTIN 29ABCDE1234F1Z5','','TAX INVOICE','','Invoice no : '+ref,'Date       : '+fmtD(r.date),'Bill to    : '+r.client+'  ('+r.cid+')','','Description: '+r.desc,'Taxable amount      : ₹'+base.toLocaleString('en-IN'),'GST @ 18%           : ₹'+gst.toLocaleString('en-IN'),'Total (incl. GST)   : ₹'+(r.amount||0).toLocaleString('en-IN'),'Status              : '+r.status,'','(Demo invoice — wireframe placeholder.)'].join('\n');
+function dlInvoice(cid,date,desc,amount,status){
+  const ref='INV-'+cid+'-'+String(date||'').replace(/-/g,'');
+  const gst=Math.round((amount||0)*0.18/1.18),base=(amount||0)-gst;
+  const c=DB.clients.find(x=>x.cid===cid),who=c?c.first+' '+c.last:cid;
+  const body=['FLAMEBACK CAPITAL PVT LTD','SEBI Reg. INA000012345  ·  GSTIN 29ABCDE1234F1Z5','','TAX INVOICE','','Invoice no : '+ref,'Date       : '+fmtD(date),'Bill to    : '+who+'  ('+cid+')','','Description: '+desc,'Taxable amount      : ₹'+base.toLocaleString('en-IN'),'GST @ 18%           : ₹'+gst.toLocaleString('en-IN'),'Total (incl. GST)   : ₹'+(amount||0).toLocaleString('en-IN'),'Status              : '+status,'','(Demo invoice — wireframe placeholder.)'].join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([body],{type:'text/plain'}));a.download=ref+'.txt';document.body.appendChild(a);a.click();a.remove();toast('Invoice '+ref+' downloaded');
 }
+function downloadInvoice(i){const r=(window.__inv||[])[i];if(r)dlInvoice(r.cid,r.date,r.desc,r.amount,r.status);}
+function dlClientInvoicesCsv(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;const rows=c.invoices||[];if(!rows.length){toast('No invoices');return;}const hdr='Invoice no,Date,Description,Amount,Status';const lines=rows.map(r=>['INV-'+cid+'-'+String(r.date).replace(/-/g,''),r.date,r.desc,r.amount,r.status].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(','));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[hdr].concat(lines).join('\n')],{type:'text/csv'}));a.download=cid+'-invoices.csv';document.body.appendChild(a);a.click();a.remove();toast('Downloaded '+rows.length+' invoices (CSV)');}
 function renderDistStrategies(){
   const cs=distClients();
   document.getElementById('distStratCards').innerHTML=STRATEGIES.map(st=>{
