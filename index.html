@@ -2722,9 +2722,6 @@ function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
 function renderVerification(){
   const el=document.getElementById('verifList');
   el.innerHTML=DB.clients.map(c=>{
-    const nameOk=norm(c.kyc.namePan)===norm(c.uploaded.namePan);
-    const panOk=norm(c.kyc.pan)===norm(c.uploaded.pan);
-    const dobOk=c.kyc.dob===c.uploaded.dob;
     const rp=c.riskProfile||{};
     const items=
       chkSection('Account opening form')+
@@ -2732,13 +2729,10 @@ function renderVerification(){
       formRow('Email',c.email)+
       formRow('Mobile',c.contact)+
       formRow('Residential address',[c.kyc.address,c.kyc.city,c.postal].filter(Boolean).join(', '))+
-      chkSection('KYC documents uploaded')+
-      cmpItem('Name (as per PAN)',c.kyc.namePan,c.uploaded.namePan,nameOk)+
-      cmpItem('PAN number',c.kyc.pan,c.uploaded.pan,panOk)+
-      cmpItem('Date of birth',fmtD(c.kyc.dob),fmtD(c.uploaded.dob),dobOk)+
-      docItem('PAN card',c.docs.pan)+
-      docItem('Aadhaar card',c.docs.aadhaar)+
-      docItem('Bank account proof',c.docs.bank)+
+      chkSection('KYC — verified digitally via DIGIO (no manual uploads)')+
+      flagItem('PAN &amp; identity verified by DIGIO · '+c.kyc.pan+' · '+c.kyc.namePan,true)+
+      flagItem('Aadhaar e-KYC completed via DIGIO',true)+
+      flagItem('Date of birth verified · '+fmtD(c.kyc.dob),true)+
       flagItem('CKYC registered'+(/pending/i.test(c.kyc.ckyc)?'':' · '+c.kyc.ckyc),!/pending/i.test(c.kyc.ckyc))+
       flagItem('KRA KYC verified',c.kyc.kra==='Verified')+
       chkSection('Agreement, disclosure & risk profile')+
@@ -2753,7 +2747,7 @@ function renderVerification(){
       <div class="chk-h"><div><span class="who">${c.first} ${c.last}</span> <span class="cid">${c.cid}</span></div>
         <div style="display:flex;gap:8px;align-items:center">
           <span class="verdict v-${c.compliance.status}">${c.compliance.status}</span>
-          ${(!nameOk||!panOk||!dobOk)?`<button class="btn ghost sm" onclick="raiseDiscrepancy('${c.cid}')">⚠ Raise to RM</button>`:''}
+          <button class="btn ghost sm" onclick="raiseDiscrepancy('${c.cid}')">⚠ Raise to RM</button>
           <button class="btn sm" onclick="setVerdict('${c.cid}','Verified')">Mark verified</button>
         </div></div>
       ${items}</div>`;
@@ -2768,9 +2762,9 @@ function viewDoc(f){toast('Opening '+f+' (demo upload)');}
 function suitabilityRow(c){const su=c.suitability||{};const ok=!!su.preparedOn;
   return `<div class="chk-item"><span class="chk-ico ${ok?'chk-ok':'chk-pend'}">${ok?'✓':'!'}</span><span class="lab">Suitability assessment (IPS)</span><span class="cmp">${ok?`<b style="color:var(--green)">Prepared</b> <a class="meet-link" href="#" onclick="viewDoc('${su.doc}');return false">📄 ${su.doc}</a> <span class="lead-sub">· sent to client ${su.sentOn?fmtD(su.sentOn):'—'}</span> <button class="btn ghost sm" onclick="sendIPS('${c.cid}')">✉ Send to client</button>`:'<b style="color:#a96a16">Pending — advisor to prepare IPS</b>'}</span></div>`;}
 function dematRow(c){const d=c.demat||{};const active=d.status==='Active';
-  const detail=active?`<b style="color:var(--green)">Read-only · ${d.broker}</b> <span class="lead-sub">· a/c ${maskAcct(d.account)} · granted ${fmtD(d.grantedOn)}</span> <button class="btn ghost sm" onclick="revokeDemat('${c.cid}')">Revoke</button>`:(d.status==='Revoked'?`<b style="color:var(--hot)">Revoked</b> <button class="btn ghost sm" onclick="grantDemat('${c.cid}')">Re-grant</button>`:`<b style="color:#a96a16">Not granted</b> <button class="btn sm" onclick="grantDemat('${c.cid}')">Grant read-only access</button>`);
+  const detail=active?`<b style="color:var(--green)">Read-only · ${d.broker}</b> <span class="lead-sub">· a/c ${maskAcct(d.account)} · granted by client ${fmtD(d.grantedOn)}</span>`:`<b style="color:#a96a16">Not granted yet</b> <button class="btn sm" onclick="grantDemat('${c.cid}')">Record client's read-only grant</button>`;
   const log=(d.log||[]).length?`<div class="demat-log">${d.log.map(l=>`<div>• ${l.event} — ${fmtD(l.date)}</div>`).join('')}</div>`:'';
-  return `<div class="chk-item"><span class="chk-ico ${active?'chk-ok':'chk-pend'}">${active?'✓':'!'}</span><span class="lab">Demat / trading access</span><span class="cmp">${detail}${log}</span></div>`;}
+  return `<div class="chk-item"><span class="chk-ico ${active?'chk-ok':'chk-pend'}">${active?'✓':'!'}</span><span class="lab">Demat / trading access (client-granted, read-only — cannot be revoked by us)</span><span class="cmp">${detail}${log}</span></div>`;}
 function sendIPS(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.suitability=c.suitability||{};if(!c.suitability.doc)c.suitability.doc='IPS_'+cid+'.pdf';if(!c.suitability.preparedOn)c.suitability.preparedOn=dayStr(0);c.suitability.sentOn=dayStr(0);save();openEmail({to:c.email,subject:'Your Investment Policy Statement (suitability assessment)',body:'Hi '+c.first+',\n\nPlease find your IPS / suitability assessment ('+c.suitability.doc+'), prepared from your risk profile and financial goals.\n\nFlameback Capital'});renderVerification();toast('IPS sent to client & logged');}
 function grantDemat(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;const broker=c.zerodha==='Yes'?'Zerodha':'Groww';c.demat=c.demat||{log:[]};c.demat.status='Active';c.demat.broker=broker;if(!c.demat.account)c.demat.account=genDemat(cid);c.demat.accessType='Read-only';c.demat.grantedOn=dayStr(0);c.demat.log=c.demat.log||[];c.demat.log.push({event:'Read-only access granted · '+broker,date:dayStr(0)});save();renderVerification();toast('Read-only demat access granted & logged ('+broker+')');}
 function revokeDemat(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c||!c.demat)return;c.demat.status='Revoked';c.demat.log=c.demat.log||[];c.demat.log.push({event:'Access revoked',date:dayStr(0)});save();renderVerification();toast('Demat access revoked & logged');}
