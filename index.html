@@ -612,6 +612,7 @@
       <button data-view="distdash"><span class="ico">🏠</span> Dashboard</button>
       <button data-view="distclients"><span class="ico">👥</span> Clients</button>
       <button data-view="diststrategies"><span class="ico">📈</span> Strategies</button>
+      <button data-view="invoices"><span class="ico">🧾</span> Invoices</button>
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> RIA Compliance List <span class="count" id="navVerif">0</span></button>
       <button data-view="compreport"><span class="ico">📋</span> SEBI Report</button>
@@ -1297,6 +1298,12 @@
       <div class="panel"><div class="panel-head"><h2>Client compliance — SEBI items i–x</h2><span class="lead-sub"><span class="dot green"></span> complete &nbsp;<span class="dot amber"></span> pending &nbsp;<span class="dot red"></span> missing</span></div>
         <table class="comp-table"><thead><tr id="crHead"></tr></thead><tbody id="crBody"></tbody></table></div>
     </section>
+    <!-- INVOICES (distributor) -->
+    <section id="view-invoices" class="hidden">
+      <div class="page-head"><div><h1>Invoices</h1><p>Fee invoices across your clients.</p></div></div>
+      <div class="cards" id="invCards"></div>
+      <div class="panel"><table><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody id="invBody"></tbody></table></div>
+    </section>
 
   </main>
 </div>
@@ -1800,7 +1807,7 @@ const ROLES={
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
   Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
-  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','reports','calendar','reminders','ips','diststrategies']}
+  Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','reports','invoices','calendar','reminders','ips','diststrategies']}
 };
 Object.values(ROLES).forEach(r=>{if(r.nav.indexOf('inbox')<0)r.nav.push('inbox');});
 let currentRole='RM';
@@ -1972,7 +1979,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','tasks','verification','compreport','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -1994,6 +2001,7 @@ function go(v){
   if(v==='distdash')renderDistDash();
   if(v==='distclients')renderDistClients();
   if(v==='diststrategies')renderDistStrategies();
+  if(v==='invoices')renderInvoices();
   if(v==='inbox')renderInbox();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
 }
@@ -3103,6 +3111,18 @@ function renderDistClients(){
   badges();
 }
 function stratPerf(name){let h=0;for(let i=0;i<name.length;i++)h+=name.charCodeAt(i);return {oneY:(8+h%12)+(h%10)/10,threeY:(11+h%9)+(h%7)/10,since:(12+h%8)+(h%5)/10};}
+function renderInvoices(){
+  const cs=(currentRole==='Distributor'?distClients():mine(DB.clients));
+  const rows=[];cs.forEach(c=>(c.invoices||[]).forEach(iv=>rows.push(Object.assign({client:c.first+' '+c.last,cid:c.cid},iv))));
+  rows.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const total=rows.reduce((s,r)=>s+(r.amount||0),0),paid=rows.filter(r=>r.status==='Paid').reduce((s,r)=>s+(r.amount||0),0);
+  document.getElementById('invCards').innerHTML=
+    dcard('Total invoiced',fmtINR(total),rows.length+' invoice'+(rows.length!==1?'s':''),'var(--navy)',100)+
+    dcard('Paid',fmtINR(paid),'Settled','var(--green)',total?paid/total*100:0)+
+    dcard('Outstanding',fmtINR(total-paid),'Due','var(--warm)',0);
+  document.getElementById('invBody').innerHTML=rows.length?rows.map(r=>`<tr><td>${fmtD(r.date)}</td><td class="lead-name">${r.client} <span class="cid">${r.cid}</span></td><td>${r.desc}</td><td>${fmtINR(r.amount)}</td><td><span class="verdict v-${r.status==='Paid'?'Verified':'Pending'}">${r.status}</span></td></tr>`).join(''):`<tr><td colspan="5" class="empty">No invoices yet.</td></tr>`;
+  badges();
+}
 function renderDistStrategies(){
   const cs=distClients();
   document.getElementById('distStratCards').innerHTML=STRATEGIES.map(st=>{
