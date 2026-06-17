@@ -587,7 +587,7 @@
       <select id="roleSel" onchange="switchRole(this.value)">
         <option value="RM">RM — Relationship Manager</option>
         <option value="Qualifier">Qualifier — Lead Desk</option>
-        <option value="Compliance">Compliance Team</option>
+        <option value="Compliance">RIA Compliance Team</option>
         <option value="Operations">Operations Team</option>
         <option value="Investment">Investment Team</option>
         <option value="Marketing">Marketing Team</option>
@@ -613,7 +613,7 @@
       <button data-view="distclients"><span class="ico">👥</span> Clients</button>
       <button data-view="diststrategies"><span class="ico">📈</span> Strategies</button>
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
-      <button data-view="verification"><span class="ico">✅</span> Verification <span class="count" id="navVerif">0</span></button>
+      <button data-view="verification"><span class="ico">✅</span> RIA Compliance List <span class="count" id="navVerif">0</span></button>
       <button data-view="compreport"><span class="ico">📋</span> SEBI Report</button>
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
       <button data-view="out"><span class="ico">⛔</span> Out List <span class="count" id="navOut">0</span></button>
@@ -821,7 +821,7 @@
     <!-- VERIFICATION (COMPLIANCE) -->
     <section id="view-verification" class="hidden">
       <div class="page-head">
-        <div><h1>KYC &amp; Compliance Files</h1><p>The account-opening form, uploaded KYC documents, CKYC, and the agreement / disclosure / risk profile for each client — verify or flag a discrepancy.</p></div>
+        <div><h1>RIA Compliance List</h1><p>RIA (advisory) clients only — account-opening form, DIGIO-verified KYC, CKYC, and the agreement / disclosure / risk profile. Verify or flag a discrepancy.</p></div>
       </div>
       <div id="verifList"></div>
     </section>
@@ -1795,7 +1795,7 @@ function demoHousehold(){
 const ROLES={
   RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
-  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'Compliance Officer',nav:['dashboard','verification','compreport','tasks','clients','suggestions','hub']},
+  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','tasks','clients','suggestions','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
@@ -2058,7 +2058,7 @@ function renderDash(){
       unq.length?unq.map(l=>`<tr><td class="lead-name">${l.name}${l.abandoned?' <span class="conflict-tag">recovery</span>':''}</td><td><span class="src">${l.source}</span></td><td>${flowChip(l.flow)}</td><td>${l.rec}</td><td><button class="btn sm" onclick="openAsgn(${l.id})">Qualify &amp; assign</button></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Queue is clear.</td></tr>`);
   }
   else if(currentRole==='Compliance'){
-    const cl=DB.clients;const pend=cl.filter(c=>c.compliance.status==='Pending'),flag=cl.filter(c=>c.compliance.status==='Flagged'),ver=cl.filter(c=>c.compliance.status==='Verified');
+    const cl=riaClients();const pend=cl.filter(c=>c.compliance.status==='Pending'),flag=cl.filter(c=>c.compliance.status==='Flagged'),ver=cl.filter(c=>c.compliance.status==='Verified');
     const mine=teamTasks('Compliance').filter(t=>t.status!=='Done');
     T.textContent='Compliance Dashboard';S.textContent='Verification queue & compliance requests';
     C.innerHTML=`${dcard('Pending verification',pend.length,'Awaiting review','var(--warm)',0)}
@@ -2719,9 +2719,10 @@ function addComment(){
 
 /* ---------- compliance verification ---------- */
 function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function riaClients(){return DB.clients.filter(c=>(c.product||'').indexOf('RIA')>=0);}
 function renderVerification(){
   const el=document.getElementById('verifList');
-  el.innerHTML=DB.clients.map(c=>{
+  el.innerHTML=riaClients().map(c=>{
     const rp=c.riskProfile||{};
     const items=
       chkSection('Account opening form')+
@@ -3183,7 +3184,7 @@ function sebiItems(c){
 }
 function clientCompliance(c){const it=sebiItems(c);if(it.some(x=>x.status==='red'))return 'gap';if(it.some(x=>x.status==='amber'))return 'pending';return 'complete';}
 function renderCompReport(){
-  const cl=DB.clients;
+  const cl=riaClients();
   const complete=cl.filter(c=>clientCompliance(c)==='complete').length;
   const pending=cl.filter(c=>clientCompliance(c)==='pending').length;
   const gaps=cl.filter(c=>clientCompliance(c)==='gap').length;
@@ -3944,7 +3945,7 @@ function badges(){
   document.getElementById('navSugg').textContent=SUGG.length;
   document.getElementById('navClients').textContent=mine(DB.clients).length;
   document.getElementById('navTasks').textContent=DB.tasks.filter(t=>t.team===currentRole&&t.status!=='Done').length;
-  document.getElementById('navVerif').textContent=DB.clients.filter(c=>c.compliance.status!=='Verified').length;
+  document.getElementById('navVerif').textContent=riaClients().filter(c=>c.compliance.status!=='Verified').length;
   document.getElementById('navIps').textContent=DB.clients.filter(c=>c.funded&&c.ips.nextReview&&new Date(c.ips.nextReview)<=new Date()).length;
   document.getElementById('navAssign').textContent=DB.leads.filter(l=>l.appUser&&!l.qualified).length;
   document.getElementById('navOnb').textContent=mine(active()).filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
