@@ -1300,9 +1300,16 @@
     </section>
     <!-- INVOICES (distributor) -->
     <section id="view-invoices" class="hidden">
-      <div class="page-head"><div><h1>Invoices</h1><p>Fee invoices across your clients.</p></div></div>
+      <div class="page-head"><div><h1>Invoices</h1><p>Fee invoices across your clients.</p></div>
+        <button class="btn" onclick="downloadAllInvoices()">⬇ Download all (CSV)</button></div>
       <div class="cards" id="invCards"></div>
-      <div class="panel"><table><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="invBody"></tbody></table></div>
+      <div class="panel">
+        <div class="filterbar">
+          <select class="filter" id="invRange" onchange="renderInvoices()"><option value="y3">Past 3 years</option><option value="y1">Past 12 months</option><option value="thisyear">This calendar year</option><option value="all">All time</option></select>
+          <select class="filter" id="invStatus" onchange="renderInvoices()"><option value="">All statuses</option><option value="Paid">Paid</option><option value="Due">Outstanding</option></select>
+        </div>
+        <table><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="invBody"></tbody></table>
+      </div>
     </section>
 
   </main>
@@ -1970,6 +1977,7 @@ function migrate(){
     DB.tagsV1=true;
   }
   if(!DB.emails){DB.emails=seedEmails();DB.nextEmail=DB.emails.length+1;}
+  if(!DB.invHistV1){DB.clients.forEach(c=>{if(c.funded){c.invoices=c.invoices||[];c.invoices.push({date:dayStr(-540),desc:'Annual subscription (prior year)',amount:38000,status:'Paid'});c.invoices.push({date:dayStr(-1200),desc:'Annual subscription (3+ years ago)',amount:32000,status:'Paid'});}});DB.invHistV1=true;}
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -3111,9 +3119,17 @@ function renderDistClients(){
   badges();
 }
 function stratPerf(name){let h=0;for(let i=0;i<name.length;i++)h+=name.charCodeAt(i);return {oneY:(8+h%12)+(h%10)/10,threeY:(11+h%9)+(h%7)/10,since:(12+h%8)+(h%5)/10};}
+function invInRange(date,range){const d=new Date(date),now=new Date(),days=(now-d)/86400000;if(range==='all')return true;if(range==='y1')return days<=366;if(range==='y3')return days<=1096;if(range==='thisyear')return d.getFullYear()===now.getFullYear();return true;}
+function downloadAllInvoices(){const rows=window.__inv||[];if(!rows.length){toast('No invoices in this range');return;}
+  const hdr='Invoice no,Date,Client,Client ID,Description,Amount,Status';
+  const lines=rows.map(r=>['INV-'+r.cid+'-'+String(r.date).replace(/-/g,''),r.date,r.client,r.cid,r.desc,r.amount,r.status].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(','));
+  const csv=[hdr].concat(lines).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='invoices.csv';document.body.appendChild(a);a.click();a.remove();toast('Downloaded '+rows.length+' invoices (CSV)');}
 function renderInvoices(){
   const cs=(currentRole==='Distributor'?distClients():mine(DB.clients));
-  const rows=[];cs.forEach(c=>(c.invoices||[]).forEach(iv=>rows.push(Object.assign({client:c.first+' '+c.last,cid:c.cid},iv))));
+  let rows=[];cs.forEach(c=>(c.invoices||[]).forEach(iv=>rows.push(Object.assign({client:c.first+' '+c.last,cid:c.cid},iv))));
+  const range=(document.getElementById('invRange')||{}).value||'y3',st=(document.getElementById('invStatus')||{}).value||'';
+  rows=rows.filter(r=>invInRange(r.date,range)&&(!st||(st==='Paid'?r.status==='Paid':r.status!=='Paid')));
   rows.sort((a,b)=>new Date(b.date)-new Date(a.date));
   const total=rows.reduce((s,r)=>s+(r.amount||0),0),paid=rows.filter(r=>r.status==='Paid').reduce((s,r)=>s+(r.amount||0),0);
   document.getElementById('invCards').innerHTML=
