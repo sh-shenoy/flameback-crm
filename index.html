@@ -1915,7 +1915,9 @@ function applyRole(){
   document.getElementById('roleLabel').textContent=R.label;
   document.getElementById('roleEmail').textContent=R.email;
   document.getElementById('roleSel').value=currentRole;
+  const nav=document.getElementById('nav');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('hidden',!R.nav.includes(b.dataset.view)));
+  R.nav.forEach(v=>{const b=nav.querySelector('button[data-view="'+v+'"]');if(b)nav.appendChild(b);});
 }
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.view);});
 
