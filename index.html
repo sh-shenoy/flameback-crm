@@ -1302,7 +1302,7 @@
     <section id="view-invoices" class="hidden">
       <div class="page-head"><div><h1>Invoices</h1><p>Fee invoices across your clients.</p></div></div>
       <div class="cards" id="invCards"></div>
-      <div class="panel"><table><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody id="invBody"></tbody></table></div>
+      <div class="panel"><table><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="invBody"></tbody></table></div>
     </section>
 
   </main>
@@ -3120,8 +3120,15 @@ function renderInvoices(){
     dcard('Total invoiced',fmtINR(total),rows.length+' invoice'+(rows.length!==1?'s':''),'var(--navy)',100)+
     dcard('Paid',fmtINR(paid),'Settled','var(--green)',total?paid/total*100:0)+
     dcard('Outstanding',fmtINR(total-paid),'Due','var(--warm)',0);
-  document.getElementById('invBody').innerHTML=rows.length?rows.map(r=>`<tr><td>${fmtD(r.date)}</td><td class="lead-name">${r.client} <span class="cid">${r.cid}</span></td><td>${r.desc}</td><td>${fmtINR(r.amount)}</td><td><span class="verdict v-${r.status==='Paid'?'Verified':'Pending'}">${r.status}</span></td></tr>`).join(''):`<tr><td colspan="5" class="empty">No invoices yet.</td></tr>`;
+  window.__inv=rows;
+  document.getElementById('invBody').innerHTML=rows.length?rows.map((r,i)=>`<tr><td>${fmtD(r.date)}</td><td class="lead-name">${r.client} <span class="cid">${r.cid}</span></td><td>${r.desc}</td><td>${fmtINR(r.amount)}</td><td><span class="verdict v-${r.status==='Paid'?'Verified':'Pending'}">${r.status}</span></td><td><button class="btn ghost sm" onclick="downloadInvoice(${i})">⬇ Download</button></td></tr>`).join(''):`<tr><td colspan="6" class="empty">No invoices yet.</td></tr>`;
   badges();
+}
+function downloadInvoice(i){const r=(window.__inv||[])[i];if(!r)return;
+  const ref='INV-'+r.cid+'-'+String(r.date||'').replace(/-/g,'');
+  const gst=Math.round((r.amount||0)*0.18/1.18),base=(r.amount||0)-gst;
+  const body=['FLAMEBACK CAPITAL PVT LTD','SEBI Reg. INA000012345  ·  GSTIN 29ABCDE1234F1Z5','','TAX INVOICE','','Invoice no : '+ref,'Date       : '+fmtD(r.date),'Bill to    : '+r.client+'  ('+r.cid+')','','Description: '+r.desc,'Taxable amount      : ₹'+base.toLocaleString('en-IN'),'GST @ 18%           : ₹'+gst.toLocaleString('en-IN'),'Total (incl. GST)   : ₹'+(r.amount||0).toLocaleString('en-IN'),'Status              : '+r.status,'','(Demo invoice — wireframe placeholder.)'].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([body],{type:'text/plain'}));a.download=ref+'.txt';document.body.appendChild(a);a.click();a.remove();toast('Invoice '+ref+' downloaded');
 }
 function renderDistStrategies(){
   const cs=distClients();
