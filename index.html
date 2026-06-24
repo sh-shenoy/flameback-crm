@@ -1318,7 +1318,7 @@
     </section>
     <!-- PMS REVIEW (maker/checker) -->
     <section id="view-pmsreview" class="hidden">
-      <div class="page-head"><div><h1>PMS Compliance Review</h1><p>Maker &amp; checker — approve KYC e-sign, cross-check identity vs onboarding &amp; CKYC, view the PMS/IPS agreement, and run the FIU AML check before sign-off.</p></div></div>
+      <div class="page-head"><div><h1>PMS Compliance Review</h1><p>KYC/CKYC is done by our onboarding partner outside the CRM. Here: FIU AML screening &amp; grey list — FIU-flagged clients cannot be onboarded.</p></div></div>
       <div id="pmsReviewList"></div>
     </section>
 
@@ -1899,7 +1899,7 @@ function genAadhaar(cid){let h=0;for(let i=0;i<cid.length;i++)h=(h*31+cid.charCo
 function ensureClientExtras(c){
   if(!c.uploaded){c.uploaded={namePan:c.kyc.namePan,pan:c.kyc.pan,dob:c.kyc.dob};if(c.cid==='FBC-1003')c.uploaded.dob='1991-07-21';}
   if(c.uploaded.address===undefined)c.uploaded.address=(c.cid==='FBC-1001'?'12 Carter Rd, Bandra (West)':c.kyc.address);
-  if(!c.pmsCompliance)c.pmsCompliance={kycApproved:false,aml:'Not run',amlOn:'',ckycUpdated:false,signoff:'Pending'};
+  if(!c.pmsCompliance)c.pmsCompliance={aml:(c.cid==='FBC-1004'?'Flagged':'Not run'),amlOn:(c.cid==='FBC-1004'?dayStr(-5):'')};
   if(!c.feeDebit){const _f={'FBC-1002':'Insufficient balance in linked bank account','FBC-1006':'e-NACH mandate expired — re-authorisation needed'};c.feeDebit=c.funded?{amount:Math.round((c.portfolio.current||0)*0.0025),date:dayStr(-3),status:_f[c.cid]?'Failed':'Success',reason:_f[c.cid]||''}:{amount:0,date:'',status:'—',reason:''};}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
   if(!c.product){c.product={'FBC-1001':'PMS','FBC-1002':'PMS Lite (RIA)','FBC-1003':'PMS Lite (RIA)','FBC-1004':'PMS','FBC-1005':'International investing','FBC-1006':'PMS Lite (RIA)'}[c.cid]||(c.goal==='Capital appreciation'?'PMS':'PMS Lite (RIA)');}
@@ -3328,38 +3328,22 @@ function closeDrill(){document.getElementById('drillScrim').classList.remove('op
 /* ---------- PMS compliance (maker/checker, filings, custodian reports) ---------- */
 function pmsClients(){return DB.clients.filter(c=>(c.product||'').indexOf('RIA')<0);}
 function renderPmsReview(){
-  const el=document.getElementById('pmsReviewList');
-  el.innerHTML=`<div class="dpdp-banner">🧾 <b>PMS compliance — maker &amp; checker.</b> Review &amp; approve each client before sign-off. APIs (custodian, FIU AML, CKYC) are simulated in this demo.</div>`+
-  pmsClients().map(c=>{
-    const p=c.pmsCompliance||{};
-    const nameOk=norm(c.kyc.namePan)===norm(c.uploaded.namePan);
-    const panOk=norm(c.kyc.pan)===norm(c.uploaded.pan);
-    const addrOk=norm(c.kyc.address)===norm(c.uploaded.address||c.kyc.address);
-    const mism=!nameOk||!panOk||!addrOk;
-    const items=
-      chkSection('1 · KYC e-sign — maker / checker')+
-      flagItem('KYC e-sign completed (DIGIO)',c.signed)+
-      `<div class="chk-item"><span class="chk-ico ${p.kycApproved?'chk-ok':'chk-pend'}">${p.kycApproved?'✓':'!'}</span><span class="lab">KYC manually approved (checker)</span><span class="cmp">${p.kycApproved?'<b style="color:var(--green)">Approved</b>':`<button class="btn sm" onclick="pmsApproveKyc('${c.cid}')">Approve KYC</button>`}</span></div>`+
-      chkSection('2 · E-sign cross-check vs onboarding form & CKYC')+
-      cmpItem('Name',c.kyc.namePan,c.uploaded.namePan,nameOk)+
-      cmpItem('PAN',c.kyc.pan,c.uploaded.pan,panOk)+
-      cmpItem('Address proof',c.kyc.address,c.uploaded.address||c.kyc.address,addrOk)+
-      (p.ckycUpdated?`<div class="chk-item"><span class="chk-ico chk-ok">✓</span><span class="lab">CKYC updated</span><span class="cmp"><b style="color:var(--green)">Corrected &amp; pushed to CKYC</b></span></div>`:(mism?`<div class="chk-item"><span class="chk-ico chk-bad">✕</span><span class="lab">Mismatch found</span><span class="cmp"><b class="mismatch">Does not match onboarding/CKYC</b> <button class="btn sm" onclick="pmsUpdateCkyc('${c.cid}')">Correct &amp; update CKYC</button></span></div>`:''))+
-      chkSection('3 · PMS / IPS agreement')+
-      agreementRow(c)+
-      chkSection('4 · Anti-Money-Laundering (FIU portal)')+
-      `<div class="chk-item"><span class="chk-ico ${p.aml==='Clear'?'chk-ok':p.aml==='Flagged'?'chk-bad':'chk-pend'}">${p.aml==='Clear'?'✓':p.aml==='Flagged'?'✕':'!'}</span><span class="lab">FIU AML check · PAN ${c.kyc.pan}</span><span class="cmp">${p.aml==='Not run'?`<button class="btn sm" onclick="pmsRunAml('${c.cid}')">Run FIU check</button>`:`<b style="color:${p.aml==='Clear'?'var(--green)':'var(--hot)'}">${p.aml}</b> <span class="lead-sub">· checked ${fmtD(p.amlOn)} via FIU API</span>`}</span></div>`;
-    return `<div class="chk"><div class="chk-h"><div><span class="who">${c.first} ${c.last}</span> <span class="cid">${c.cid}</span> <span class="ptag pt-pms">${c.product}</span></div>
-      <div style="display:flex;gap:8px;align-items:center"><span class="verdict v-${p.signoff==='Approved'?'Verified':p.signoff==='Sent back'?'Flagged':'Pending'}">${p.signoff}</span>
-      ${p.signoff!=='Approved'?`<button class="btn ghost sm" onclick="pmsSendBack('${c.cid}')">Send back</button><button class="btn sm" onclick="pmsSignoff('${c.cid}')">Approve &amp; sign off</button>`:''}</div></div>${items}</div>`;
-  }).join('');
+  const cs=pmsClients();
+  const grey=cs.filter(c=>(c.pmsCompliance||{}).aml==='Flagged');
+  const cleared=cs.filter(c=>(c.pmsCompliance||{}).aml==='Clear');
+  document.getElementById('pmsReviewList').innerHTML=
+    `<div class="dpdp-banner">🤝 <b>PMS KYC, CKYC &amp; document checks are handled by our onboarding partner (Silver Bullet), outside the CRM.</b> The compliance officer's only role here is <b>FIU AML screening</b> — any client matched on the FIU list is <b>grey-listed and cannot be onboarded</b>.</div>`+
+    `<div class="cards" style="margin-bottom:16px">${dcard('PMS clients',cs.length,'In screening','var(--teal)',100)}${dcard('FIU cleared',cleared.length,'Eligible to onboard','var(--green)',0)}${dcard('Grey-listed',grey.length,'Cannot onboard','var(--hot)',0)}</div>`+
+    `<div class="panel"><div class="panel-head"><h2>FIU AML screening</h2></div><table><thead><tr><th>Client</th><th>PAN</th><th>FIU AML</th><th>Onboarding</th><th></th></tr></thead><tbody>`+
+    cs.map(c=>{const p=c.pmsCompliance||{};
+      const elig=p.aml==='Flagged'?'<span class="verdict v-Flagged">⛔ Grey-listed — cannot onboard</span>':p.aml==='Clear'?'<span class="verdict v-Verified">✅ Eligible</span>':'<span class="verdict v-Pending">Pending screening</span>';
+      const amlCell=(!p.aml||p.aml==='Not run')?'<span class="lead-sub">Not screened</span>':`<b style="color:${p.aml==='Clear'?'var(--green)':'var(--hot)'}">${p.aml}</b>${p.amlOn?` <span class="lead-sub">· ${fmtD(p.amlOn)}</span>`:''}`;
+      const act=(!p.aml||p.aml==='Not run')?`<button class="btn sm" onclick="pmsRunAml('${c.cid}')">Run FIU check</button>`:`<button class="btn ghost sm" onclick="pmsRunAml('${c.cid}')">Re-screen</button>`;
+      return `<tr><td class="lead-name">${c.first} ${c.last} <span class="cid">${c.cid}</span> <span class="ptag pt-pms">${c.product}</span></td><td>${c.kyc.pan}</td><td>${amlCell}</td><td>${elig}</td><td>${act}</td></tr>`;}).join('')+
+    `</tbody></table></div>`;
   badges();
 }
-function pmsApproveKyc(cid){const c=DB.clients.find(x=>x.cid===cid);c.pmsCompliance=c.pmsCompliance||{};c.pmsCompliance.kycApproved=true;save();renderPmsReview();toast('KYC manually approved by checker');}
-function pmsUpdateCkyc(cid){const c=DB.clients.find(x=>x.cid===cid);c.uploaded.namePan=c.kyc.namePan;c.uploaded.pan=c.kyc.pan;c.uploaded.address=c.kyc.address;c.pmsCompliance.ckycUpdated=true;save();renderPmsReview();toast('Details corrected & pushed to CKYC');}
-function pmsRunAml(cid){const c=DB.clients.find(x=>x.cid===cid);c.pmsCompliance=c.pmsCompliance||{};c.pmsCompliance.aml='Clear';c.pmsCompliance.amlOn=dayStr(0);save();renderPmsReview();toast('FIU AML check (PAN '+c.kyc.pan+') → Clear');}
-function pmsSendBack(cid){const c=DB.clients.find(x=>x.cid===cid);c.pmsCompliance.signoff='Sent back';save();renderPmsReview();toast('Sent back to RM for correction');}
-function pmsSignoff(cid){const c=DB.clients.find(x=>x.cid===cid);const p=c.pmsCompliance||{};if(!p.kycApproved){toast('Approve KYC first');return;}if(p.aml!=='Clear'){toast('Run the FIU AML check first');return;}p.signoff='Approved';save();renderPmsReview();toast(c.first+' '+c.last+' signed off by checker');}
+function pmsRunAml(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.pmsCompliance=c.pmsCompliance||{};const flagged=(cid==='FBC-1004');c.pmsCompliance.aml=flagged?'Flagged':'Clear';c.pmsCompliance.amlOn=dayStr(0);save();renderPmsReview();toast(flagged?('⛔ FIU match — '+c.first+' '+c.last+' grey-listed, cannot onboard'):('FIU AML check (PAN '+c.kyc.pan+') → Clear'));}
 function renderPmsFilings(){
   const f=DB.pmsFilings||[];const now=Date.now();
   const due=f.filter(x=>x.status!=='Uploaded'&&new Date(x.due)<=now+7*864e5).length;
@@ -4137,7 +4121,7 @@ function badges(){
   document.getElementById('navOnb').textContent=mine(active()).filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
   document.getElementById('navCal').textContent=myMeetings().filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
   document.getElementById('navInbox').textContent=(DB.emails||[]).filter(e=>!e.read&&emailMatch(e.to,myEmail())).length;
-  var _np=document.getElementById('navPms');if(_np)_np.textContent=pmsClients().filter(c=>(c.pmsCompliance||{}).signoff!=='Approved').length;
+  var _np=document.getElementById('navPms');if(_np)_np.textContent=pmsClients().filter(c=>(c.pmsCompliance||{}).aml!=='Clear').length;
   document.getElementById('navRem').textContent=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
   const no=document.getElementById('navOwner');if(no)no.textContent=OWNER_DEPTS.reduce((n,d)=>n+deptAttn(d.key).length,0);
 }
