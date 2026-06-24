@@ -28,6 +28,7 @@ B2B: **Partner Pipeline** + Head **Dashboard** (city-based online/visit engageme
 
 ## Docs in the repo
 - **FUNCTIONAL_SPEC.md** — PM/product spec in the RIA-App format (Sections 1–11: scope, screen inventory of 40 screens, screen-by-screen, business logic & rules, integrations, error handling, NFRs, out-of-scope, **open items for PM sign-off**, flows). The reference was Shashank's *Flameback India RIA App* spec at `~/Downloads/Cruise/FLAMEBACK CAPITAL RIA APP.docx`.
+- **DECISIONS.md** — the *why*: key product decisions, the corrections made, and unresolved items needing PM sign-off. **Read this to build with the right intent, not just replicate screens.**
 - **FLOWS.md** — one-page flow + module overview.
 - **CHANGELOG.md** — full running log of everything built.
 
