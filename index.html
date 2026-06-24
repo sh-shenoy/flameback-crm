@@ -617,6 +617,7 @@
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> RIA Compliance List <span class="count" id="navVerif">0</span></button>
       <button data-view="compreport"><span class="ico">📋</span> SEBI Report</button>
+      <button data-view="feepay"><span class="ico">💳</span> Fee Payments</button>
       <button data-view="pmsreview"><span class="ico">🔎</span> PMS Review <span class="count" id="navPms">0</span></button>
       <button data-view="pmsfilings"><span class="ico">🗂️</span> Regulatory Filings</button>
       <button data-view="custreports"><span class="ico">📤</span> Custodian Reports</button>
@@ -1334,6 +1335,12 @@
       <div class="cards" id="custCards"></div>
       <div class="panel"><table><thead><tr><th>Report</th><th>Frequency</th><th>Last sent</th><th>Email tracking</th><th>Auto</th><th></th></tr></thead><tbody id="custBody"></tbody></table></div>
     </section>
+    <!-- FEE PAYMENTS (RIA compliance) -->
+    <section id="view-feepay" class="hidden">
+      <div class="page-head"><div><h1>Fee Payments</h1><p>Advisory fee auto-debit (e-NACH) status for RIA clients — cleared, failed (with reason), and raise to RM where action is needed.</p></div></div>
+      <div class="cards" id="feeCards"></div>
+      <div class="panel"><table><thead><tr><th>Client</th><th>Fee</th><th>Auto-debit date</th><th>Status</th><th>Reason</th><th></th></tr></thead><tbody id="feeBody"></tbody></table></div>
+    </section>
 
   </main>
 </div>
@@ -1832,7 +1839,7 @@ function demoHousehold(){
 const ROLES={
   RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','invoices','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
-  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','tasks','clients','suggestions','hub']},
+  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','feepay','tasks','clients','suggestions','hub']},
   PMSCompliance:{name:'Imran Khan',email:'imran@flamebackcapital.com',label:'PMS Compliance Team',nav:['pmsreview','pmsfilings','custreports','tasks','inbox','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','invoices','calendar','tasks','suggestions','hub']},
@@ -1893,6 +1900,7 @@ function ensureClientExtras(c){
   if(!c.uploaded){c.uploaded={namePan:c.kyc.namePan,pan:c.kyc.pan,dob:c.kyc.dob};if(c.cid==='FBC-1003')c.uploaded.dob='1991-07-21';}
   if(c.uploaded.address===undefined)c.uploaded.address=(c.cid==='FBC-1001'?'12 Carter Rd, Bandra (West)':c.kyc.address);
   if(!c.pmsCompliance)c.pmsCompliance={kycApproved:false,aml:'Not run',amlOn:'',ckycUpdated:false,signoff:'Pending'};
+  if(!c.feeDebit){const _f={'FBC-1002':'Insufficient balance in linked bank account','FBC-1006':'e-NACH mandate expired — re-authorisation needed'};c.feeDebit=c.funded?{amount:Math.round((c.portfolio.current||0)*0.0025),date:dayStr(-3),status:_f[c.cid]?'Failed':'Success',reason:_f[c.cid]||''}:{amount:0,date:'',status:'—',reason:''};}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
   if(!c.product){c.product={'FBC-1001':'PMS','FBC-1002':'PMS Lite (RIA)','FBC-1003':'PMS Lite (RIA)','FBC-1004':'PMS','FBC-1005':'International investing','FBC-1006':'PMS Lite (RIA)'}[c.cid]||(c.goal==='Capital appreciation'?'PMS':'PMS Lite (RIA)');}
   if(!c.holder){c.holder=c.first+' '+c.last;c.relation='Self';}
@@ -2031,7 +2039,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','feepay','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -2047,6 +2055,7 @@ function go(v){
   if(v==='profiles')renderProfiles();
   if(v==='reports')renderReports();
   if(v==='compreport')renderCompReport();
+  if(v==='feepay')renderFeePay();
   if(v==='pmsreview')renderPmsReview();
   if(v==='pmsfilings')renderPmsFilings();
   if(v==='custreports')renderCustReports();
@@ -3382,6 +3391,23 @@ function renderCustReports(){
 }
 function custSend(i){const r=DB.custReports[i];const n=pmsClients().length;r.lastRun=dayStr(0);r.tracking={sent:n,delivered:n,seen:Math.max(0,n-1)};save();renderCustReports();toast(r.name+' emailed to '+n+' clients · delivery & open tracked');}
 function custToggle(i,v){DB.custReports[i].auto=v;save();toast('Auto-send '+(v?'on':'off')+' for '+DB.custReports[i].name);}
+
+/* ---------- RIA fee payments (auto-debit status) ---------- */
+function renderFeePay(){
+  const cs=riaClients().filter(c=>c.funded);
+  const collected=cs.filter(c=>c.feeDebit&&c.feeDebit.status==='Success');
+  const failed=cs.filter(c=>c.feeDebit&&c.feeDebit.status==='Failed');
+  const totalC=collected.reduce((s,c)=>s+(c.feeDebit.amount||0),0);
+  document.getElementById('feeCards').innerHTML=
+    dcard('Collected',fmtINR(totalC),collected.length+' debit'+(collected.length!==1?'s':'')+' cleared','var(--green)',100)+
+    dcard('Failed',failed.length,'Need attention','var(--hot)',0)+
+    dcard('On auto-debit',cs.length,'e-NACH mandates','var(--teal)',100);
+  document.getElementById('feeBody').innerHTML=cs.length?cs.map(c=>{const f=c.feeDebit||{};
+    return `<tr><td class="lead-name">${c.first} ${c.last} <span class="cid">${c.cid}</span></td><td>${fmtINR(f.amount)}</td><td>${f.date?fmtD(f.date):'—'}</td><td><span class="verdict v-${f.status==='Success'?'Verified':f.status==='Failed'?'Flagged':'Pending'}">${f.status}</span></td><td class="lead-sub">${f.reason||'—'}</td><td style="white-space:nowrap">${f.status==='Failed'?`<button class="btn ghost sm" onclick="retryDebit('${c.cid}')">↻ Retry</button> <button class="btn sm" onclick="raiseFeeIssue('${c.cid}')">⚠ Raise to RM</button>`:''}</td></tr>`;}).join(''):`<tr><td colspan="6" class="empty">No fee debits.</td></tr>`;
+  badges();
+}
+function retryDebit(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.feeDebit.status='Success';c.feeDebit.reason='';c.feeDebit.date=dayStr(0);save();renderFeePay();toast('Auto-debit retried — cleared');}
+function raiseFeeIssue(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;openTask(null,{team:'RM',type:'Follow up',cid,title:'Fee auto-debit failed — '+c.first+' '+c.last});document.getElementById('tmNotes').value='Advisory fee auto-debit ('+fmtINR(c.feeDebit.amount)+') failed — reason: '+c.feeDebit.reason+'. Please follow up with the client to fund the account / re-authorise the e-NACH mandate, then we will retry.';toast('Raising fee-failure task to RM');}
 
 /* ---------- Inbox (Gmail-linked) ---------- */
 function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}

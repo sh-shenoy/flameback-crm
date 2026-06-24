@@ -51,6 +51,9 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**RIA fee payments (auto-debit status)**
+- Fee Payments view for the RIA Compliance officer: advisory fee auto-debit (e-NACH) status per RIA client — cleared vs failed with the failure reason (e.g. insufficient balance, mandate expired) — with Retry and Raise-to-RM (opens a pre-filled follow-up task).
+
 **PMS Compliance module (PMS Compliance Team)**
 - New PMS Compliance role with three workspaces, scoped to PMS clients:
   - **PMS Review (maker / checker):** manually approve the KYC e-sign, cross-check name / PAN / address-proof against the onboarding form & CKYC (with a "Correct & update CKYC" action on mismatch), view the PMS/IPS agreement, and run the FIU AML check (by PAN) before sign-off.
