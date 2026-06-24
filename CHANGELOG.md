@@ -51,6 +51,10 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**Docs**
+- Added FUNCTIONAL_SPEC.md — a full functional spec of the project (roles, modules, B2C/B2B flows, compliance, data model, simulated integrations, known gaps).
+- Refreshed the in-app Knowledge Hub: updated team roster, added a "Modules & roles map" section, and expanded the glossary (DIGIO, FIU, grey list, SEBI PMR, APMI/PMSBazaar, e-NACH, custodian, B2B vs B2C).
+
 **B2B / Partnerships module**
 - A B2C→B2B counterpart for acquiring partner firms (distributors, wealth managers, family offices, IFAs) who reach us via Instagram / ads / referrals / inbound.
 - **Partner Pipeline:** firm, type, source, city, stage, assigned RM and engagement mode. Open a partner to log interactions, set stage, and (Head) assign a Partnerships RM.

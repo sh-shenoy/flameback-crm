@@ -950,6 +950,7 @@
           <h4>On this page</h4>
           <a onclick="hubGo('overview')">Overview</a>
           <a onclick="hubGo('teams')">Teams &amp; people</a>
+          <a onclick="hubGo('modules')">Modules &amp; roles map</a>
           <a onclick="hubGo('duties')">Who does what</a>
           <a onclick="hubGo('leadflow')">How a lead flows</a>
           <a onclick="hubGo('workflow')">How work flows between teams</a>
@@ -979,12 +980,38 @@
             <table class="hub-table">
               <thead><tr><th>Team</th><th>What they own</th><th>People</th></tr></thead>
               <tbody>
-                <tr><td>Sales / RM</td><td>Leads, relationships, onboarding, reviews</td><td>Shashank, Priya Nair, Arjun Mehta, Divya Rao, Karan Shah</td></tr>
+                <tr><td>Sales / RM</td><td>B2C leads, relationships, onboarding, reviews (own book)</td><td>Shashank, Priya Nair, Arjun Mehta, Divya Rao, Karan Shah</td></tr>
                 <tr><td>Lead Desk (Qualifier)</td><td>Qualify app sign-ups, assign the best-fit RM</td><td>Maya Sharma</td></tr>
-                <tr><td>Compliance</td><td>KYC / AML / PAN verification, flags, sign-off</td><td>Neha Gupta, Imran Khan, Sara Thomas</td></tr>
+                <tr><td>Investment</td><td>All clients' portfolios, IPS, rebalancing, reviews</td><td>Anjali Rao, Vikas Shah, Rhea Kapoor</td></tr>
                 <tr><td>Operations</td><td>Account opening, demat, cheques, reconciliations</td><td>Ravi Menon, Deepak Verma, Pooja Nair</td></tr>
-                <tr><td>Investment</td><td>Portfolios, IPS, rebalancing, reviews</td><td>Anjali Rao, Vikas Shah, Rhea Kapoor</td></tr>
-                <tr><td>Leadership</td><td>Oversight of each department, intervention</td><td>Dept heads (Sales, Investment, Compliance, Operations)</td></tr>
+                <tr><td>RIA Compliance</td><td>RIA KYC files, SEBI report, fee auto-debit (RIA clients)</td><td>Neha Gupta</td></tr>
+                <tr><td>PMS Compliance</td><td>FIU/grey list, regulatory filings, custodian reports (PMS clients)</td><td>Imran Khan</td></tr>
+                <tr><td>Marketing</td><td>Events, audience lists, content / article distribution</td><td>Tanvi Shah</td></tr>
+                <tr><td>Partnerships (B2B)</td><td>Acquire distributors / WMs / family offices; RM + Head</td><td>Aditya Rao, Meera Joshi, Sanjay Kapoor · Vikram Sethi (Head)</td></tr>
+                <tr><td>Distributor / WM (external)</td><td>Partner portal — their own clients, RM-style</td><td>e.g. ABC Wealth</td></tr>
+                <tr><td>Leadership</td><td>All-up oversight &amp; intervention across departments</td><td>Dept heads</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="hub-sec" id="hub-modules">
+            <h2>Modules &amp; roles map</h2>
+            <p class="hub-lead">The CRM spans two motions — <b>B2C</b> (individual investors) and <b>B2B / Partnerships</b> (partner firms) — plus shared operating and compliance modules. Full detail is in <b>FUNCTIONAL_SPEC.md</b> in the repo.</p>
+            <table class="hub-table">
+              <thead><tr><th>Module</th><th>Who uses it</th><th>What it does</th></tr></thead>
+              <tbody>
+                <tr><td>Leads &amp; Assignment</td><td>RM, Qualifier</td><td>B2C pipeline (L1–L4, five-strike), app sign-ups assigned to the best-fit RM.</td></tr>
+                <tr><td>Onboarding hub</td><td>RM</td><td>Mobile-keyed household: many accounts (PMS/RIA/Intl) + family members, each with its own agreement &amp; e-sign.</td></tr>
+                <tr><td>Clients &amp; Profiles</td><td>RM, Investment, Leadership</td><td>One row per account, grouped by household; unified person profiles with accounts, timeline, notes, tags.</td></tr>
+                <tr><td>Tags &amp; Content</td><td>RM, Marketing</td><td>Client pain-point tags (+ AI suggestions); tagged articles auto-deliver to matching clients.</td></tr>
+                <tr><td>Calendar, Reviews, Inbox, Tasks</td><td>Most roles</td><td>Meetings + 10-min reminders, IPS/portfolio reviews, Gmail-linked inbox, cross-team requests.</td></tr>
+                <tr><td>Client Reports</td><td>RM, Investment, Leadership, Distributor</td><td>Monthly / half-yearly / tax reports per client with delivery receipts.</td></tr>
+                <tr><td>Marketing</td><td>Marketing</td><td>Audience lists (multi-select), events, content distribution.</td></tr>
+                <tr><td>Distributor portal</td><td>External partner</td><td>RM-style dashboard, clients, strategies, calendar, reviews, IPS, invoices — own book; contact their Flameback RM.</td></tr>
+                <tr><td>RIA Compliance</td><td>RIA Compliance</td><td>KYC files (DIGIO-verified), monthly SEBI report (items i–x), fee auto-debit status.</td></tr>
+                <tr><td>PMS Compliance</td><td>PMS Compliance</td><td>FIU AML screening + grey list, fund-level filings (SEBI PMR/APMI/PMSBazaar), per-client custodian reports.</td></tr>
+                <tr><td>B2B / Partnerships</td><td>Partnerships RM &amp; Head</td><td>Acquire partner firms; city-based online/visit engagement; Head assigns &amp; oversees.</td></tr>
+                <tr><td>Leadership</td><td>Dept heads</td><td>Department throughput, "needs your attention", per-person scorecards.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1190,6 +1217,14 @@
                 <tr><td>PMS Lite (RIA)</td><td>Advisory-led, lighter offering under a Registered Investment Adviser.</td></tr>
                 <tr><td>Suspense</td><td>Holdings/cash not yet reconciled to the client account (e.g. a corporate-action bonus).</td></tr>
                 <tr><td>Out List</td><td>Parked / dead leads, with a reason — revivable later.</td></tr>
+                <tr><td>DIGIO</td><td>E-sign &amp; digital KYC provider — verifies PAN / name / DOB / Aadhaar e-KYC.</td></tr>
+                <tr><td>FIU</td><td>Financial Intelligence Unit — AML screening by PAN; a match → grey list (cannot onboard).</td></tr>
+                <tr><td>Grey list</td><td>Clients flagged by FIU/AML who cannot be onboarded.</td></tr>
+                <tr><td>SEBI PMR</td><td>Monthly Portfolio Manager Report filed to SEBI via the SEBI portal.</td></tr>
+                <tr><td>APMI / PMSBazaar</td><td>Industry body (Association of Portfolio Managers in India) / PMS data aggregator — fund-level submissions.</td></tr>
+                <tr><td>e-NACH</td><td>Auto-debit mandate used to collect advisory fees.</td></tr>
+                <tr><td>Custodian</td><td>Holds securities/cash; supplies periodic statements (8 report types) via API.</td></tr>
+                <tr><td>B2B vs B2C</td><td>B2B = partner firms (distributors/WMs/family offices); B2C = individual investors.</td></tr>
               </tbody>
             </table>
           </div>
