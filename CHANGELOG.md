@@ -51,6 +51,11 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**SEBI RIA daily report + client metrics**
+- New SEBI RIA Report (RIA Compliance): the daily client register submitted to SEBI — start date, name, contact, email, product, strategy, PAN, CKYC/KRA proof link, resident status (Individual-Resident / NRI / NRO / Non-Individual / Non-Resident), agreement PDF link, city & state, country, gender — viewable as a list and exportable to CSV.
+- Month selector (5-year history) with new-added / exited / active / inactive / total counts as of the chosen month.
+- Fixed an unclosed-table bug in the B2B dashboard that nested later sections incorrectly.
+
 **Docs**
 - Added FUNCTIONAL_SPEC.md — a full functional spec of the project (roles, modules, B2C/B2B flows, compliance, data model, simulated integrations, known gaps).
 - Refreshed the in-app Knowledge Hub: updated team roster, added a "Modules & roles map" section, and expanded the glossary (DIGIO, FIU, grey list, SEBI PMR, APMI/PMSBazaar, e-NACH, custodian, B2B vs B2C).

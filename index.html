@@ -622,6 +622,7 @@
       <button data-view="verification"><span class="ico">✅</span> RIA Compliance List <span class="count" id="navVerif">0</span></button>
       <button data-view="compreport"><span class="ico">📋</span> SEBI Report</button>
       <button data-view="feepay"><span class="ico">💳</span> Fee Payments</button>
+      <button data-view="riareport"><span class="ico">📄</span> SEBI RIA Report</button>
       <button data-view="pmsreview"><span class="ico">🔎</span> PMS Review <span class="count" id="navPms">0</span></button>
       <button data-view="pmsfilings"><span class="ico">🗂️</span> Regulatory Filings</button>
       <button data-view="custreports"><span class="ico">📤</span> Custodian Reports</button>
@@ -1397,9 +1398,18 @@
       <div class="page-head"><div><h1 id="b2bDashTitle">B2B Partnerships Dashboard</h1><p>Partner acquisition pipeline across the Partnerships RMs.</p></div></div>
       <div class="cards" id="b2bCards"></div>
       <div class="two-col" style="grid-template-columns:1fr 1fr;align-items:start">
-        <div class="panel"><div class="panel-head"><h2>By Partnerships RM</h2></div><table><thead><tr><th>RM</th><th>City</th><th>Partners</th><th>Meetings</th><th>Onboarded</th></tr></thead><tbody id="b2bRmBody"></tbody></div>
+        <div class="panel"><div class="panel-head"><h2>By Partnerships RM</h2></div><table><thead><tr><th>RM</th><th>City</th><th>Partners</th><th>Meetings</th><th>Onboarded</th></tr></thead><tbody id="b2bRmBody"></tbody></table></div>
         <div class="panel"><div class="panel-head"><h2>Needs attention</h2></div><div id="b2bAttn" style="padding:6px 16px 14px"></div></div>
       </div>
+    </section>
+    <!-- SEBI RIA DAILY REPORT -->
+    <section id="view-riareport" class="hidden">
+      <div class="page-head"><div><h1>SEBI RIA Report</h1><p>Daily client register submitted to SEBI — view all RIA clients and export. Month metrics (new / exited / active / inactive) viewable over the last 5 years.</p></div>
+        <button class="btn" onclick="exportRiaReport()">⬇ Export (CSV)</button></div>
+      <div class="panel" style="padding:13px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><label style="font-size:13px;color:var(--muted);font-weight:600">Month</label><input type="month" id="riaMonth" onchange="renderRiaReport()"><span class="lead-sub">— counts as of this month (5-year history)</span></div>
+      <div class="cards" id="riaCards"></div>
+      <div class="panel"><div class="panel-head"><h2>Client register</h2><span class="lead-sub">submitted to SEBI daily</span></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Start date</th><th>Client</th><th>Contact</th><th>Email</th><th>Product</th><th>Strategy</th><th>PAN</th><th>CKYC/KRA</th><th>Resident status</th><th>Agreement</th><th>City / State</th><th>Country</th><th>Gender</th></tr></thead><tbody id="riaBody"></tbody></table></div></div>
     </section>
 
   </main>
@@ -1911,7 +1921,7 @@ function demoHousehold(){
 const ROLES={
   RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','invoices','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
-  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','feepay','tasks','clients','suggestions','hub']},
+  Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','feepay','riareport','tasks','clients','suggestions','hub']},
   PMSCompliance:{name:'Imran Khan',email:'imran@flamebackcapital.com',label:'PMS Compliance Team',nav:['pmsreview','pmsfilings','custreports','tasks','inbox','hub']},
   B2BRM:{name:'Aditya Rao',email:'aditya@flamebackcapital.com',label:'Partnerships RM (B2B)',nav:['b2bpipeline','calendar','tasks','inbox','hub']},
   B2BHead:{name:'Vikram Sethi',email:'vikram@flamebackcapital.com',label:'Partnerships Head (B2B)',nav:['b2bdash','b2bpipeline','calendar','tasks','inbox','hub']},
@@ -1974,6 +1984,10 @@ function ensureClientExtras(c){
   if(!c.uploaded){c.uploaded={namePan:c.kyc.namePan,pan:c.kyc.pan,dob:c.kyc.dob};if(c.cid==='FBC-1003')c.uploaded.dob='1991-07-21';}
   if(c.uploaded.address===undefined)c.uploaded.address=(c.cid==='FBC-1001'?'12 Carter Rd, Bandra (West)':c.kyc.address);
   if(!c.pmsCompliance)c.pmsCompliance={aml:(c.cid==='FBC-1004'?'Flagged':'Not run'),amlOn:(c.cid==='FBC-1004'?dayStr(-5):'')};
+  if(!c.kyc.state)c.kyc.state=({'Mumbai':'Maharashtra','Pune':'Maharashtra','Chennai':'Tamil Nadu','Delhi':'Delhi','Bangalore':'Karnataka','Hyderabad':'Telangana','Kolkata':'West Bengal'})[c.kyc.city]||'—';
+  if(!c.residentStatus)c.residentStatus=({'FBC-1002':'NRI','FBC-1006':'NRO'})[c.cid]||'Individual - Resident';
+  if(!c.ckycLink)c.ckycLink='https://ckyc.gov.in/proof/'+c.cid+'.pdf';
+  if(c.exitedOn===undefined)c.exitedOn=(c.cid==='FBC-1006'?dayStr(-15):'');
   if(!c.reportsSent){c.reportsSent={};if(c.funded&&(c.product||'').indexOf('RIA')<0){c.reportsSent['Holding statement']={date:dayStr(-12),email:'Seen'};c.reportsSent['NAV / performance report']={date:dayStr(-12),email:'Delivered'};}}
   if(!c.feeDebit){const _f={'FBC-1002':'Insufficient balance in linked bank account','FBC-1006':'e-NACH mandate expired — re-authorisation needed'};c.feeDebit=c.funded?{amount:Math.round((c.portfolio.current||0)*0.0025),date:dayStr(-3),status:_f[c.cid]?'Failed':'Success',reason:_f[c.cid]||''}:{amount:0,date:'',status:'—',reason:''};}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
@@ -2128,7 +2142,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','b2bdash','b2bpipeline','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','feepay','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','b2bdash','b2bpipeline','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','feepay','riareport','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -2147,6 +2161,7 @@ function go(v){
   if(v==='reports')renderReports();
   if(v==='compreport')renderCompReport();
   if(v==='feepay')renderFeePay();
+  if(v==='riareport')renderRiaReport();
   if(v==='pmsreview')renderPmsReview();
   if(v==='pmsfilings')renderPmsFilings();
   if(v==='custreports')renderCustReports();
@@ -3560,6 +3575,39 @@ function renderB2bDash(){
   document.getElementById('b2bAttn').innerHTML=unassigned.length?unassigned.map(l=>`<div class="trail">🆕 <b>${l.firm}</b> <span class="lead-sub">${l.type} · ${l.city} · via ${l.source}</span> <button class="btn ghost sm" onclick="openPartner(${l.id})">Assign</button></div>`).join(''):'<span class="lead-sub">All partner leads are assigned.</span>';
   badges();
 }
+
+/* ---------- SEBI RIA daily report + 5-year client metrics ---------- */
+function monthOf(d){return (d||'').slice(0,7);}
+function renderRiaReport(){
+  const all=riaClients();
+  const inp=document.getElementById('riaMonth');
+  if(inp&&!inp.value){inp.value=dayStr(0).slice(0,7);const y=new Date().getFullYear();inp.min=(y-5)+'-01';inp.max=dayStr(0).slice(0,7);}
+  const m=(inp&&inp.value)||dayStr(0).slice(0,7);
+  const endM=new Date(m+'-01');endM.setMonth(endM.getMonth()+1);
+  const newAdd=all.filter(c=>monthOf(c.signup)===m);
+  const exited=all.filter(c=>c.exitedOn&&monthOf(c.exitedOn)===m);
+  const asOf=all.filter(c=>c.signup&&new Date(c.signup)<endM&&(!c.exitedOn||new Date(c.exitedOn)>=endM));
+  const active=asOf.filter(c=>c.funded),inactive=asOf.filter(c=>!c.funded);
+  document.getElementById('riaCards').innerHTML=
+    dcard('New added',newAdd.length,'Onboarded in '+m,'var(--teal)',0)+
+    dcard('Exited',exited.length,'Left in '+m,'var(--hot)',0)+
+    dcard('Active',active.length,'Funded · month-end','var(--green)',0)+
+    dcard('Inactive',inactive.length,'Not funded / dormant','var(--warm)',0)+
+    dcard('Total on books',asOf.length,'As of '+m,'var(--navy)',0);
+  document.getElementById('riaBody').innerHTML=all.length?all.map(c=>`<tr>
+    <td>${c.signup?fmtD(c.signup):'—'}</td><td class="lead-name">${c.first} ${c.last}${c.exitedOn?' <span class="verdict v-Flagged">exited</span>':''}</td><td>${c.contact}</td><td>${c.email}</td>
+    <td>${c.product}</td><td>${(c.strategies&&c.strategies[0])||'—'}</td><td>${c.kyc.pan}</td>
+    <td><a class="meet-link" href="${c.ckycLink}" target="_blank">Proof ↗</a></td>
+    <td>${c.residentStatus}</td>
+    <td>${c.agreementUrl?`<a class="meet-link" href="${c.agreementUrl}" target="_blank">PDF ↗</a>`:'—'}</td>
+    <td>${c.kyc.city}, ${c.kyc.state}</td><td>${c.country}</td><td>${c.kyc.gender}</td></tr>`).join(''):`<tr><td colspan="13" class="empty">No RIA clients.</td></tr>`;
+  badges();
+}
+function exportRiaReport(){const all=riaClients();
+  const hdr=['Start date','Client name','Contact','Email','Product','Strategy','PAN','CKYC/KRA proof','Resident status','Agreement link','City','State','Country','Gender'];
+  const rows=all.map(c=>[c.signup,c.first+' '+c.last,c.contact,c.email,c.product,(c.strategies&&c.strategies[0])||'',c.kyc.pan,c.ckycLink,c.residentStatus,c.agreementUrl||'',c.kyc.city,c.kyc.state,c.country,c.kyc.gender].map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(','));
+  const csv=[hdr.join(',')].concat(rows).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='RIA-SEBI-report-'+dayStr(0)+'.csv';document.body.appendChild(a);a.click();a.remove();toast('RIA SEBI report exported ('+all.length+' clients)');}
 
 /* ---------- Inbox (Gmail-linked) ---------- */
 function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}
