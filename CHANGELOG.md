@@ -57,7 +57,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 **PMS Compliance module (PMS Compliance Team)**
 - New PMS Compliance role with three workspaces, scoped to PMS clients:
   - **PMS Review (FIU screening & grey list):** PMS KYC/CKYC/document checks are done by the onboarding partner outside the CRM; here the officer runs the FIU AML check (by PAN) — any FIU match is grey-listed and cannot be onboarded.
-  - **Regulatory Filings:** SEBI monthly / quarterly / half-yearly / annual reports pulled from the custodian (API) and uploaded, plus APMI & PMSBazaar submissions — with due-date reminders and status.
+  - **Regulatory Filings:** fund-level / firm-wide submissions — SEBI Monthly PMR (links to the SEBI PMR portal), APMI and PMSBazaar — fetched from the custodian and uploaded, with due-date reminders. (Per-client statements are under Custodian Reports.)
   - **Custodian Reports:** per-client — each PMS client has their own panel of the 8 custodian reports; send each (or all) to the client, with per-report email delivery / seen tracking via the connected 3rd-party email system.
 - APIs (custodian, FIU, email tracking) are simulated in this wireframe.
 

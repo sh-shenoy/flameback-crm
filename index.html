@@ -1324,7 +1324,7 @@
 
     <!-- REGULATORY FILINGS -->
     <section id="view-pmsfilings" class="hidden">
-      <div class="page-head"><div><h1>Regulatory Filings</h1><p>SEBI (monthly / quarterly / half-yearly / annual) pulled from the custodian and uploaded, plus APMI &amp; PMSBazaar submissions. Due-date reminders below.</p></div></div>
+      <div class="page-head"><div><h1>Regulatory Filings</h1><p>Fund-level / firm-wide submissions — SEBI (Monthly PMR via the SEBI portal), APMI &amp; PMSBazaar. Aggregate, not per client (per-client statements are under Custodian Reports).</p></div></div>
       <div class="cards" id="pmsFilingCards"></div>
       <div class="panel"><table><thead><tr><th>Filing</th><th>Frequency</th><th>Source</th><th>Next due</th><th>Status</th><th></th></tr></thead><tbody id="pmsFilingBody"></tbody></table></div>
     </section>
@@ -2037,6 +2037,11 @@ function migrate(){
     {name:'Securities / demat ledger',freq:'Quarterly',auto:true,lastRun:'',tracking:null},
     {name:'Expense & fee statement',freq:'Quarterly',auto:false,lastRun:'',tracking:null}
   ];}
+  if(!DB.pmsFilingsV2){DB.pmsFilings=[
+    {name:'SEBI — Monthly PMR (Portfolio Manager Report)',freq:'Monthly',source:'Custodian API',due:dayStr(4),status:'Pending',url:'https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doPmr=yes'},
+    {name:'APMI — fund-level submission',freq:'Quarterly',source:'CRM',due:dayStr(-2),status:'Pending'},
+    {name:'PMSBazaar — fund performance upload',freq:'Monthly',source:'CRM',due:dayStr(3),status:'Pending'}
+  ];DB.pmsFilingsV2=true;}
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -3363,13 +3368,13 @@ function renderPmsFilings(){
   document.getElementById('pmsFilingBody').innerHTML=f.map((x,i)=>{const cust=x.source.indexOf('Custodian')>=0;
     let act='';
     if(x.status==='Pending'&&cust)act=`<button class="btn ghost sm" onclick="pmsFetch(${i})">⬇ Fetch from custodian</button>`;
-    else if(x.status==='Fetched'||(x.status==='Pending'&&!cust))act=`<button class="btn sm" onclick="pmsUpload(${i})">⬆ Upload</button>`;
+    else if(x.status==='Fetched'||(x.status==='Pending'&&!cust))act=`<button class="btn sm" onclick="pmsUpload(${i})">${x.url?'⬆ Upload via SEBI portal':'⬆ Upload'}</button>`;
     else if(x.status==='Uploaded')act=`<span class="lead-sub">${x.uploadedOn?fmtD(x.uploadedOn):''}</span>`;
-    return `<tr><td class="lead-name">${x.name}</td><td>${x.freq}</td><td>${x.source}</td><td>${fmtDue(x.due)}</td><td><span class="verdict v-${x.status==='Uploaded'?'Verified':x.status==='Fetched'?'Pending':'Flagged'}">${x.status}</span></td><td style="white-space:nowrap">${act}</td></tr>`;}).join('');
+    return `<tr><td class="lead-name">${x.name}${x.url?` <a class="meet-link" href="${x.url}" target="_blank" onclick="event.stopPropagation()">↗ portal</a>`:''}</td><td>${x.freq}</td><td>${x.source}</td><td>${fmtDue(x.due)}</td><td><span class="verdict v-${x.status==='Uploaded'?'Verified':x.status==='Fetched'?'Pending':'Flagged'}">${x.status}</span></td><td style="white-space:nowrap">${act}</td></tr>`;}).join('');
   badges();
 }
 function pmsFetch(i){DB.pmsFilings[i].status='Fetched';save();renderPmsFilings();toast('Report fetched from custodian (API) into CRM');}
-function pmsUpload(i){const f=DB.pmsFilings[i];f.status='Uploaded';f.uploadedOn=dayStr(0);save();renderPmsFilings();toast(f.name+' uploaded');}
+function pmsUpload(i){const f=DB.pmsFilings[i];if(f.url)window.open(f.url,'_blank');f.status='Uploaded';f.uploadedOn=dayStr(0);save();renderPmsFilings();toast(f.name+(f.url?' — opened SEBI portal & marked uploaded':' uploaded'));}
 let CUST_CID=null;
 function custTypes(){return DB.custReports||[];}
 function renderCustReports(){
