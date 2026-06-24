@@ -51,6 +51,13 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**PMS Compliance module (PMS Compliance Team)**
+- New PMS Compliance role with three workspaces, scoped to PMS clients:
+  - **PMS Review (maker / checker):** manually approve the KYC e-sign, cross-check name / PAN / address-proof against the onboarding form & CKYC (with a "Correct & update CKYC" action on mismatch), view the PMS/IPS agreement, and run the FIU AML check (by PAN) before sign-off.
+  - **Regulatory Filings:** SEBI monthly / quarterly / half-yearly / annual reports pulled from the custodian (API) and uploaded, plus APMI & PMSBazaar submissions — with due-date reminders and status.
+  - **Custodian Reports:** the 8 periodic custodian reports, auto-sent to clients, with email delivery / seen tracking via the connected 3rd-party email system.
+- APIs (custodian, FIU, email tracking) are simulated in this wireframe.
+
 **Monthly SEBI compliance report**
 - New compliance report (compliance officer): header with Flameback's SEBI registration number + generation timestamp, exportable to PDF. Four summary metrics (active clients, fully compliant, pending, gaps). A client-level table with green/amber/red status for all ten SEBI mandatory items (i–x). Click any client for a drill-down: identity (PAN/Aadhaar masked to last 4), document links, trade & advice audit trail (approval token, broker order ID, confirmation status), report dispatch log, and correspondence log.
 

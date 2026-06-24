@@ -588,6 +588,7 @@
         <option value="RM">RM — Relationship Manager</option>
         <option value="Qualifier">Qualifier — Lead Desk</option>
         <option value="Compliance">RIA Compliance Team</option>
+        <option value="PMSCompliance">PMS Compliance Team</option>
         <option value="Operations">Operations Team</option>
         <option value="Investment">Investment Team</option>
         <option value="Marketing">Marketing Team</option>
@@ -616,6 +617,9 @@
       <button data-view="tasks"><span class="ico">🔁</span> Tasks & Requests <span class="count" id="navTasks">0</span></button>
       <button data-view="verification"><span class="ico">✅</span> RIA Compliance List <span class="count" id="navVerif">0</span></button>
       <button data-view="compreport"><span class="ico">📋</span> SEBI Report</button>
+      <button data-view="pmsreview"><span class="ico">🔎</span> PMS Review <span class="count" id="navPms">0</span></button>
+      <button data-view="pmsfilings"><span class="ico">🗂️</span> Regulatory Filings</button>
+      <button data-view="custreports"><span class="ico">📤</span> Custodian Reports</button>
       <button data-view="ips"><span class="ico">📈</span> Portfolios & IPS <span class="count" id="navIps">0</span></button>
       <button data-view="out"><span class="ico">⛔</span> Out List <span class="count" id="navOut">0</span></button>
       <button data-view="suggestions"><span class="ico">💡</span> Feature Suggestions <span class="count" id="navSugg">0</span></button>
@@ -1311,6 +1315,25 @@
         <table><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="invBody"></tbody></table>
       </div>
     </section>
+    <!-- PMS REVIEW (maker/checker) -->
+    <section id="view-pmsreview" class="hidden">
+      <div class="page-head"><div><h1>PMS Compliance Review</h1><p>Maker &amp; checker — approve KYC e-sign, cross-check identity vs onboarding &amp; CKYC, view the PMS/IPS agreement, and run the FIU AML check before sign-off.</p></div></div>
+      <div id="pmsReviewList"></div>
+    </section>
+
+    <!-- REGULATORY FILINGS -->
+    <section id="view-pmsfilings" class="hidden">
+      <div class="page-head"><div><h1>Regulatory Filings</h1><p>SEBI (monthly / quarterly / half-yearly / annual) pulled from the custodian and uploaded, plus APMI &amp; PMSBazaar submissions. Due-date reminders below.</p></div></div>
+      <div class="cards" id="pmsFilingCards"></div>
+      <div class="panel"><table><thead><tr><th>Filing</th><th>Frequency</th><th>Source</th><th>Next due</th><th>Status</th><th></th></tr></thead><tbody id="pmsFilingBody"></tbody></table></div>
+    </section>
+
+    <!-- CUSTODIAN REPORTS -->
+    <section id="view-custreports" class="hidden">
+      <div class="page-head"><div><h1>Custodian Reports</h1><p>Periodic reports from the custodian, auto-sent to clients. Email delivery / seen tracked via the connected 3rd-party email system.</p></div></div>
+      <div class="cards" id="custCards"></div>
+      <div class="panel"><table><thead><tr><th>Report</th><th>Frequency</th><th>Last sent</th><th>Email tracking</th><th>Auto</th><th></th></tr></thead><tbody id="custBody"></tbody></table></div>
+    </section>
 
   </main>
 </div>
@@ -1810,6 +1833,7 @@ const ROLES={
   RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','invoices','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','tasks','clients','suggestions','hub']},
+  PMSCompliance:{name:'Imran Khan',email:'imran@flamebackcapital.com',label:'PMS Compliance Team',nav:['pmsreview','pmsfilings','custreports','tasks','inbox','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','invoices','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','invoices','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
@@ -1867,6 +1891,8 @@ function maskAcct(a){return a&&a.length>4?('••••••'+a.slice(-4)):'�
 function genAadhaar(cid){let h=0;for(let i=0;i<cid.length;i++)h=(h*31+cid.charCodeAt(i))>>>0;let n=(200000000000+(h%799999999999)).toString();n=(n+'000000000000').slice(0,12);return n.replace(/(\d{4})(\d{4})(\d{4})/,'$1 $2 $3');}
 function ensureClientExtras(c){
   if(!c.uploaded){c.uploaded={namePan:c.kyc.namePan,pan:c.kyc.pan,dob:c.kyc.dob};if(c.cid==='FBC-1003')c.uploaded.dob='1991-07-21';}
+  if(c.uploaded.address===undefined)c.uploaded.address=(c.cid==='FBC-1001'?'12 Carter Rd, Bandra (West)':c.kyc.address);
+  if(!c.pmsCompliance)c.pmsCompliance={kycApproved:false,aml:'Not run',amlOn:'',ckycUpdated:false,signoff:'Pending'};
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
   if(!c.product){c.product={'FBC-1001':'PMS','FBC-1002':'PMS Lite (RIA)','FBC-1003':'PMS Lite (RIA)','FBC-1004':'PMS','FBC-1005':'International investing','FBC-1006':'PMS Lite (RIA)'}[c.cid]||(c.goal==='Capital appreciation'?'PMS':'PMS Lite (RIA)');}
   if(!c.holder){c.holder=c.first+' '+c.last;c.relation='Self';}
@@ -1978,6 +2004,24 @@ function migrate(){
   }
   if(!DB.emails){DB.emails=seedEmails();DB.nextEmail=DB.emails.length+1;}
   if(!DB.invHistV1){DB.clients.forEach(c=>{if(c.funded){c.invoices=c.invoices||[];c.invoices.push({date:dayStr(-540),desc:'Annual subscription (prior year)',amount:38000,status:'Paid'});c.invoices.push({date:dayStr(-1200),desc:'Annual subscription (3+ years ago)',amount:32000,status:'Paid'});}});DB.invHistV1=true;}
+  if(!DB.pmsFilings){DB.pmsFilings=[
+    {name:'SEBI — Monthly report',freq:'Monthly',source:'Custodian API',due:dayStr(4),status:'Pending'},
+    {name:'SEBI — Quarterly report',freq:'Quarterly',source:'Custodian API',due:dayStr(18),status:'Pending'},
+    {name:'SEBI — Half-yearly report',freq:'Half-yearly',source:'Custodian API',due:dayStr(55),status:'Pending'},
+    {name:'SEBI — Annual report',freq:'Annual',source:'Custodian API',due:dayStr(150),status:'Pending'},
+    {name:'APMI — periodic submission',freq:'Quarterly',source:'CRM',due:dayStr(-2),status:'Pending'},
+    {name:'PMSBazaar — performance upload',freq:'Monthly',source:'CRM',due:dayStr(3),status:'Pending'}
+  ];}
+  if(!DB.custReports){DB.custReports=[
+    {name:'Holding statement',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:4,seen:3}},
+    {name:'Transaction statement',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:4,seen:2}},
+    {name:'Capital gains statement',freq:'Quarterly',auto:true,lastRun:'',tracking:null},
+    {name:'Corporate actions report',freq:'Monthly',auto:true,lastRun:'',tracking:null},
+    {name:'NAV / performance report',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:3,seen:2}},
+    {name:'Bank book',freq:'Monthly',auto:false,lastRun:'',tracking:null},
+    {name:'Securities / demat ledger',freq:'Quarterly',auto:true,lastRun:'',tracking:null},
+    {name:'Expense & fee statement',freq:'Quarterly',auto:false,lastRun:'',tracking:null}
+  ];}
   save();
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
@@ -1987,7 +2031,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -2003,6 +2047,9 @@ function go(v){
   if(v==='profiles')renderProfiles();
   if(v==='reports')renderReports();
   if(v==='compreport')renderCompReport();
+  if(v==='pmsreview')renderPmsReview();
+  if(v==='pmsfilings')renderPmsFilings();
+  if(v==='custreports')renderCustReports();
   if(v==='events')renderEvents();
   if(v==='lists')renderLists();
   if(v==='content')renderContent();
@@ -3269,6 +3316,73 @@ function openDrill(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;DRI
 }
 function closeDrill(){document.getElementById('drillScrim').classList.remove('open');DRILL_CID=null;}
 
+/* ---------- PMS compliance (maker/checker, filings, custodian reports) ---------- */
+function pmsClients(){return DB.clients.filter(c=>(c.product||'').indexOf('RIA')<0);}
+function renderPmsReview(){
+  const el=document.getElementById('pmsReviewList');
+  el.innerHTML=`<div class="dpdp-banner">🧾 <b>PMS compliance — maker &amp; checker.</b> Review &amp; approve each client before sign-off. APIs (custodian, FIU AML, CKYC) are simulated in this demo.</div>`+
+  pmsClients().map(c=>{
+    const p=c.pmsCompliance||{};
+    const nameOk=norm(c.kyc.namePan)===norm(c.uploaded.namePan);
+    const panOk=norm(c.kyc.pan)===norm(c.uploaded.pan);
+    const addrOk=norm(c.kyc.address)===norm(c.uploaded.address||c.kyc.address);
+    const mism=!nameOk||!panOk||!addrOk;
+    const items=
+      chkSection('1 · KYC e-sign — maker / checker')+
+      flagItem('KYC e-sign completed (DIGIO)',c.signed)+
+      `<div class="chk-item"><span class="chk-ico ${p.kycApproved?'chk-ok':'chk-pend'}">${p.kycApproved?'✓':'!'}</span><span class="lab">KYC manually approved (checker)</span><span class="cmp">${p.kycApproved?'<b style="color:var(--green)">Approved</b>':`<button class="btn sm" onclick="pmsApproveKyc('${c.cid}')">Approve KYC</button>`}</span></div>`+
+      chkSection('2 · E-sign cross-check vs onboarding form & CKYC')+
+      cmpItem('Name',c.kyc.namePan,c.uploaded.namePan,nameOk)+
+      cmpItem('PAN',c.kyc.pan,c.uploaded.pan,panOk)+
+      cmpItem('Address proof',c.kyc.address,c.uploaded.address||c.kyc.address,addrOk)+
+      (p.ckycUpdated?`<div class="chk-item"><span class="chk-ico chk-ok">✓</span><span class="lab">CKYC updated</span><span class="cmp"><b style="color:var(--green)">Corrected &amp; pushed to CKYC</b></span></div>`:(mism?`<div class="chk-item"><span class="chk-ico chk-bad">✕</span><span class="lab">Mismatch found</span><span class="cmp"><b class="mismatch">Does not match onboarding/CKYC</b> <button class="btn sm" onclick="pmsUpdateCkyc('${c.cid}')">Correct &amp; update CKYC</button></span></div>`:''))+
+      chkSection('3 · PMS / IPS agreement')+
+      agreementRow(c)+
+      chkSection('4 · Anti-Money-Laundering (FIU portal)')+
+      `<div class="chk-item"><span class="chk-ico ${p.aml==='Clear'?'chk-ok':p.aml==='Flagged'?'chk-bad':'chk-pend'}">${p.aml==='Clear'?'✓':p.aml==='Flagged'?'✕':'!'}</span><span class="lab">FIU AML check · PAN ${c.kyc.pan}</span><span class="cmp">${p.aml==='Not run'?`<button class="btn sm" onclick="pmsRunAml('${c.cid}')">Run FIU check</button>`:`<b style="color:${p.aml==='Clear'?'var(--green)':'var(--hot)'}">${p.aml}</b> <span class="lead-sub">· checked ${fmtD(p.amlOn)} via FIU API</span>`}</span></div>`;
+    return `<div class="chk"><div class="chk-h"><div><span class="who">${c.first} ${c.last}</span> <span class="cid">${c.cid}</span> <span class="ptag pt-pms">${c.product}</span></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="verdict v-${p.signoff==='Approved'?'Verified':p.signoff==='Sent back'?'Flagged':'Pending'}">${p.signoff}</span>
+      ${p.signoff!=='Approved'?`<button class="btn ghost sm" onclick="pmsSendBack('${c.cid}')">Send back</button><button class="btn sm" onclick="pmsSignoff('${c.cid}')">Approve &amp; sign off</button>`:''}</div></div>${items}</div>`;
+  }).join('');
+  badges();
+}
+function pmsApproveKyc(cid){const c=DB.clients.find(x=>x.cid===cid);c.pmsCompliance=c.pmsCompliance||{};c.pmsCompliance.kycApproved=true;save();renderPmsReview();toast('KYC manually approved by checker');}
+function pmsUpdateCkyc(cid){const c=DB.clients.find(x=>x.cid===cid);c.uploaded.namePan=c.kyc.namePan;c.uploaded.pan=c.kyc.pan;c.uploaded.address=c.kyc.address;c.pmsCompliance.ckycUpdated=true;save();renderPmsReview();toast('Details corrected & pushed to CKYC');}
+function pmsRunAml(cid){const c=DB.clients.find(x=>x.cid===cid);c.pmsCompliance=c.pmsCompliance||{};c.pmsCompliance.aml='Clear';c.pmsCompliance.amlOn=dayStr(0);save();renderPmsReview();toast('FIU AML check (PAN '+c.kyc.pan+') → Clear');}
+function pmsSendBack(cid){const c=DB.clients.find(x=>x.cid===cid);c.pmsCompliance.signoff='Sent back';save();renderPmsReview();toast('Sent back to RM for correction');}
+function pmsSignoff(cid){const c=DB.clients.find(x=>x.cid===cid);const p=c.pmsCompliance||{};if(!p.kycApproved){toast('Approve KYC first');return;}if(p.aml!=='Clear'){toast('Run the FIU AML check first');return;}p.signoff='Approved';save();renderPmsReview();toast(c.first+' '+c.last+' signed off by checker');}
+function renderPmsFilings(){
+  const f=DB.pmsFilings||[];const now=Date.now();
+  const due=f.filter(x=>x.status!=='Uploaded'&&new Date(x.due)<=now+7*864e5).length;
+  const over=f.filter(x=>x.status!=='Uploaded'&&new Date(x.due)<now).length;
+  document.getElementById('pmsFilingCards').innerHTML=
+    dcard('Filings tracked',f.length,'SEBI · APMI · PMSBazaar','var(--teal)',100)+
+    dcard('Due this week',due,'Action needed','var(--warm)',0)+
+    dcard('Overdue',over,'Past due date','var(--hot)',0)+
+    dcard('Uploaded',f.filter(x=>x.status==='Uploaded').length,'This period','var(--green)',0);
+  document.getElementById('pmsFilingBody').innerHTML=f.map((x,i)=>{const cust=x.source.indexOf('Custodian')>=0;
+    let act='';
+    if(x.status==='Pending'&&cust)act=`<button class="btn ghost sm" onclick="pmsFetch(${i})">⬇ Fetch from custodian</button>`;
+    else if(x.status==='Fetched'||(x.status==='Pending'&&!cust))act=`<button class="btn sm" onclick="pmsUpload(${i})">⬆ Upload</button>`;
+    else if(x.status==='Uploaded')act=`<span class="lead-sub">${x.uploadedOn?fmtD(x.uploadedOn):''}</span>`;
+    return `<tr><td class="lead-name">${x.name}</td><td>${x.freq}</td><td>${x.source}</td><td>${fmtDue(x.due)}</td><td><span class="verdict v-${x.status==='Uploaded'?'Verified':x.status==='Fetched'?'Pending':'Flagged'}">${x.status}</span></td><td style="white-space:nowrap">${act}</td></tr>`;}).join('');
+  badges();
+}
+function pmsFetch(i){DB.pmsFilings[i].status='Fetched';save();renderPmsFilings();toast('Report fetched from custodian (API) into CRM');}
+function pmsUpload(i){const f=DB.pmsFilings[i];f.status='Uploaded';f.uploadedOn=dayStr(0);save();renderPmsFilings();toast(f.name+' uploaded');}
+function renderCustReports(){
+  const r=DB.custReports||[];
+  document.getElementById('custCards').innerHTML=
+    dcard('Custodian reports',r.length,'Auto-sent to clients','var(--teal)',100)+
+    dcard('Sent this period',r.filter(x=>x.lastRun).length,'Dispatched','var(--green)',0)+
+    dcard('Auto-send on',r.filter(x=>x.auto).length+'/'+r.length,'Scheduled','var(--navy)',100);
+  document.getElementById('custBody').innerHTML=r.map((x,i)=>{const t=x.tracking||{};
+    return `<tr><td class="lead-name">${x.name}</td><td>${x.freq}</td><td>${x.lastRun?fmtD(x.lastRun):'<span class="lead-sub">—</span>'}</td><td>${x.lastRun&&x.tracking?`<span class="lead-sub">📤 ${t.sent||0} sent · ✅ ${t.delivered||0} delivered · 👁 ${t.seen||0} seen</span>`:'<span class="lead-sub">not sent yet</span>'}</td><td><label style="font-size:12px;cursor:pointer"><input type="checkbox" ${x.auto?'checked':''} onchange="custToggle(${i},this.checked)"> auto</label></td><td><button class="btn sm" onclick="custSend(${i})">Send now</button></td></tr>`;}).join('');
+  badges();
+}
+function custSend(i){const r=DB.custReports[i];const n=pmsClients().length;r.lastRun=dayStr(0);r.tracking={sent:n,delivered:n,seen:Math.max(0,n-1)};save();renderCustReports();toast(r.name+' emailed to '+n+' clients · delivery & open tracked');}
+function custToggle(i,v){DB.custReports[i].auto=v;save();toast('Auto-send '+(v?'on':'off')+' for '+DB.custReports[i].name);}
+
 /* ---------- Inbox (Gmail-linked) ---------- */
 function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}
 function emailMatch(to,me){return (to||'').toLowerCase().indexOf((me||'__').toLowerCase())>=0;}
@@ -3997,6 +4111,7 @@ function badges(){
   document.getElementById('navOnb').textContent=mine(active()).filter(l=>l.onbStep!==undefined&&l.onbStep<7).length;
   document.getElementById('navCal').textContent=myMeetings().filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
   document.getElementById('navInbox').textContent=(DB.emails||[]).filter(e=>!e.read&&emailMatch(e.to,myEmail())).length;
+  var _np=document.getElementById('navPms');if(_np)_np.textContent=pmsClients().filter(c=>(c.pmsCompliance||{}).signoff!=='Approved').length;
   document.getElementById('navRem').textContent=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
   const no=document.getElementById('navOwner');if(no)no.textContent=OWNER_DEPTS.reduce((n,d)=>n+deptAttn(d.key).length,0);
 }
