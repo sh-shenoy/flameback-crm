@@ -1,254 +1,253 @@
-# Flameback CRM — Functional Specification (Developer)
+# Flameback CRM — Functional Spec (Product)
 
-> **Audience:** engineers building the production system.
-> **Companion docs:** `FLOWS.md` (narrative flow overview), `CHANGELOG.md` (prototype change log).
-> **Status of this repo:** the `index.html` prototype is a clickable wireframe; all integrations are mocked. This spec describes the **production target** — real data model, RBAC, integrations, edge cases, scheduling and NFRs. Where the prototype already demonstrates behaviour it is cited as "[proto]".
-
-Requirement IDs: `FR-<module>-<n>` (functional), `BR-<n>` (business rule), `INT-<n>` (integration), `EDGE-<n>` (edge case), `NFR-<n>`.
+> Plain-English, screen-by-screen spec for the team building this CRM. Describes every screen, what it does, the flows, the backend logic in words, and edge cases.
+> Companion: `FLOWS.md` (one-page flow overview), `CHANGELOG.md` (what's been built).
 
 ---
 
-## 1. Scope & system context
+## A. The big picture
 
-Flameback offers three products — **PMS Lite (RIA)** (SEBI Investment Adviser regime), **PMS** (SEBI Portfolio Managers regime), and **International investing**. The CRM supports two acquisition motions (**B2C** individuals, **B2B** partner firms) plus servicing, reporting and dual compliance regimes.
+Flameback sells three products: **PMS Lite (RIA)** (advisory), **PMS** (discretionary), and **International investing**. The CRM serves two ways of getting clients and the teams behind them:
 
-**Target architecture (recommended):**
-- SPA front-end (React/Vue) + REST/GraphQL API; relational DB (Postgres).
-- RBAC enforced **at the API/query layer**, not just UI (NFR-1).
-- Object store for documents (agreements, reports) with signed, expiring URLs.
-- Job scheduler (cron/queue) for daily/periodic filings, report dispatch, reminders.
-- Secrets in a manager (AWS Secrets Manager / Vault); PII encrypted at rest (AES-256).
+- **B2C** — individuals and their families who come from ads/website/referrals.
+- **B2B / Partnerships** — partner firms (distributors, wealth managers, family offices, IFAs) who bring clients.
 
----
+Everyone logs in as a **role** and sees only the screens relevant to them. The roles are: RM, Qualifier (Lead Desk), Investment, Operations, RIA Compliance, PMS Compliance, Marketing, Distributor (external partner), Partnerships RM, Partnerships Head, and Leadership.
 
-## 2. Roles & RBAC
-
-### 2.1 Roles
-RM, Qualifier, Investment, Operations, RIA-Compliance, PMS-Compliance, Marketing, Distributor (external), B2B-RM (Partnerships RM), B2B-Head (Partnerships Head), Leadership. (Service accounts: scheduler, integration webhooks.)
-
-### 2.2 Data scoping (BR)
-- **BR-1** RM sees only records where `record.rm == currentUser` (leads, clients, calendar, reviews, reports, fee status).
-- **BR-2** Distributor (external) sees only `client.distributor == currentPartner`.
-- **BR-3** B2B-RM sees only `b2bLead.rm == currentUser`; B2B-Head sees all B2B leads.
-- **BR-4** RIA-Compliance scoped to clients with `product` ∈ {PMS Lite (RIA)}; PMS-Compliance scoped to `product` ∉ {RIA} (PMS, International).
-- **BR-5** Investment & Leadership see all clients (read); Leadership all-up across departments.
-- **BR-6** Marketing sees aggregate/segment data, not individual sensitive PII beyond name/email/city unless needed.
-
-### 2.3 Permission matrix (R=read, W=write, – none)
-| Capability | RM | Qual | Inv | Ops | RIA-Comp | PMS-Comp | Mktg | Distrib | B2B | Lead |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Leads (own) | RW | RW(assign) | – | – | – | – | – | – | – | R |
-| Clients/accounts | RW(own) | – | R | R | R(RIA) | R(PMS) | R(seg) | R(own) | – | R |
-| Onboarding forms | RW(own) | – | – | – | – | – | – | – | – | R |
-| KYC/PAN/Aadhaar (unmasked) | – | – | – | – | RIA only | – (partner does) | – | – | – | – |
-| Compliance actions | – | – | – | – | RW(RIA) | RW(PMS) | – | – | – | R |
-| Reports send | RW(own) | – | RW | – | – | – | – | RW(own) | – | RW |
-| Tasks | RW | RW | RW | RW | RW | RW | RW | – | RW | R |
-| Marketing lists/events/content | – | – | – | – | – | – | RW | – | – | R |
-| B2B partner pipeline | – | – | – | – | – | – | – | – | RW | R |
+Two ideas run through everything:
+1. **A "household" = one mobile number.** One person can hold several accounts (one each of PMS / RIA / International), and family members sit under the same number. The Clients list shows **one row per account**.
+2. **Role scoping.** An RM sees only their own book; a distributor sees only their own clients; compliance is split — **RIA Compliance** handles RIA clients, **PMS Compliance** handles PMS clients.
 
 ---
 
-## 3. Data model
+## B. Screen index
 
-Types: `uuid`, `string`, `text`, `enum`, `date`, `datetime`, `money` (₹ integer paise/rupees), `bool`, `json`. PII flagged 🔒 (encrypted at rest, access-logged).
-
-### 3.1 Person / Household
-- `id uuid`, `mobile string` (household key, unique), `holderName string`, `email string`, `dob date`, `gender enum`, `city`, `state`, `country`, `source`, `marketingTags string[]`, `createdAt`.
-- A **household** = persons sharing `mobile`. `relation enum{Self,Spouse,Father,Mother,Son,Daughter,Sibling}`.
-
-### 3.2 Account (≈ prototype `client`)
-- `id`, `cid string` (e.g. FBC-1007), `personId fk`, `household mobile`, `holder`, `relation`,
-- `product enum{PMS Lite (RIA), PMS, International investing}`, `strategy string` (backend-assigned), `rm`, `distributor`,
-- `funded bool`, `signupDate date`, `exitedOn date|null`,
-- `kyc{ namePan, pan🔒, aadhaar🔒, dob, gender, address, city, state, profession, maritalStatus, pep bool, kra enum, ckyc string, ckycLink url }`,
-- `residentStatus enum{Individual-Resident, Non-Individual-Resident, NRI, NRO, Non-Resident-Non-Individual}`,
-- `portfolio{ invested money, current money, absReturn, irr, holdings[[name,inv,cur]], suspense[] }`,
-- `ips{ riskBand, targetEquity, lastReview, nextAnnualReview, lastAnnualReview, nextQuarterlyReview, lastQuarterlyReview }`,
-- `riskProfile{ category, communicated bool, assessedOn, nextRefresh }`,
-- `consent{ given bool, ts, purpose }` (DPDP), `disclosure{accepted,ts}`, `agreementUrl url` (DIGIO), `welcomeKit bool`,
-- `suitability{ doc, preparedOn, sentOn }`,
-- `demat{ status enum{Not granted,Active}, broker, account🔒, accessType:'Read-only', grantedOn, log[] }` (client-granted, **not** revocable by us — BR-7),
-- `feeDebit{ amount money, date, status enum{Success,Failed,Pending}, reason }` (e-NACH),
-- `pmsCompliance{ aml enum{Not run,Clear,Flagged}, amlOn }` (Flagged ⇒ grey-listed),
-- `reportsSent{ [reportName]:{date, email enum{Sent,Delivered,Seen}} }`,
-- `invoices[]{ date, desc, amount money, status enum{Paid,Due}, ref }`,
-- `calls[]{ when, note, source }`, `tags string[]`, `profileNotes text`, `commPref{channels[],freq,lang,time,dnd}`.
-
-### 3.3 Lead (B2C)
-- `id`, `name`, `source`, `stage enum{L1,L2,L3,L4}`, `status`, `rm`, `phone`, `email`, `count int`, `follow date`, `hist[]{type,when}`, `out bool`, `outReason`, `appUser bool`, `flow enum{Self-serve,RM-assisted}`, `qualified bool`, `onbStep int`, `tags string[]`.
-
-### 3.4 OnboardingForm
-- `no string` (FORM-xxxx), `mobile` (household key), `holder`, `member`, `relation`, `product`, `leadId`,
-- `data{ personal, contact, financial, objective, route{product,rationale}, risk, bank, nominee, decl }`,
-- `status enum{Not started,In progress,E-sign sent,Signed}`, `esign{sentTo,when,status}`, `started`, `lastSaved`.
-- **One mobile → many forms** (one per account/member).
-
-### 3.5 Supporting entities
-`Meeting{id,title,rm,when,dur,attendees[],meet|location,status}`, `Task{id,title,team,type,cid,from,assignee,priority,status,due,thread[]}`, `Email{id,from,to,subject,body,date,read}`, `Tag string`, `Article{id,title,summary,tags[],date}`, `AudienceList{id,name,categories[],cities[],zones[],accounts[],distributors[],rms[],minVal,includeProspects}`, `Event{id,name,lead,colead,date,venue,groups[listId]}`, `ChannelPartner{name,city,email,type enum{Distributor,Wealth Manager,Family Office,IFA/Referral}}`, `PmsFiling{name,freq,source,due,status enum{Pending,Fetched,Uploaded},url,uploadedOn}`, `CustodianReportType{name,freq}`, `B2BLead{id,firm,type,source,city,contactName,phone,email,stage,rm,mode,hist[],notes}`, `AuditLog{id,user,role,cid,field,ts}` (immutable, append-only), `FiuGreyList{pan,reason,ts}`.
-
----
-
-## 4. Module specs
-
-### 4.1 Lead acquisition & assignment
-- **FR-LEAD-1** Capture inbound (web/app/ad) leads with source attribution.
-- **FR-LEAD-2** Stages L1→L4; RM logs interactions (call/email/meeting/WhatsApp) incrementing `count` + `hist`.
-- **BR-8 Five-Strike:** at L1, after 5 unanswered outreaches → prompt move to Out List (reason required). Re-engagement resets only on a response.
-- **FR-ASSIGN-1** Qualifier sees app sign-ups (`appUser && !qualified`), picks best-fit RM (recommendation by language/region/capacity/goal), confirms → creates Google Calendar event + Meet link with client+RM+qualifier (INT-7).
-- **EDGE-1** Duplicate lead (same mobile/email) → merge into existing person/household, don't create a second.
-- **EDGE-2** Self-serve drop-off → becomes recovery lead in the queue; resumable by mobile.
-
-### 4.2 Onboarding (household, accounts, e-sign)
-- **FR-ONB-1** Entry = mobile number. Resolve household; if forms exist, show hub (resume any).
-- **FR-ONB-2** Per number, support N accounts (1 each of PMS/RIA/International per person) and family members; each account = its own form + agreement.
-- **FR-ONB-3** Form sections incl. advisory routing (product fit). e-sign request at ≥85% completion (BR-9) via DIGIO (INT-1).
-- **BR-10** Forms keyed by mobile so self-serve + RM-assisted converge to the same record.
-- **EDGE-3** Same mobile starts a 2nd self-serve session → must not fork; reload latest server state (last-write-wins with field-level merge preferred).
-- **EDGE-4** e-sign sent but client never signs → status stuck `E-sign sent`; 7-day reminder, then RM task.
-
-### 4.3 Clients, accounts, profiles
-- **FR-CLI-1** Clients list = one row per account, grouped by household; quick-view (holdings, CAGR-since-inception, invested/current). CAGR = (current/invested)^(1/years)−1; **EDGE-5** years<0.5 → annualisation inflates % → cap display or show "since inception" absolute when tenure < 1y.
-- **FR-PROF-1** Unified profile (lead or client) searchable by name/email/mobile; household accounts + linked leads roll up.
-- **FR-PROF-2** Tabs: Accounts (per-account metrics, portfolio graph, strategy perf, holdings, rebalance dates, Reports tab inside the account), Communication prefs, Timeline, Notes.
-- **BR-11** Strategy is backend-assigned (read-only in CRM).
-
-### 4.4 Tags & content routing
-- **FR-TAG-1** Client tags = pain points/interests; preset + custom.
-- **FR-TAG-2** AI suggests tags from notes + meeting transcripts (NLP/LLM) the RM hasn't added; RM confirms (human-in-loop, BR-12 — never auto-apply).
-- **FR-CONTENT-1** Marketing tags an article; system auto-delivers to clients whose tags intersect (INT-6 email). Profile shows delivered content; article shows reach.
-- **EDGE-6** Tag renamed/deleted → keep references; don't orphan delivered-content history.
-
-### 4.5 Calendar, reminders, scheduling
-- **FR-CAL-1** Meetings sync with Google Calendar; online → Meet link, visit → location.
-- **FR-CAL-2** Conflict detection per RM (overlapping non-done meetings).
-- **FR-REM-1** Pop-up + push reminder **10 min before** each call (client-side timer + server push/FCM).
-- **FR-SCHED-1** RM/Distributor schedule with any client/lead/colleague; organizer = current user; scoping by `mine()`.
-
-### 4.6 Tasks & requests
-- **FR-TASK-1** Cross-team handoff; board Open/In-Progress/Blocked/Done; activity log; **BR-13** reassignment requires a reason (audited).
-
-### 4.7 Inbox / email
-- **FR-MAIL-1** Per-user Inbox/Sent keyed on the user's address; compose delivers to recipient inbox; reply pre-fills; unread badge.
-- **INT-8** Outbound via Gmail API / transactional ESP; inbound via IMAP/webhook. **EDGE-7** bounced/failed send → mark failed + notify sender.
-
-### 4.8 Client reports
-- **FR-RPT-1** Per client: Monthly (holdings, trades, P&L, valuation, commentary + **fee invoice attached**), Half-yearly, Tax (STCG/LTCG/dividends, ITR-ready).
-- **FR-RPT-2** Each send logs **delivery, open, acknowledgement** receipts (INT-6) and is retained.
-- **BR-14 Schedule:** Monthly by 1st of following month; Half-yearly end-Sep & end-Mar; Tax in April for prior FY. Scheduler auto-generates + dispatches (§6).
-- **FR-RPT-3 Annual risk refresh:** 12-month trigger to re-do risk questionnaire; if no response in 14 days → flag RM (BR-15).
-
-### 4.9 Marketing
-- **FR-MKT-1** Audience Lists with multi-select filters (category, city, zone, account type, distributor, RM, min AUM, include-prospects); live count; pool includes channel partners.
-- **FR-MKT-2** Events (lead, co-lead, groups=lists, dedup invitee count). **FR-MKT-3** Content (tag → auto-route, §4.4).
-
-### 4.10 Distributor / WM portal (external)
-- **FR-DIST-1** Scoped to `distributor==partner`; RM-style dashboard (AUM, net gain, clients, reviews-due), clients, strategies, calendar, reviews, IPS, invoices (range filter incl. past 3y, per-invoice + bulk CSV download).
-- **FR-DIST-2** Contact "your Flameback RM" (call/email/WhatsApp). **BR-16** external partner can't see other partners' clients or internal-only fields.
-
-### 4.11 RIA Compliance
-- **FR-RIA-1 KYC file (per client):** account-opening form; KYC **verified via DIGIO** (PAN/name/DOB/Aadhaar e-KYC — no manual uploads, INT-1); CKYC/KRA; disclosure; risk profile; agreement PDF; suitability (IPS) send; demat access (client-granted, read-only, BR-7). Verify / Raise-to-RM.
-- **FR-RIA-2 Monthly SEBI report:** SEBI-reg-no + timestamp header; PDF export; summary (active/compliant/pending/gaps); table of green/amber/red across SEBI items i–x; per-client drill-down (identity with PAN/Aadhaar masked, doc links, trade/advice audit trail, report dispatch log, correspondence log).
-- **FR-RIA-3 Fee payments:** advisory fee auto-debit (e-NACH, INT-9) status per client; failures show reason; Retry + Raise-to-RM.
-- **FR-RIA-4 SEBI RIA daily report:** client register (start date, name, contact, email, product, strategy, PAN, CKYC/KRA proof link, resident status, agreement link, city/state, country, gender). List + CSV export; **submitted daily** (scheduler, §6). Month metrics over 5y: new/exited/active/inactive/total as of month-end. **BR-17** active = funded & not exited; inactive = not funded & not exited; exited = `exitedOn` set.
-- **EDGE-8** PAN/Aadhaar shown unmasked only to RIA-Compliance; every unmasked read → AuditLog (NFR-2).
-
-### 4.12 PMS Compliance
-- **FR-PMS-1 Review = FIU screening + grey list:** KYC/CKYC/docs done by onboarding partner **outside the CRM**. Officer runs FIU AML by PAN (INT-4); **Flagged ⇒ grey-listed ⇒ cannot onboard** (BR-18).
-- **FR-PMS-2 Regulatory filings (fund-level):** SEBI **Monthly PMR** via portal `https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doPmr=yes` (fetch report from custodian INT-5 → upload via portal), APMI submission, PMSBazaar upload; due-date reminders.
-- **FR-PMS-3 Custodian reports (per client):** 8 report types (holding statement, transactions, capital gains, corporate actions, NAV/performance, bank book, securities ledger, expense & fee) pulled from custodian (INT-5), sent per client with email delivery/seen tracking (INT-6).
-
-### 4.13 B2B / Partnerships
-- **FR-B2B-1** Partner pipeline (distributor/WM/family office/IFA) via Instagram/ads/referral/inbound; firm, type, source, city, stage, RM, mode.
-- **FR-B2B-2** Engagement mode by city: same city ⇒ in-person visit recommended; else online meet; schedule either.
-- **FR-B2B-3** Head assigns Partnerships RM; Head dashboard (pipeline, per-RM, unassigned). **GAP:** dedicated B2B Qualifier/assignment-queue view (currently Head assigns).
-- **FR-B2B-4** On partner onboarded → provision a Distributor portal account (link to §4.10).
-
-### 4.14 Leadership
-- **FR-LEAD-HEAD-1** Department toggle (Sales/Investment/Compliance/Operations): throughput, "needs attention" escalations, per-person scorecards.
+| ID | Screen | Who uses it | In one line |
+|----|--------|-------------|-------------|
+| S-01 | Login / "Viewing as" role switch | Everyone | Pick the role you're working as (prod = real login). |
+| S-02 | RM Dashboard | RM | Your pipeline, follow-ups due, reviews due. |
+| S-03 | Leads | RM | Your lead pipeline (L1–L4). |
+| S-04 | Lead detail | RM | Work a lead: log calls, set stage, start onboarding. |
+| S-05 | Assignment Queue | Qualifier | New app sign-ups waiting to be assigned to an RM. |
+| S-06 | Qualify & Assign | Qualifier | Pick best-fit RM, book the intro meeting. |
+| S-07 | Onboarding Journey | RM | Leads in onboarding + the funnel. |
+| S-08 | Onboarding — Household hub | RM | All accounts on a number; add accounts/family. |
+| S-09 | Onboarding form | RM | The long account-opening form + e-sign. |
+| S-10 | Clients (accounts) | RM, Investment, Leadership | One row per account; quick-view; product tags. |
+| S-11 | Account detail | RM + others | Full account: overview, investment, portfolio, reports, invoices. |
+| S-12 | Profiles directory | RM, Investment, Leadership | Search every lead & client by name/email/number. |
+| S-13 | Person Profile | RM + others | One person: accounts, tags, communication, timeline, notes. |
+| S-14 | Calendar | Most | Meetings + Google Meet, conflicts, 10-min reminders. |
+| S-15 | Schedule meeting / call | RM, Distributor | Book a meeting with any client/lead/colleague. |
+| S-16 | Reviews & Reminders | RM, Investment | Annual IPS + quarterly reviews due this week. |
+| S-17 | Tasks & Requests | All teams | Cross-team handoffs (board + activity log). |
+| S-18 | Inbox | All | Email to/from you (Inbox/Sent), compose, reply. |
+| S-19 | Client Reports | RM, Investment, Distributor, Leadership | View & send Monthly / Half-yearly / Tax reports. |
+| S-20 | Out List | RM | Parked/dead leads with reasons, revivable. |
+| S-21 | Knowledge Hub | All | In-app guide to how the CRM works. |
+| S-22 | Feature Suggestions | All | Shared ideas board (live). |
+| S-23 | Audience Lists | Marketing | Reusable segments (multi-filter). |
+| S-24 | Events | Marketing | Plan events; attach audience lists. |
+| S-25 | Content | Marketing | Tag articles; auto-deliver to matching clients. |
+| S-26 | Distributor Dashboard | Distributor (external) | RM-style view of their own book + contact RM. |
+| S-27 | Distributor Clients | Distributor | Their clients (city, AUM, CAGR). |
+| S-28 | Distributor Strategies | Distributor | Strategies they can offer + performance. |
+| S-29 | Distributor Invoices | Distributor | Fee invoices, filter & download. |
+| S-30 | RIA Compliance List | RIA Compliance | Per-client KYC/compliance file. |
+| S-31 | Monthly SEBI Report | RIA Compliance | SEBI items i–x status + per-client drill-down. |
+| S-32 | Fee Payments | RIA Compliance | Advisory fee auto-debit status & failures. |
+| S-33 | SEBI RIA Daily Report | RIA Compliance | Daily client register + 5-year metrics. |
+| S-34 | PMS Review | PMS Compliance | FIU AML screening + grey list. |
+| S-35 | Regulatory Filings | PMS Compliance | SEBI PMR / APMI / PMSBazaar (fund level). |
+| S-36 | Custodian Reports | PMS Compliance | Per-client custodian reports + email tracking. |
+| S-37 | Partner Pipeline | Partnerships RM/Head | B2B partner leads + work modal. |
+| S-38 | B2B Dashboard | Partnerships Head | Partner pipeline overview + per-RM. |
+| S-39 | Leadership | Leadership | Department throughput + needs-attention. |
+| S-40 | Role dashboards | Qualifier/Inv/Ops/Compliance | Role-specific home screens. |
 
 ---
 
-## 5. Integrations catalog
+## C. Screen-by-screen
 
-Each integration: trigger, request, response, auth, failure/retry. (All mocked in proto.)
+For each: **who**, **what's on it**, **what you can do**, **backend logic (in words)**, **edge cases**.
 
-- **INT-1 DIGIO** — e-sign + digital KYC (PAN↔name, DOB, Aadhaar e-KYC OTP). *Trigger:* onboarding e-sign / KYC verify. *Req:* client identity payload. *Resp:* `{kycStatus, panVerified, aadhaarVerified, signedPdfUrl}`. *Webhook:* sign-complete → store `agreementUrl`. *Auth:* API key + webhook HMAC. *Fail:* retry 3×; surface "e-sign pending".
-- **INT-2 CKYC registry** — fetch/update CKYC record. *Trigger:* KYC step / correction. *Resp:* `{ckycNo, status}`. (PMS: handled by partner, not CRM.)
-- **INT-3 KRA** — KYC Registration Agency status check.
-- **INT-4 FIU AML** — *Trigger:* PMS screening. *Req:* `{pan}`. *Resp:* `{match:bool, score, listRef}`. match ⇒ grey list (BR-18). Audit each check.
-- **INT-5 Custodian API** — *Trigger:* daily/periodic pull. *Resp:* statement files (Excel/XML) for filings + the 8 per-client reports. *Auth:* mTLS/API key. *Fail:* alert PMS-Compliance, mark filing "fetch failed".
-- **INT-6 Transactional email + tracking (e.g. SendGrid/Netcore)** — send client reports/content; capture **delivered / opened / acknowledged** via webhooks. *Idempotency:* per message-id. *Fail:* bounce → mark failed + retry/raise.
-- **INT-7 Google Calendar / Meet** — create events, Meet links, invites.
-- **INT-8 Gmail / IMAP / ESP** — inbox send/receive.
-- **INT-9 Payment / e-NACH (mandate + auto-debit)** — *Trigger:* fee cycle. *Resp:* `{status:Success|Failed, reason}` (insufficient balance, mandate expired, bank declined). Failures → Fee Payments view + RM task. Retry on demand.
-- **INT-10 SEBI PMR portal / APMI / PMSBazaar** — fund-level uploads; PMR via the portal URL above (manual portal upload acknowledged; APMI/PMSBazaar API where available).
-- **INT-11 WhatsApp Business** — outreach + delivery receipts in correspondence log.
-- **INT-12 Supabase** — the live shared Feature-Suggestions board (only non-mocked integration in proto).
+### S-01 · Login / Role switch
+- **Who:** everyone. **On it:** the "Viewing as" dropdown (prototype) → in production this is the login + the system reads your role.
+- **Logic:** your role decides which menu items appear and what data you can see (your own book vs everyone).
+- **Edge:** an external partner must never see internal screens or other partners' clients.
+
+### S-02 · RM Dashboard
+- **Who:** RM. **On it:** cards (active leads, hot leads, onboarding, follow-ups due, reviews due this week) and a panel of follow-ups due today/overdue.
+- **Do:** add a lead; click a follow-up to open the lead.
+- **Logic:** "due" = follow-up date today or earlier; everything is filtered to the logged-in RM.
+- **Edge:** brand-new RM with no book sees zeros, not errors.
+
+### S-03 · Leads  ·  S-04 · Lead detail
+- **Who:** RM. **On it:** lead table (name, source, status, stage L1–L4, RM, interactions, follow-up). Lead detail opens a side drawer.
+- **Do:** log a call/email/meeting/WhatsApp; set stage/status/follow-up; add comments; **Start onboarding**; move to Out List.
+- **Logic — Five-Strike:** at stage L1, after **5 outreach attempts with no response**, the lead is flagged to move to the Out List (a reason is required). Logging an interaction bumps the count and timestamp.
+- **Edge:** a lead that responds resets the five-strike warning; out-listed leads can be revived later with their history intact.
+
+### S-05 · Assignment Queue  ·  S-06 · Qualify & Assign
+- **Who:** Qualifier. **On it:** app sign-ups not yet assigned (with captured details, source, the flow they chose, a recommended RM).
+- **Do:** open a lead, pick the best-fit RM, set the meeting date/time, confirm.
+- **Logic:** confirming **assigns the RM, books an intro meeting and auto-creates a Google Meet invite** for client + RM + qualifier; the lead becomes "qualified" and moves to L2/onboarding. A self-serve drop-off shows as a "recovery" item.
+- **Edge:** duplicate sign-up (same number) should attach to the existing person, not create a second.
+
+### S-07 · Onboarding Journey  ·  S-08 · Household hub  ·  S-09 · Onboarding form
+- **Who:** RM. **On it:** a funnel (where leads are) + a table of leads in onboarding with a **Start onboarding / Resume** button. Onboarding is **RM-only**.
+- **Flow:**
+  1. Click **Start onboarding** → it asks for the **mobile number first**.
+  2. The number opens the **Household hub** — every account already on that number, each with progress.
+  3. **Resume** any account, or **add an account** (PMS/RIA/International — one each per person) or a **family member** (spouse, parent…). Each account is its own form.
+  4. The **form** captures personal, contact, financial, objective, **advisory routing (which product)**, risk profile, bank/demat, nominee, declarations — with a live progress bar — and ends with a **Send e-sign request** for the agreement.
+- **Logic:** forms are **keyed by the mobile number**, so if the client started self-serve (or another RM started it), entering the number **resumes the exact same form** — nothing is lost. e-sign is enabled once the form is mostly complete.
+- **Edge:** client started self-serve then asks for help → RM resumes mid-way; e-sign sent but unsigned → reminder after a week, then a task to the RM.
+
+### S-10 · Clients  ·  S-11 · Account detail
+- **Who:** RM (own), Investment & Leadership (all). **On it:** one row **per account**, grouped by household, with product tags and filters; a **quick-view** dropdown (holdings, CAGR since inception, invested/current).
+- **Account detail tabs:** Overview (personal + engagement), Investment & SIP, Risk Profile & Agreement, Portfolio, **Reports**, Invoices, Call Sync. A family member's account shows **"linked to [primary] · [relation]"**.
+- **Logic:** strategies are backend-assigned (not edited here); "CAGR since inception" is annualised from invested→current over the tenure.
+- **Edge:** very new accounts (under a year) make annualised CAGR look extreme — show "return since inception" instead.
+
+### S-12 · Profiles  ·  S-13 · Person Profile
+- **Who:** RM, Investment, Leadership. **On it:** a searchable directory of **every lead and client** (by name, email or number); a person rolls up all their accounts + linked leads.
+- **Profile tabs:** **Accounts** (each account: invested/current/CAGR, a portfolio graph, strategy performance, holdings, rebalance dates; open an account for its own page incl. a **Reports** tab), **Communication** (channels/frequency/language/DND), **Timeline** (reach-outs for leads; onboarding/funding/rebalance history for clients), **Notes** (free text about the person).
+- **Header:** DOB, RM, source, account count, and **tags** (see Tags below).
+
+### S-14 · Calendar  ·  S-15 · Schedule meeting/call
+- **Who:** most roles. **On it:** day-grouped meetings with Google Meet links; conflicts flagged.
+- **Do:** **Schedule meeting/call** with any client/lead/colleague; pick online (Meet link) or call; **Preview** a 10-min reminder.
+- **Logic:** a **pop-up reminder appears ~10 minutes before** any call. RMs see their own calendar; Investment/Leadership see the team calendar.
+- **Edge:** overlapping meetings for one RM are flagged as conflicts to reschedule.
+
+### S-16 · Reviews & Reminders
+- **Who:** RM, Investment. **On it:** clients due **this week** for an **annual IPS review** or **quarterly portfolio review**; schedule call / send reminder / open IPS.
+- **Logic — annual risk refresh:** every 12 months the client is prompted to re-do the risk questionnaire; if no response in **14 days**, the RM is flagged.
+
+### S-17 · Tasks & Requests
+- **Who:** all teams. **On it:** a board (Open / In-Progress / Blocked / Done) of cross-team requests with an activity log.
+- **Do:** raise a request to a team + person; drag across the board; post updates.
+- **Logic:** **reassigning a task requires a reason**, which is recorded in the activity log.
+
+### S-18 · Inbox
+- **Who:** all. **On it:** Inbox / Sent for the logged-in person; unread badge.
+- **Do:** compose (delivers to the recipient's inbox), open (marks read), reply (pre-filled).
+- **Logic:** everything sent in the CRM (reports, invites, partner contact) also lands in the relevant inbox.
+- **Edge:** a bad/missing email address blocks the send and flags it.
+
+### S-19 · Client Reports
+- **Who:** RM, Investment, Distributor, Leadership (own book). **On it:** per client — **Monthly** (holdings, trades, P&L, valuation, advisor commentary **+ fee invoice**), **Half-yearly**, **Tax** (STCG/LTCG/dividends, ITR-ready).
+- **Do:** **View** the contents, **Send** to the client.
+- **Logic — receipts:** each send logs **delivered → opened → acknowledged** and lands in the client's inbox. Schedule: monthly by the 1st, half-yearly end-Sep/end-Mar, tax in April.
+
+### S-20 · Out List  ·  S-21 · Knowledge Hub  ·  S-22 · Feature Suggestions
+- Out List: parked/dead leads with reasons, restorable. Knowledge Hub: in-app guide (teams, flows, glossary, module map). Feature Suggestions: shared ideas board (the one live, multi-user feature).
+
+### S-23 · Audience Lists  ·  S-24 · Events  ·  S-25 · Content (Marketing)
+- **Audience Lists:** build a reusable segment with **multi-select** filters — Category (Direct/Retail, HNI, Family Office, Corporate, Trust, NRI, Distributor, Wealth Manager, IFA, Institution), City, Zone, Account type, Distributor, RM, min AUM, include-prospects; live member preview.
+- **Events:** name + lead + co-lead + date/venue; attach audience lists as groups; shows the **unique invitee count** (deduped).
+- **Content:** upload + **tag** an article; it **auto-delivers to every client carrying a matching tag**; the article shows its reach.
+
+### S-26–S-29 · Distributor portal (external partner)
+- **Dashboard:** the **same RM dashboard** we give our own RMs but scoped to **their** clients — AUM with Flameback, net gain, client count, client list, and **"Reach out to your Flameback RM"** (call/email/WhatsApp).
+- **Clients:** their clients (city/AUM/CAGR → full profile). **Strategies:** strategies they can offer + performance. **Invoices:** fee invoices with a date-range filter (incl. past 3 years), per-invoice download + download-all.
+- They also get Calendar, Reviews and Portfolios/IPS for their own book. **The only difference vs an internal RM:** the RM they contact is **us**.
+
+### S-30 · RIA Compliance List
+- **Who:** RIA Compliance (RIA clients only). **On it:** per client — the account-opening form; **KYC verified via DIGIO** (PAN/name/DOB/Aadhaar — no manual uploads); CKYC/KRA; disclosure accepted; risk profile; **DIGIO-signed agreement** (PDF); welcome kit; **suitability (IPS)** with send-to-client; **demat access** (client-granted, read-only — **we can't revoke it**).
+- **Do:** Verify, or **Raise to RM** (creates a task).
+
+### S-31 · Monthly SEBI Report
+- **Who:** RIA Compliance. **On it:** header with SEBI reg-no + timestamp (PDF-exportable); four metrics (active / fully compliant / pending / gaps); a table of **green/amber/red** status for all **ten SEBI items (i–x)**; click a client for a **drill-down** — identity (PAN/Aadhaar masked), document links, trade & advice audit trail, report dispatch log, correspondence log.
+- **Logic:** each item's colour is computed from the underlying records (agreement signed, disclosure, risk, KYC/CKYC, correspondence, suitability, invoice, etc.).
+
+### S-32 · Fee Payments
+- **Who:** RIA Compliance. **On it:** advisory fee **auto-debit (e-NACH)** status per client — cleared vs **failed with the reason** (insufficient balance, mandate expired…).
+- **Do:** **Retry** the debit, or **Raise to RM** (pre-filled follow-up task).
+
+### S-33 · SEBI RIA Daily Report
+- **Who:** RIA Compliance. **On it:** the daily client **register** sent to SEBI — start date, name, contact, email, product, strategy, PAN, CKYC/KRA proof link, **resident status** (Resident / NRI / NRO / Non-Individual / Non-Resident), agreement link, city/state, country, gender. **Exportable to CSV.**
+- **Plus:** a **month picker (5-year history)** showing **new added / exited / active / inactive / total** as of that month.
+- **Logic:** active = funded & not exited; inactive = not funded & not exited; exited = has an exit date; sent automatically each day.
+
+### S-34 · PMS Review (PMS Compliance)
+- **Who:** PMS Compliance (PMS clients). **Key point:** PMS KYC/CKYC/document checks are done by our **onboarding partner outside the CRM**. The officer's only job here is **FIU AML screening**.
+- **Do:** Run the **FIU check (by PAN)**. **Logic:** an FIU match **grey-lists** the client → **cannot be onboarded**; a clear result makes them eligible.
+
+### S-35 · Regulatory Filings (PMS, fund-level)
+- **Who:** PMS Compliance. **On it:** fund-level/firm-wide submissions — **SEBI Monthly PMR** (links to the SEBI PMR portal; fetch the report from the custodian → upload via the portal), **APMI** submission, **PMSBazaar** upload — with due-date reminders. (These are **aggregate**, not per client.)
+
+### S-36 · Custodian Reports (PMS, per client)
+- **Who:** PMS Compliance. **On it:** each PMS client has their own panel of the **8 custodian reports** (holding statement, transactions, capital gains, corporate actions, NAV/performance, bank book, securities ledger, expense & fee).
+- **Do:** **Send** each (or **Send all**) to the client. **Logic:** the system pulls the report from the custodian and emails it; each report shows **email status** (sent / delivered / seen) via the connected email system.
+
+### S-37 · Partner Pipeline  ·  S-38 · B2B Dashboard (Partnerships)
+- **Who:** Partnerships RM (own partners) & Head (all). **On it:** partner firms — distributor / wealth manager / family office / IFA — that reached us via **Instagram / ads / LinkedIn / referral / inbound**, with type, source, **city**, stage, RM, engagement mode.
+- **Flow:** inbound partner → Head **assigns** a Partnerships RM → RM works it (log interactions, set stage) → **engagement by city**: if the RM is in the partner's city the CRM **recommends an in-person visit**, otherwise an **online meet**; one-click schedule either.
+- **Head dashboard:** pipeline counts, per-RM breakdown, and **unassigned partners needing an RM**.
+- **Open item:** today the **Head** assigns; a dedicated **B2B Qualifier** queue (like the B2C qualifier) is not built yet.
+
+### S-39 · Leadership  ·  S-40 · Role dashboards
+- **Leadership:** a department toggle (Sales / Investment / Compliance / Operations) showing throughput, a **"needs your attention"** escalation list, and per-person scorecards.
+- **Role dashboards:** Qualifier (queue + recovery), Investment (AUM, reviews due, tasks), Operations (task queue), Compliance (verification queue).
 
 ---
 
-## 6. Scheduling / background jobs
+## D. End-to-end flows (in words)
 
-- **JOB-1** Daily 06:00 — generate & submit **SEBI RIA daily report** (FR-RIA-4); retain + log.
-- **JOB-2** Monthly 1st — generate & dispatch client **Monthly reports + fee invoices** (BR-14); update receipts.
-- **JOB-3** Monthly — **SEBI PMR** prep (pull custodian INT-5) + due reminder to PMS-Compliance.
-- **JOB-4** End-Sep / End-Mar — half-yearly reports; April — tax reports.
-- **JOB-5** Periodic — custodian per-client reports auto-send (INT-5/6).
-- **JOB-6** Daily — review-due + filing-due reminders; 10-min pre-call reminders (push).
-- **JOB-7** Annual — risk-profile refresh trigger; +14-day no-response → RM flag (BR-15).
-- **JOB-8** Fee cycle — e-NACH auto-debit run (INT-9); failures → Fee Payments + tasks.
+**B2C — acquire to serve**
+1. A person sees an ad / visits the site / is referred → becomes a **lead** (S-03) or an app sign-up.
+2. App sign-ups go to the **Qualifier** (S-05), who calls them and **assigns the best-fit RM** with an intro meeting.
+3. The **RM** works the lead (S-04), then **starts onboarding** (S-07–S-09): one number → a household → one or more accounts (and family members), each finishing with **DIGIO e-sign**.
+4. Once funded, the account appears in **Clients** (S-10) and in the person's **Profile** (S-13).
+5. The RM **schedules meetings** (S-14), runs **reviews** (S-16), sends **reports** (S-19), and uses **tags** so Marketing's **content** reaches the right clients.
+6. **Compliance** runs in parallel — RIA clients through RIA Compliance (S-30–S-33), PMS clients through PMS Compliance (S-34–S-36).
 
----
-
-## 7. Security, privacy & compliance (DPDP 2023 / SEBI)
-
-- **NFR-1** RBAC enforced at query layer; UI hiding is not sufficient.
-- **NFR-2** PAN/Aadhaar (and demat a/c) encrypted at rest (AES-256), keys in a secrets manager separate from app; unmasked access only by designated compliance officer and **every unmasked read is written to an immutable audit log** (user, record, field, timestamp), exportable (CSV/JSON) for SEBI audit; included in the monthly compliance report.
-- **NFR-3** DPDP explicit consent captured at registration (distinct from advisory agreement), timestamped, stored immutably.
-- **NFR-4** Developers must use anonymised data in non-prod; no raw PII in lower environments.
-- **NFR-5** Document store: signed expiring URLs; agreements/reports retained per SEBI retention norms.
-- **NFR-6** External partners (distributors) strictly partitioned to their own book.
+**B2B — acquire partners**
+1. A distributor/WM/family office reaches us via ads/referral (S-37).
+2. The **Partnerships Head** assigns a **Partnerships RM**.
+3. The RM engages **online or in person based on city**, moves the firm through the pipeline to **Onboarded**.
+4. An onboarded partner gets a **Distributor portal** (S-26–S-29) to manage their own clients (with us as their RM).
 
 ---
 
-## 8. Cross-cutting edge cases
+## E. Backend logic, in plain words (the rules that matter)
 
-- **EDGE-9** Household with multiple members sharing one mobile — disambiguate by PAN; never collapse two PANs into one person.
-- **EDGE-10** Client holds same product twice — spec says one-each; block/curate.
-- **EDGE-11** Exited client — exclude from active counts/reports but keep in register & audit.
-- **EDGE-12** Report send to a client with no email / bad email — block send, flag.
-- **EDGE-13** FIU grey-listed client somehow reaching onboarding — hard block; alert compliance.
-- **EDGE-14** Distributor portal: client reassigned to another distributor — access must follow current `distributor`.
-- **EDGE-15** Timezone — all datetimes stored UTC; displayed in IST; cron in IST.
-- **EDGE-16** Concurrent edits (RM + onboarding form) — optimistic locking / field-merge.
-
----
-
-## 9. Non-functional
-
-- **NFR-7** P95 page < 2s; report generation async with progress.
-- **NFR-8** Audit log immutable & queryable; 8-year retention.
-- **NFR-9** Availability 99.5%; backups + PITR.
-- **NFR-10** Accessibility AA; responsive (desktop + tablet).
+- **Household = mobile number.** Accounts and family members hang off it; one row per account in Clients.
+- **Onboarding forms are keyed by number** so self-serve + RM-assisted converge — no lost progress, no duplicates.
+- **Five-Strike:** 5 unanswered L1 outreaches → flag to Out List (reason required).
+- **Scoping:** RM = own book; Distributor = own clients; RIA Compliance = RIA clients; PMS Compliance = PMS clients; Investment/Leadership = everyone.
+- **Compliance split:** KYC for RIA is verified digitally by DIGIO (no uploads); for PMS, KYC is done by the onboarding partner and the CRM only runs **FIU + grey list**.
+- **Grey list:** an FIU match blocks onboarding.
+- **Fee auto-debit (e-NACH):** even though automated, the CRM shows success/failure + reason; failures can be retried or raised to the RM.
+- **Reports:** client reports log delivery/open/acknowledgement; the SEBI RIA register goes daily; SEBI PMR/APMI/PMSBazaar are fund-level filings.
+- **Demat access** is granted by the client (read-only) and **cannot be revoked by us**.
+- **PII (PAN/Aadhaar)** is visible unmasked only to the compliance officer; every unmasked view is logged.
 
 ---
 
-## 10. Acceptance criteria (samples)
+## F. Edge cases (consolidated)
 
-- **AC-1** An RM cannot load another RM's client via API even with a guessed id (BR-1, NFR-1).
-- **AC-2** A compliance officer revealing a PAN writes exactly one audit entry per reveal; entry appears in the monthly report and CSV export (NFR-2).
-- **AC-3** FIU match sets grey list and onboarding is blocked end-to-end (BR-18, EDGE-13).
-- **AC-4** Monthly report job dispatches to all active clients with the fee invoice attached and records delivery/open (BR-14, INT-6).
-- **AC-5** SEBI RIA daily report runs at 06:00, exports the full register, and month metrics reconcile (new−exited applied to prior active = current active) (FR-RIA-4, BR-17).
-- **AC-6** One mobile onboards two accounts + a spouse; three forms/accounts exist under one household (FR-ONB-2).
+- Duplicate lead/sign-up (same number/email) → attach to the existing person, don't fork.
+- Self-serve drop-off then asks for help → RM resumes the same form.
+- e-sign sent but never signed → reminder, then RM task.
+- One household, two PANs (e.g. spouse) → keep them as separate people under one number; never merge PANs.
+- Same product twice for one person → not allowed (one each).
+- Exited client → drop from active counts/reports but keep in the register and audit trail.
+- New account (<1 year) → annualised CAGR misleads → show return-since-inception.
+- FIU-flagged client reaching onboarding → hard block.
+- Distributor's client reassigned to another distributor → access follows the current distributor.
+- Report send to a client with no/invalid email → blocked and flagged.
+- Overlapping meetings for an RM → flagged as a conflict to reschedule.
+- Times shown in IST; daily/periodic jobs run on IST schedule.
 
 ---
 
-## 11. Open decisions
+## G. Open product decisions
 
-1. **B2B Qualifier** — add a dedicated qualification queue vs Head-assigns (current). 
-2. Lead→client auto-conversion on agreement signed (currently manual/seeded).
-3. Report auto-send: full automation vs maker-checker approval before dispatch.
-4. International-investing regulatory regime specifics (LRS limits, reporting).
-5. Whether Marketing may see client-level PII or only segments.
+1. **B2B Qualifier** screen — add a dedicated qualification queue, or keep "Head assigns"?
+2. Auto-convert a signed lead into a client/account (today it's manual)?
+3. Should client reports auto-send, or wait for a compliance/maker-checker approval?
+4. May Marketing see client-level details, or only segments?
+5. International-investing specific rules (LRS limits, reporting).

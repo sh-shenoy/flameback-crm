@@ -57,7 +57,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Fixed an unclosed-table bug in the B2B dashboard that nested later sections incorrectly.
 
 **Docs**
-- Split docs: **FUNCTIONAL_SPEC.md** is now the developer-grade spec (data model with types, RBAC matrix, per-module FRs + state/edge cases, full integrations catalog with contracts, scheduling/cron jobs, security/DPDP, NFRs, acceptance criteria, open decisions). The previous overview was kept and renamed **FLOWS.md** (narrative flow + module overview).
+- Rewrote **FUNCTIONAL_SPEC.md** as a product-style spec: a screen index (~40 screens with IDs/names/users), a plain-English screen-by-screen walkthrough (what's on it, what you can do, backend logic in words, edge cases), end-to-end flows, the rules-that-matter, a consolidated edge-case list, and open product decisions. **FLOWS.md** keeps the one-page flow overview.
 - Added FUNCTIONAL_SPEC.md — a full functional spec of the project (roles, modules, B2C/B2B flows, compliance, data model, simulated integrations, known gaps).
 - Refreshed the in-app Knowledge Hub: updated team roster, added a "Modules & roles map" section, and expanded the glossary (DIGIO, FIU, grey list, SEBI PMR, APMI/PMSBazaar, e-NACH, custodian, B2B vs B2C).
 
