@@ -57,7 +57,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Fixed an unclosed-table bug in the B2B dashboard that nested later sections incorrectly.
 
 **Docs**
-- Rewrote **FUNCTIONAL_SPEC.md** as a product-style spec: a screen index (~40 screens with IDs/names/users), a plain-English screen-by-screen walkthrough (what's on it, what you can do, backend logic in words, edge cases), end-to-end flows, the rules-that-matter, a consolidated edge-case list, and open product decisions. **FLOWS.md** keeps the one-page flow overview.
+- Restructured **FUNCTIONAL_SPEC.md** to match the Flameback RIA App spec format (the gold standard): Sections 1–11 — Overview & Scope, Architecture & Screen Inventory (40 screens), Roles & Auth, Screen-by-Screen specs, Business Logic & Rules, Integrations, Error Handling tables, NFRs, Out of Scope, **Open Items requiring PM sign-off**, and End-to-End Flows — with **PM INPUT** boxes. Aligned product truth to the app (RIA <₹50L / PMS ≥₹50L routing, Cruise strategy tiers, the app's onboarding feeding the CRM). **FLOWS.md** keeps the one-page overview.
 - Added FUNCTIONAL_SPEC.md — a full functional spec of the project (roles, modules, B2C/B2B flows, compliance, data model, simulated integrations, known gaps).
 - Refreshed the in-app Knowledge Hub: updated team roster, added a "Modules & roles map" section, and expanded the glossary (DIGIO, FIU, grey list, SEBI PMR, APMI/PMSBazaar, e-NACH, custodian, B2B vs B2C).
 
