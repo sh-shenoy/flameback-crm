@@ -51,6 +51,12 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-16
 
+**B2B / Partnerships module**
+- A B2C→B2B counterpart for acquiring partner firms (distributors, wealth managers, family offices, IFAs) who reach us via Instagram / ads / referrals / inbound.
+- **Partner Pipeline:** firm, type, source, city, stage, assigned RM and engagement mode. Open a partner to log interactions, set stage, and (Head) assign a Partnerships RM.
+- **City-based engagement:** the CRM recommends an in-person visit when the RM is in the partner's city, else an online meet — with one-click "Schedule online meet" (Google Meet) or "Schedule in-person visit".
+- **Partnerships RM** sees only their assigned partners; **Partnerships Head** gets a dashboard (pipeline by stage, per-RM breakdown, unassigned partners needing an RM).
+
 **RIA fee payments (auto-debit status)**
 - Fee Payments view for the RIA Compliance officer: advisory fee auto-debit (e-NACH) status per RIA client — cleared vs failed with the failure reason (e.g. insufficient balance, mandate expired) — with Retry and Raise-to-RM (opens a pre-filled follow-up task).
 

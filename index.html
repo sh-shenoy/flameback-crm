@@ -593,6 +593,8 @@
         <option value="Investment">Investment Team</option>
         <option value="Marketing">Marketing Team</option>
         <option value="Distributor">Distributor / Wealth Manager</option>
+        <option value="B2BRM">Partnerships RM (B2B)</option>
+        <option value="B2BHead">Partnerships Head (B2B)</option>
         <option value="Owner">Leadership — Dept Heads</option>
       </select>
     </div>
@@ -606,6 +608,8 @@
       <button data-view="reminders"><span class="ico">🔔</span> Reviews & Reminders <span class="count" id="navRem">0</span></button>
       <button data-view="clients"><span class="ico">💼</span> Clients <span class="count" id="navClients">0</span></button>
       <button data-view="profiles"><span class="ico">🪪</span> Profiles</button>
+      <button data-view="b2bdash"><span class="ico">📊</span> B2B Dashboard</button>
+      <button data-view="b2bpipeline"><span class="ico">🤝</span> Partner Pipeline <span class="count" id="navB2b">0</span></button>
       <button data-view="reports"><span class="ico">📑</span> Client Reports</button>
       <button data-view="events"><span class="ico">🎟️</span> Events</button>
       <button data-view="lists"><span class="ico">🗂️</span> Audience Lists</button>
@@ -1341,6 +1345,27 @@
       <div class="cards" id="feeCards"></div>
       <div class="panel"><table><thead><tr><th>Client</th><th>Fee</th><th>Auto-debit date</th><th>Status</th><th>Reason</th><th></th></tr></thead><tbody id="feeBody"></tbody></table></div>
     </section>
+    <!-- B2B PARTNER PIPELINE -->
+    <section id="view-b2bpipeline" class="hidden">
+      <div class="page-head"><div><h1>Partner Pipeline (B2B)</h1><p>Distributors, wealth managers and family offices reaching out via ads / referrals — qualify, assign to a Partnerships RM, then engage online or in-person by city.</p></div></div>
+      <div class="panel">
+        <div class="filterbar">
+          <select class="filter" id="b2bType" onchange="renderB2bPipeline()"><option value="">All types</option><option>Distributor</option><option>Wealth Manager</option><option>Family Office</option><option>IFA / Referral</option></select>
+          <select class="filter" id="b2bStage" onchange="renderB2bPipeline()"><option value="">All stages</option><option>New</option><option>Qualified</option><option>Meeting set</option><option>In discussion</option><option>Onboarded</option><option>Not interested</option></select>
+        </div>
+        <table><thead><tr><th>Firm</th><th>Type</th><th>Source</th><th>City</th><th>Stage</th><th>RM</th><th>Engagement</th><th></th></tr></thead><tbody id="b2bBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- B2B DASHBOARD (RM Head) -->
+    <section id="view-b2bdash" class="hidden">
+      <div class="page-head"><div><h1 id="b2bDashTitle">B2B Partnerships Dashboard</h1><p>Partner acquisition pipeline across the Partnerships RMs.</p></div></div>
+      <div class="cards" id="b2bCards"></div>
+      <div class="two-col" style="grid-template-columns:1fr 1fr;align-items:start">
+        <div class="panel"><div class="panel-head"><h2>By Partnerships RM</h2></div><table><thead><tr><th>RM</th><th>City</th><th>Partners</th><th>Meetings</th><th>Onboarded</th></tr></thead><tbody id="b2bRmBody"></tbody></div>
+        <div class="panel"><div class="panel-head"><h2>Needs attention</h2></div><div id="b2bAttn" style="padding:6px 16px 14px"></div></div>
+      </div>
+    </section>
 
   </main>
 </div>
@@ -1666,6 +1691,12 @@
   <div class="modal-f"><button class="btn ghost" onclick="closeDrill()">Close</button></div>
 </div></div>
 
+<div class="modal-scrim" id="partnerScrim"><div class="modal">
+  <div class="modal-h"><h2 id="ptFirm">Partner</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closePartner()">×</button></div>
+  <div class="modal-b" id="ptBody"></div>
+  <div class="modal-f"><button class="btn ghost" onclick="closePartner()">Close</button></div>
+</div></div>
+
 <div class="modal-scrim" id="custClientScrim"><div class="modal wide">
   <div class="modal-h"><h2 id="custClientTitle">Custodian reports</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeCustClient()">×</button></div>
   <div class="modal-b" id="custClientBody"></div>
@@ -1847,6 +1878,8 @@ const ROLES={
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','feepay','tasks','clients','suggestions','hub']},
   PMSCompliance:{name:'Imran Khan',email:'imran@flamebackcapital.com',label:'PMS Compliance Team',nav:['pmsreview','pmsfilings','custreports','tasks','inbox','hub']},
+  B2BRM:{name:'Aditya Rao',email:'aditya@flamebackcapital.com',label:'Partnerships RM (B2B)',nav:['b2bpipeline','calendar','tasks','inbox','hub']},
+  B2BHead:{name:'Vikram Sethi',email:'vikram@flamebackcapital.com',label:'Partnerships Head (B2B)',nav:['b2bdash','b2bpipeline','calendar','tasks','inbox','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
   Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','invoices','calendar','tasks','suggestions','hub']},
   Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','invoices','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
@@ -2018,6 +2051,15 @@ function migrate(){
     DB.tagsV1=true;
   }
   if(!DB.emails){DB.emails=seedEmails();DB.nextEmail=DB.emails.length+1;}
+  if(!DB.b2bLeads){DB.b2bLeads=[
+    {id:1,firm:'Summit Partners',type:'Wealth Manager',source:'Instagram',city:'Bangalore',contactName:'Rohan Verma',phone:'+91 98450 11001',email:'rohan@summitpartners.in',stage:'New',rm:'',mode:'',hist:[],notes:''},
+    {id:2,firm:'Meridian Family Office',type:'Family Office',source:'Referral',city:'Mumbai',contactName:'Aarav Shah',phone:'+91 98200 22002',email:'aarav@meridianfo.in',stage:'Qualified',rm:'Aditya Rao',mode:'',hist:[h('Call',-3)],notes:''},
+    {id:3,firm:'PineBridge Distributors',type:'Distributor',source:'LinkedIn',city:'Chennai',contactName:'Karthik Iyer',phone:'+91 99400 33003',email:'karthik@pinebridge.in',stage:'Meeting set',rm:'Aditya Rao',mode:'Online',hist:[h('Call',-6),h('Meeting',-1)],notes:''},
+    {id:4,firm:'Anchor IFA Network',type:'IFA / Referral',source:'Meta ad',city:'Bangalore',contactName:'Sneha Rao',phone:'+91 98860 44004',email:'sneha@anchorifa.in',stage:'New',rm:'',mode:'',hist:[],notes:''},
+    {id:5,firm:'Crestone Wealth',type:'Wealth Manager',source:'Inbound',city:'Delhi',contactName:'Vivek Malhotra',phone:'+91 98110 55005',email:'vivek@crestone.in',stage:'Qualified',rm:'Sanjay Kapoor',mode:'',hist:[h('Call',-2)],notes:''},
+    {id:6,firm:'Northbridge Family Office',type:'Family Office',source:'Instagram',city:'Mumbai',contactName:'Ishaan Mehta',phone:'+91 98201 66006',email:'ishaan@northbridge.in',stage:'Meeting set',rm:'Aditya Rao',mode:'Visit',hist:[h('Meeting',-2)],notes:''},
+    {id:7,firm:'Zenith Distributors',type:'Distributor',source:'Referral',city:'Bangalore',contactName:'Priya Nambiar',phone:'+91 98453 77007',email:'priya@zenithdist.in',stage:'Onboarded',rm:'Meera Joshi',mode:'Visit',hist:[h('Meeting',-20),h('Meeting',-8)],notes:''}
+  ];DB.nextB2b=8;}
   if(!DB.invHistV1){DB.clients.forEach(c=>{if(c.funded){c.invoices=c.invoices||[];c.invoices.push({date:dayStr(-540),desc:'Annual subscription (prior year)',amount:38000,status:'Paid'});c.invoices.push({date:dayStr(-1200),desc:'Annual subscription (3+ years ago)',amount:32000,status:'Paid'});}});DB.invHistV1=true;}
   if(!DB.pmsFilings){DB.pmsFilings=[
     {name:'SEBI — Monthly report',freq:'Monthly',source:'Custodian API',due:dayStr(4),status:'Pending'},
@@ -2051,7 +2093,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','feepay','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','b2bdash','b2bpipeline','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','feepay','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -2065,6 +2107,8 @@ function go(v){
   if(v==='ips')renderIps();
   if(v==='out')renderOut();
   if(v==='profiles')renderProfiles();
+  if(v==='b2bpipeline')renderB2bPipeline();
+  if(v==='b2bdash')renderB2bDash();
   if(v==='reports')renderReports();
   if(v==='compreport')renderCompReport();
   if(v==='feepay')renderFeePay();
@@ -3424,6 +3468,64 @@ function renderFeePay(){
 function retryDebit(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.feeDebit.status='Success';c.feeDebit.reason='';c.feeDebit.date=dayStr(0);save();renderFeePay();toast('Auto-debit retried — cleared');}
 function raiseFeeIssue(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;openTask(null,{team:'RM',type:'Follow up',cid,title:'Fee auto-debit failed — '+c.first+' '+c.last});document.getElementById('tmNotes').value='Advisory fee auto-debit ('+fmtINR(c.feeDebit.amount)+') failed — reason: '+c.feeDebit.reason+'. Please follow up with the client to fund the account / re-authorise the e-NACH mandate, then we will retry.';toast('Raising fee-failure task to RM');}
 
+/* ---------- B2B partnerships (distributors / WMs / family offices) ---------- */
+const B2B_RMS=[{name:'Aditya Rao',city:'Mumbai'},{name:'Meera Joshi',city:'Bangalore'},{name:'Sanjay Kapoor',city:'Delhi'}];
+function b2bRmCity(name){const r=B2B_RMS.find(x=>x.name===name);return r?r.city:'';}
+function b2bScope(){const all=DB.b2bLeads||[];return currentRole==='B2BRM'?all.filter(l=>l.rm===ROLES.B2BRM.name):all;}
+function b2bStageCls(st){return st==='Onboarded'?'L4':(st==='Meeting set'||st==='In discussion')?'L3':st==='Qualified'?'L2':'L1';}
+function renderB2bPipeline(){
+  const ty=(document.getElementById('b2bType')||{}).value||'',stg=(document.getElementById('b2bStage')||{}).value||'';
+  const rows=b2bScope().filter(l=>(!ty||l.type===ty)&&(!stg||l.stage===stg));
+  document.getElementById('b2bBody').innerHTML=rows.length?rows.map(l=>`<tr class="lead-row" onclick="openPartner(${l.id})"><td class="lead-name">${l.firm}</td><td>${l.type}</td><td><span class="src">${l.source}</span></td><td>${l.city}</td><td><span class="stage-tag stage-${b2bStageCls(l.stage)}">${l.stage}</span></td><td>${l.rm||'<span class="lead-sub">unassigned</span>'}</td><td>${l.mode?(l.mode==='Visit'?'🏢 In-person':'🎥 Online'):'<span class="lead-sub">—</span>'}</td><td><button class="btn ghost sm" onclick="event.stopPropagation();openPartner(${l.id})">Work</button></td></tr>`).join(''):`<tr><td colspan="8" class="empty">No partner leads.</td></tr>`;
+  badges();
+}
+let PARTNER_ID=null;
+function openPartner(id){PARTNER_ID=id;renderPartner();document.getElementById('partnerScrim').classList.add('open');}
+function closePartner(){document.getElementById('partnerScrim').classList.remove('open');PARTNER_ID=null;rerender();}
+function renderPartner(){
+  const l=(DB.b2bLeads||[]).find(x=>x.id===PARTNER_ID);if(!l)return;
+  document.getElementById('ptFirm').textContent=l.firm;
+  const isHead=currentRole==='B2BHead';
+  const sameCity=l.rm&&b2bRmCity(l.rm)===l.city;
+  const rec=l.rm?(sameCity?`<b>In-person visit</b> recommended — the RM (${l.rm}) is based in ${l.city}, same as the partner.`:`<b>Online meeting</b> recommended — the RM (${l.rm}) is in ${b2bRmCity(l.rm)||'another city'}, partner is in ${l.city}.`):'Assign an RM to get the engagement recommendation (in-person if same city, else online).';
+  document.getElementById('ptBody').innerHTML=
+    `<div class="lead-sub" style="margin-bottom:12px"><span class="ptag pt-pms">${l.type}</span> · ${l.city} · reached us via <b>${l.source}</b></div>`+
+    `<div class="kv" style="margin-bottom:14px"><div class="kv-h">Contact</div>${kvr('Name',l.contactName)}${kvr('Phone',l.phone)}${kvr('Email',l.email)}</div>`+
+    `<div class="grid2">`+
+      `<div class="field"><label>Stage</label><select onchange="b2bSet('stage',this.value)">${['New','Qualified','Meeting set','In discussion','Onboarded','Not interested'].map(o=>`<option ${l.stage===o?'selected':''}>${o}</option>`).join('')}</select></div>`+
+      `<div class="field"><label>Assigned RM ${isHead?'':'<span class="lead-sub">(head assigns)</span>'}</label><select onchange="b2bSet('rm',this.value)" ${isHead?'':'disabled'}><option value="">— unassigned —</option>${B2B_RMS.map(r=>`<option ${l.rm===r.name?'selected':''}>${r.name} · ${r.city}</option>`).join('')}</select></div>`+
+    `</div>`+
+    `<div class="dpdp-banner" style="margin-top:2px">🗺 ${rec}</div>`+
+    `<div style="font-size:12px;color:var(--muted);margin:4px 0 6px">Log an interaction:</div>`+
+    `<div class="quicklog" style="margin-bottom:10px"><button onclick="logB2b('Call')"><span class="ic">📞</span>Call</button><button onclick="logB2b('Email')"><span class="ic">✉️</span>Email</button><button onclick="logB2b('Meeting')"><span class="ic">🤝</span>Meeting</button></div>`+
+    `<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn sm" onclick="b2bSchedule('Online')">🎥 Schedule online meet</button><button class="btn sm" onclick="b2bSchedule('Visit')">🏢 Schedule in-person visit</button></div>`+
+    `<div class="field"><label>Notes</label><textarea onchange="b2bSet('notes',this.value)" placeholder="Partnership terms discussed, AUM they can bring, etc.">${esc(l.notes||'')}</textarea></div>`+
+    (l.hist&&l.hist.length?`<div class="section-h">Interactions</div><ul class="tl">${[...l.hist].reverse().map(x=>`<li><strong>${x.type}</strong><div class="when">${new Date(x.when).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div></li>`).join('')}</ul>`:'');
+}
+function b2bSet(k,v){const l=(DB.b2bLeads||[]).find(x=>x.id===PARTNER_ID);if(!l)return;if(k==='rm'&&v&&l.stage==='New')l.stage='Qualified';l[k]=v;save();renderPartner();}
+function logB2b(t){const l=(DB.b2bLeads||[]).find(x=>x.id===PARTNER_ID);if(!l)return;l.hist=l.hist||[];l.hist.push({type:t,when:dayStr(0)});save();renderPartner();toast(t+' logged');}
+function b2bSchedule(mode){const l=(DB.b2bLeads||[]).find(x=>x.id===PARTNER_ID);if(!l)return;if(!l.rm){toast('Assign an RM first');return;}
+  l.mode=mode;if(l.stage==='New'||l.stage==='Qualified')l.stage='Meeting set';
+  const d=new Date();d.setDate(d.getDate()+2);d.setHours(11,0,0,0);
+  if(!DB.nextMtg)DB.nextMtg=DB.meetings.length+1;
+  DB.meetings.push({id:DB.nextMtg++,title:(mode==='Visit'?'Partner visit — ':'Partner online meet — ')+l.firm,rm:l.rm,when:d.toISOString().slice(0,16),dur:mode==='Visit'?60:30,attendees:[a(l.contactName+' · '+l.firm,'Partner'),a(l.rm,'RM')],meet:mode==='Visit'?('In-person · '+l.city):genMeet(),status:'Scheduled'});
+  save();renderPartner();toast(mode==='Visit'?('In-person visit scheduled in '+l.city):'Online meet scheduled · Google Meet invite sent');}
+function renderB2bDash(){
+  const all=DB.b2bLeads||[];
+  const unassigned=all.filter(l=>!l.rm&&l.stage!=='Not interested');
+  const eng=all.filter(l=>l.stage==='Meeting set'||l.stage==='In discussion');
+  const onb=all.filter(l=>l.stage==='Onboarded');
+  document.getElementById('b2bDashTitle').textContent='B2B Partnerships — '+(ROLES[currentRole]?ROLES[currentRole].name:'Head');
+  document.getElementById('b2bCards').innerHTML=
+    dcard('Partner leads',all.length,'In pipeline','var(--teal)',100)+
+    dcard('Unassigned',unassigned.length,'Awaiting an RM','var(--warm)',0)+
+    dcard('In engagement',eng.length,'Meetings / discussions','#2f54a8',0)+
+    dcard('Onboarded',onb.length,'Live partners','var(--green)',0);
+  document.getElementById('b2bRmBody').innerHTML=B2B_RMS.map(r=>{const mine=all.filter(l=>l.rm===r.name);return `<tr><td class="lead-name">${r.name}</td><td>${r.city}</td><td>${mine.length}</td><td>${mine.filter(l=>l.mode).length}</td><td>${mine.filter(l=>l.stage==='Onboarded').length}</td></tr>`;}).join('');
+  document.getElementById('b2bAttn').innerHTML=unassigned.length?unassigned.map(l=>`<div class="trail">🆕 <b>${l.firm}</b> <span class="lead-sub">${l.type} · ${l.city} · via ${l.source}</span> <button class="btn ghost sm" onclick="openPartner(${l.id})">Assign</button></div>`).join(''):'<span class="lead-sub">All partner leads are assigned.</span>';
+  badges();
+}
+
 /* ---------- Inbox (Gmail-linked) ---------- */
 function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}
 function emailMatch(to,me){return (to||'').toLowerCase().indexOf((me||'__').toLowerCase())>=0;}
@@ -4153,6 +4255,7 @@ function badges(){
   document.getElementById('navCal').textContent=myMeetings().filter(m=>sameDay(m.when,0)&&m.status!=='Done').length;
   document.getElementById('navInbox').textContent=(DB.emails||[]).filter(e=>!e.read&&emailMatch(e.to,myEmail())).length;
   var _np=document.getElementById('navPms');if(_np)_np.textContent=pmsClients().filter(c=>(c.pmsCompliance||{}).aml!=='Clear').length;
+  var _b=document.getElementById('navB2b');if(_b)_b.textContent=b2bScope().filter(l=>l.stage!=='Onboarded'&&l.stage!=='Not interested').length;
   document.getElementById('navRem').textContent=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
   const no=document.getElementById('navOwner');if(no)no.textContent=OWNER_DEPTS.reduce((n,d)=>n+deptAttn(d.key).length,0);
 }
