@@ -2044,7 +2044,7 @@ function ensureClientExtras(c){
   if(!c.ckycLink)c.ckycLink='https://ckyc.gov.in/proof/'+c.cid+'.pdf';
   if(c.exitedOn===undefined)c.exitedOn=(c.cid==='FBC-1006'?dayStr(-15):'');
   if(!c.boardingLetterV1){c.boardingLetter=null;if(c.funded&&(c.product||'').indexOf('RIA')>=0){c.welcomeKit=true;const _st={'FBC-1005':'Sent','FBC-1008':'Delivered'};c.boardingLetter={sent:dayStr(-18),status:_st[c.cid]||'Seen',seenOn:(_st[c.cid]?'':dayStr(-16))};}c.boardingLetterV1=true;}
-  if(!c.rebalancesV1){c.rebalances=[];if(c.funded){const isRia=(c.product||'').indexOf('RIA')>=0;let h=0;for(let i=0;i<c.cid.length;i++)h+=c.cid.charCodeAt(i);
+  if(!c.rebalancesV1){c.rebalances=[];if(c.funded&&(c.product||'').indexOf('RIA')>=0){const isRia=true;let h=0;for(let i=0;i<c.cid.length;i++)h+=c.cid.charCodeAt(i);
     const secs=(c.portfolio.holdings||[]).map(x=>x[0]);if(!secs.length)secs.push('Reliance Industries','HDFC Bank');
     [1,3,5,8].forEach((mo,i)=>{const seed=(h+i*7)%10;const s1=secs[i%secs.length],s2=secs[(i+1)%secs.length];const detail='Trim '+s1+' ~'+(2+seed%3)+'%, add '+s2+' ~'+(2+seed%3)+'%';
       let status,reason,by;
@@ -2847,10 +2847,11 @@ function atAddTag(){const t=document.getElementById('atTagSel').value;if(!t)retu
 function atRemoveTag(t){const p=CURRENT_PROFILE;(p.accounts||[]).concat(p.leads||[]).forEach(o=>{if(o.tags)o.tags=o.tags.filter(x=>x!==t);});save();renderAcctProfile(CURRENT);toast('Tag removed');}
 function rebBadge(s){const col=s==='Executed'?'Verified':s==='Failed'?'Flagged':'Pending';const lbl=s==='Executed'?'✓ Successful':s==='Failed'?'✕ Failed':'— Not done';return `<span class="verdict v-${col}">${lbl}</span>`;}
 function rebalancePanel(c){
-  if(!c.funded)return '';
+  // RIA only — PMS is discretionary (manager executes), no client-facing rebalance proposal log
+  if(!c.funded||(c.product||'').indexOf('RIA')<0)return '';
   const rb=c.rebalances||[];
   const lastExec=rb.find(r=>r.status==='Executed');
-  const isRia=(c.product||'').indexOf('RIA')>=0;
+  const isRia=true;
   const summary=`<div class="cards" style="margin:0;padding:12px 16px">
     <div class="metric"><div class="k">Last successful rebalance</div><div class="v" style="font-size:16px">${lastExec?fmtD(lastExec.date):'—'}</div></div>
     <div class="metric"><div class="k">Total rebalances</div><div class="v" style="font-size:16px">${rb.length}</div></div>
