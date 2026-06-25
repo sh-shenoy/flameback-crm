@@ -2277,7 +2277,7 @@ function renderDash(){
       ${dcard('Touch-base due',touch.length,'Monthly check-in','#a9561f',0)}
       ${dcard('Reviews due this week',revDue,'Annual + quarterly','#5b3aa8',0)}
       ${dcard('Follow-ups due',due.length,'Leads · today & overdue','var(--warm)',0)}`;
-    const touchRows=touch.length?touch.map(x=>{const lt=lastTouch(x);const nr=[x.ips&&x.ips.nextQuarterlyReview,x.ips&&x.ips.nextAnnualReview].filter(Boolean).sort()[0];return `<tr class="lead-row" onclick="openClient('${x.cid}')"><td class="lead-name">${x.first} ${x.last}</td><td>${productTag(x.product)}</td><td>${fmtINR(x.portfolio.current)}</td><td>${lt?fmtD(lt):'—'}</td><td>${nr?fmtDue(nr):'—'}</td><td style="white-space:nowrap"><button class="btn sm" onclick="event.stopPropagation();scheduleTouch('${x.cid}')">📅 Schedule</button> <button class="btn ghost sm" onclick="event.stopPropagation();logTouch('${x.cid}')">✓ Log call</button></td></tr>`;}).join(''):`<tr><td colspan="6" class="empty">🎉 Everyone's been contacted this month.</td></tr>`;
+    const touchRows=touch.length?touch.map(x=>{const lt=lastTouch(x);const nr=[x.ips&&x.ips.nextQuarterlyReview,x.ips&&x.ips.nextAnnualReview].filter(Boolean).sort()[0];return `<tr class="lead-row" onclick="openClient('${x.cid}')"><td class="lead-name">${x.first} ${x.last}<div class="lead-sub" style="font-weight:400">${touchReason(x)}</div></td><td>${productTag(x.product)}</td><td>${fmtINR(x.portfolio.current)}</td><td>${lt?fmtD(lt):'—'}</td><td>${nr?fmtDue(nr):'—'}</td><td style="white-space:nowrap"><button class="btn sm" onclick="event.stopPropagation();scheduleTouch('${x.cid}')">📅 Schedule</button> <button class="btn ghost sm" onclick="event.stopPropagation();logTouch('${x.cid}')">✓ Log call</button></td></tr>`;}).join(''):`<tr><td colspan="6" class="empty">🎉 Everyone's been contacted this month.</td></tr>`;
     P.innerHTML=panelTable('Monthly touch-base — clients to check in with','View all clients →',"go('clients')",
         ['Client','Product','AUM','Last contact','Next review',''],touchRows)
       +panelTable('Follow-ups due today & overdue','View all leads →',"go('leads')",
@@ -3185,6 +3185,20 @@ function scheduleMeeting(cid){const c=DB.clients.find(x=>x.cid===cid);c.calls=c.
 function lastTouch(c){const now=Date.now();const cand=[];(c.calls||[]).forEach(x=>{const t=new Date(x.when).getTime();if(t<=now)cand.push(t);});[c.ips&&c.ips.lastReview,c.ips&&c.ips.lastQuarterlyReview,c.signup].forEach(d=>{if(d)cand.push(new Date(d).getTime());});return cand.length?new Date(Math.max.apply(null,cand)):null;}
 function touchDue(c){const lt=lastTouch(c);if(!lt)return true;return (Date.now()-lt.getTime())>=30*864e5;}
 function logTouch(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.calls=c.calls||[];c.calls.push({when:new Date().toISOString().slice(0,16),note:'Monthly touch-base call',source:'Logged'});save();rerender();toast('Touch-base logged for '+c.first+' '+c.last);}
+// example talking point / reason for the monthly touch-base
+function touchReason(c){
+  const lt=lastTouch(c);const days=lt?Math.round((Date.now()-lt.getTime())/864e5):999;
+  if(c.portfolio&&c.portfolio.current<c.portfolio.invested)return 'Portfolio below cost — reassure & walk through the plan';
+  const nq=c.ips&&c.ips.nextQuarterlyReview;if(nq&&new Date(nq)<startToday())return 'Quarterly review overdue — book the call';
+  const ex=['No contact in '+days+' days — routine check-in',
+            'Share the latest house view & rebalance note',
+            'Discuss tax-harvesting before financial year-end',
+            'SIP step-up opportunity to raise',
+            'New strategy launched — gauge interest',
+            'Check liquidity / upcoming cash-flow needs',
+            'Festive bonus season — top-up conversation'];
+  let h=0;for(let i=0;i<(c.cid||'').length;i++)h+=c.cid.charCodeAt(i);
+  return ex[h%ex.length];}
 function scheduleTouch(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.calls=c.calls||[];const d=new Date();d.setDate(d.getDate()+2);d.setHours(15,0,0,0);if(!DB.nextMtg)DB.nextMtg=DB.meetings.length+1;const meet=genMeet();DB.meetings.push({id:DB.nextMtg++,title:'Monthly touch-base — '+c.first+' '+c.last,rm:c.rm,when:d.toISOString().slice(0,16),dur:30,attendees:[a(c.first+' '+c.last,'Client'),a(c.rm,'RM')],meet,status:'Scheduled'});c.calls.push({when:d.toISOString().slice(0,16),note:'Monthly touch-base call',source:'Calendar sync'});save();rerender();toast('Touch-base call scheduled · Google Meet invite sent');}
 
 /* ---------- onboarding flow / app / assignment ---------- */

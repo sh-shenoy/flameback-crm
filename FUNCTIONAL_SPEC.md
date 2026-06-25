@@ -203,7 +203,7 @@ KPI tiles:
 | Follow-ups due | count | leads whose follow-up date ≤ today (local midnight) |
 
 Two worklists:
-- **"Monthly touch-base — clients to check in with"** (link *View all clients →* S-10). Clients due a monthly check-in, sorted by longest-since-contact. Columns: **Client · Product · AUM · Last contact · Next review · actions**. Actions: **📅 Schedule** (creates a 30-min touch-base call + Meet invite, logged to the client's calls) · **✓ Log call** (records contact today, clearing them from the list). Row → Account Detail. Empty: "🎉 Everyone's been contacted this month."
+- **"Monthly touch-base — clients to check in with"** (link *View all clients →* S-10). Clients due a monthly check-in, sorted by longest-since-contact. Columns: **Client (+ a contextual "why now" talking point) · Product · AUM · Last contact · Next review · actions**. The talking point is data-aware (e.g. portfolio below cost, review overdue) falling back to rotating examples (house-view, tax-harvesting, SIP step-up, liquidity check). Actions: **📅 Schedule** (creates a 30-min touch-base call + Meet invite, logged to the client's calls) · **✓ Log call** (records contact today, clearing them from the list). Row → Account Detail. Empty: "🎉 Everyone's been contacted this month."
 - **"Follow-ups due today & overdue"** (link *View all leads →* S-03). Columns: **Lead · RM · Stage · Status · Interaction · Follow-up**. Row → Lead Detail. Empty: "🎉 No follow-ups due."
 - **BR-TOUCH-1 (monthly touch-base).** Last contact = most recent of the client's past calls, last IPS/quarterly review, or sign-up; due when ≥30 days elapsed. [PM INPUT — cadence per segment; auto-reminders.]
 
