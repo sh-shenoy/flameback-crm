@@ -390,7 +390,7 @@ Worklist **"Follow-ups due today & overdue"** (link: *View all leads →* S-03).
 |---|---|
 | CID | account id (e.g. FBC-1001) → opens Account Detail |
 | Name | first + last; a relationship chip if not Self; for a family member a "↳ linked to <holder>" sub-line, else "source · country" |
-| Contact | phone → opens Account Detail |
+| Contact | phone → opens the **merged Person Profile** (S-13) for that mobile number — all accounts + family on the number, with Tags / Accounts / Communication / Timeline / Notes (falls back to Account Detail if no merged profile). The **CID** opens the specific Account Detail. |
 | RM | owning RM |
 | Product | product tag |
 | Plan | billing cycle |

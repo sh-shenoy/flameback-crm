@@ -2628,7 +2628,7 @@ function renderClients(){
     return `<tr class="lead-row">
       <td><span class="cid" onclick="openClient('${c.cid}')">${c.cid}</span></td>
       <td><div class="lead-name">${c.first} ${c.last}${(c.relation&&c.relation!=='Self')?` <span class="rel-chip">${c.relation}</span>`:''}</div><div class="lead-sub">${(c.relation&&c.relation!=='Self')?('↳ linked to '+c.holder):(c.source+' · '+c.country)}</div></td>
-      <td><span class="phone-link" onclick="openClient('${c.cid}')">${c.contact}</span></td>
+      <td><span class="phone-link" onclick="openClientProfile('${c.cid}')">${c.contact}</span></td>
       <td>${c.rm}</td>
       <td>${productTag(c.product)}</td>
       <td>${c.plan}</td>
@@ -2645,6 +2645,8 @@ function stageBadge(c){const n=currentStageName(c);return n==='Invested'?'L4':n=
 
 let CURRENT=null;
 function openClient(cid){CURRENT=DB.clients.find(c=>c.cid===cid);renderProfile();go('clientProfile');}
+// Clicking the number/household opens the MERGED person profile (tags, accounts, comms, timeline, notes); falls back to the account if no merged profile exists.
+function openClientProfile(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;const pid='n'+(digits(c.contact)||('cid'+c.cid));if(buildProfiles().some(p=>p.pid===pid))openProfile(pid);else openClient(cid);}
 function acctReportsHtml(c){
   const who=(c.first+' '+c.last+' '+c.cid);
   const reps=[['Holding statement','📄'],['Tax report — capital gains','🧾'],['Strategy performance report','📈'],['Fund inflows & outflows','💰'],['Basic information report','🗂️']];

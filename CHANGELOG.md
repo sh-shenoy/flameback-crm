@@ -4,6 +4,9 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-25
 
+**Clients → number opens the merged profile**
+- Clicking a client's **phone number** in the Clients list now opens the **merged Person Profile** for that mobile number (all accounts + family members on the number, with Tags / AI-suggested tags / auto-shared content, Accounts, Communication, Timeline and Notes) instead of the single account. The **CID** still opens that specific account. Falls back to the account view if no merged profile exists.
+
 **Custodian reports — real report set, viewable, auto-sent**
 - Replaced the placeholder custodian report list with the **actual 10 reports the custodian sends for PMS clients**: Portfolio Statement, Transaction Statement, Performance Report, Factsheet, Corporate Benefits, Statement of Capital Gain/Loss, Statement of Dividend, Corpus Report, Expense Statement, and Profit & Loss / Balance Sheet (each with its real frequency).
 - Each report is now **openable as a realistic preview** built from the client's own portfolio — matching the custodian's actual layout (e.g. Portfolio Statement = appraisal by asset class with Qty/Unit Cost/Cost/Market Value/Gain-Loss/%Assets; Performance Report = allocation + summary + returns vs NIFTY 500 TRI; Capital Gain/Loss with LT/ST; Dividend with TDS; P&L + Balance Sheet, etc.). Download PDF.
