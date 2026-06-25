@@ -620,7 +620,7 @@ Header: avatar; name; kind badge; phone; email. Meta: DOB · RM · Source · Acc
 | Profit & Loss / Balance Sheet | Half-yearly | P&L account + balance sheet for the period |
 | *(Custody cut-off timings — Axis Bank)* | Reference | Operational custody cut-offs — not a per-client report |
   Each report type has an **auto-send** flag (auto-dispatched to the client each period).
-- **Scope.** Funded PMS clients. **Tiles:** PMS clients · Reports sent (of clients × types) · Report types (10). **List:** Client (+ product) · Sent count (n/10) · Last sent · **Manage & send** (Compliance) / **View reports** (RM).
+- **Scope.** Funded **PMS** clients only (`product = PMS` — **excludes RIA and International investing**). **Tiles:** PMS clients · Reports sent (of clients × types) · Report types (10). **List:** Client (+ product) · Sent count (n/10) · Last sent · **Manage & send** (Compliance) / **View reports** (RM).
 - **Per-client view:** per report — name + description · frequency · **Auto/Manual** flag · last sent · **delivery status** (Pending / Delivered / Seen) · **👁 View** (opens a faithful preview built from the client's holdings; Download PDF) · **Send** (Compliance only); plus **Send all to client** (Compliance). **BR-FILING-2** per-client (distinct from S-35).
 - **RM access (read-only).** RMs get the same screen **scoped to their own PMS clients** — they can **view and download** each report but **not send** (sending is auto-dispatched by PMS Compliance). [PM INPUT — custodian source & field mapping per report (INT-5); delivered-vs-seen tracking (INT-6); auto-send schedule per type.]
 

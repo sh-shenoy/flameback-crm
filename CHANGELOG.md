@@ -12,6 +12,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Each report is now **openable as a realistic preview** built from the client's own portfolio — matching the custodian's actual layout (e.g. Portfolio Statement = appraisal by asset class with Qty/Unit Cost/Cost/Market Value/Gain-Loss/%Assets; Performance Report = allocation + summary + returns vs NIFTY 500 TRI; Capital Gain/Loss with LT/ST; Dividend with TDS; P&L + Balance Sheet, etc.). Download PDF.
 - **PMS Compliance** sends them to clients (per report or **Send all**), with **Auto-send** flagged per report type and delivery/seen tracking — unchanged.
 - **RMs can now view** their own PMS clients' custodian reports: a new read-only **Custodian Reports** page (scoped to their book) — open/download any report, no send (those are auto-dispatched by Compliance).
+- Custodian reports are scoped to **true PMS clients only** (`product = PMS`) — RIA and International-investing clients are excluded.
 
 **Pre-review brief (Review prep)**
 - A one-click **Review prep** brief on every funded client (Reviews & Reminders page, and the account's Portfolio tab) that surfaces, ahead of a client review:

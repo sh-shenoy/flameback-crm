@@ -2038,7 +2038,7 @@ function ensureClientExtras(c){
   if(!c.residentStatus)c.residentStatus=({'FBC-1002':'NRI','FBC-1006':'NRO'})[c.cid]||'Individual - Resident';
   if(!c.ckycLink)c.ckycLink='https://ckyc.gov.in/proof/'+c.cid+'.pdf';
   if(c.exitedOn===undefined)c.exitedOn=(c.cid==='FBC-1006'?dayStr(-15):'');
-  if(!c.reportsSentV3){c.reportsSent={};if(c.funded&&(c.product||'').indexOf('RIA')<0){c.reportsSent['Portfolio Statement']={date:dayStr(-12),email:'Seen'};c.reportsSent['Performance Report']={date:dayStr(-12),email:'Delivered'};c.reportsSent['Factsheet']={date:dayStr(-12),email:'Seen'};}c.reportsSentV3=true;}
+  if(!c.reportsSentV3){c.reportsSent={};if(c.funded&&c.product==='PMS'){c.reportsSent['Portfolio Statement']={date:dayStr(-12),email:'Seen'};c.reportsSent['Performance Report']={date:dayStr(-12),email:'Delivered'};c.reportsSent['Factsheet']={date:dayStr(-12),email:'Seen'};}c.reportsSentV3=true;}
   if(!c.feeDebit){const _f={'FBC-1002':'Insufficient balance in linked bank account','FBC-1006':'e-NACH mandate expired — re-authorisation needed'};c.feeDebit=c.funded?{amount:Math.round((c.portfolio.current||0)*0.0025),date:dayStr(-3),status:_f[c.cid]?'Failed':'Success',reason:_f[c.cid]||''}:{amount:0,date:'',status:'—',reason:''};}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
   if(!c.product){c.product={'FBC-1001':'PMS','FBC-1002':'PMS Lite (RIA)','FBC-1003':'PMS Lite (RIA)','FBC-1004':'PMS','FBC-1005':'International investing','FBC-1006':'PMS Lite (RIA)'}[c.cid]||(c.goal==='Capital appreciation'?'PMS':'PMS Lite (RIA)');}
@@ -3673,6 +3673,8 @@ function closeDrill(){document.getElementById('drillScrim').classList.remove('op
 
 /* ---------- PMS compliance (maker/checker, filings, custodian reports) ---------- */
 function pmsClients(){return DB.clients.filter(c=>(c.product||'').indexOf('RIA')<0);}
+// custodian reports are for true PMS clients only (not RIA, not International investing)
+function custClients(){return DB.clients.filter(c=>c.product==='PMS');}
 function renderPmsReview(){
   const cs=pmsClients();
   const grey=cs.filter(c=>(c.pmsCompliance||{}).aml==='Flagged');
@@ -3714,7 +3716,7 @@ function custTypes(){return DB.custReports||[];}
 function custCanSend(){return currentRole==='PMSCompliance';}
 function renderCustReports(){
   const rm=currentRole==='RM';
-  const cs=(rm?mine(pmsClients()):pmsClients()).filter(c=>c.funded);const types=custTypes();
+  const cs=(rm?mine(custClients()):custClients()).filter(c=>c.funded);const types=custTypes();
   const intro=document.getElementById('custIntro');if(intro)intro.textContent=rm?'Custodian reports for your PMS clients — auto-sent to clients by the PMS Compliance team; you can view and download each report here.':'Each PMS client’s custodian reports — auto-sent per client, with email delivery / seen tracked via the connected 3rd-party email system.';
   let sent=0;cs.forEach(c=>sent+=Object.keys(c.reportsSent||{}).length);
   document.getElementById('custCards').innerHTML=
@@ -3822,7 +3824,7 @@ function custDoc(c,name){
   }
   return head+'<div class="empty">Preview not available for this report.</div>';
 }
-function custSend(i){const r=DB.custReports[i];const n=pmsClients().length;r.lastRun=dayStr(0);r.tracking={sent:n,delivered:n,seen:Math.max(0,n-1)};save();renderCustReports();toast(r.name+' emailed to '+n+' clients · delivery & open tracked');}
+function custSend(i){const r=DB.custReports[i];const n=custClients().filter(c=>c.funded).length;r.lastRun=dayStr(0);r.tracking={sent:n,delivered:n,seen:Math.max(0,n-1)};save();renderCustReports();toast(r.name+' emailed to '+n+' clients · delivery & open tracked');}
 function custToggle(i,v){DB.custReports[i].auto=v;save();toast('Auto-send '+(v?'on':'off')+' for '+DB.custReports[i].name);}
 
 /* ---------- RIA fee payments (auto-debit status) ---------- */
