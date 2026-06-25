@@ -2783,32 +2783,77 @@ function saveKyc(){
   CURRENT.kyc={namePan:g('namePan'),pan:g('pan'),gender:g('gender'),address:g('address'),city:g('city'),dob:g('dob'),profession:g('profession'),marital:g('marital'),pep:g('pep'),kra:g('kra'),ckyc:g('ckyc')};
   persistClient();renderProfile();toast('KYC details saved');
 }
+// ---- strategy fact-sheet helpers (asset mix, NAV series, chart, timeframe toggle) ----
+const STRAT_MIX={'Flameback Multicap':{equity:90,debt:2,cash:8},'Flameback Momentum':{equity:90,debt:2,cash:8},'Flameback Dividend Yield':{equity:86,debt:8,cash:6},'Flameback Bluechip':{equity:92,debt:3,cash:5},'Flameback Small-Cap Alpha':{equity:89,debt:2,cash:9}};
+function stratMix(name){return STRAT_MIX[name]||{equity:90,debt:2,cash:8};}
+const STRAT_RANGES=[['1M',1],['3M',3],['6M',6],['1Y',12],['3Y',36],['5Y',60],['SI',null]];
+function monthsBetween(dateStr){if(!dateStr)return null;const d=new Date(dateStr),now=new Date();return (now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth());}
+function stratNav(name){const inf=stratInfo(name),pf=stratPerf(name);const now=new Date(),inc=new Date(inf.inception);
+  let months=(now.getFullYear()-inc.getFullYear())*12+(now.getMonth()-inc.getMonth());months=Math.max(13,Math.min(months,120));
+  const yrs=months/12,finalMult=Math.pow(1+pf.since/100,yrs);let seed=0;for(let i=0;i<name.length;i++)seed+=name.charCodeAt(i);
+  const v=[];for(let i=0;i<=months;i++){const t=i/months;const base=100*Math.pow(finalMult,t);
+    const noise=(Math.sin(seed*0.5+i*0.55)+0.5*Math.sin(seed*1.3+i*1.7))*base*0.035;v.push(Math.max(1,base+(i>0&&i<months?noise:0)));}
+  v[0]=100;v[months]=100*finalMult;return {v,months};}
+function stratChart(values,markerFrac){const w=600,h=150,pad=10;
+  const mn=Math.min.apply(null,values),mx=Math.max.apply(null,values),rng=(mx-mn)||1;
+  const xs=i=>pad+i*(w-2*pad)/(values.length-1),ys=val=>h-pad-((val-mn)/rng)*(h-2*pad);
+  const line=values.map((val,i)=>(i?'L':'M')+xs(i).toFixed(1)+','+ys(val).toFixed(1)).join(' ');
+  const area=line+' L'+xs(values.length-1).toFixed(1)+','+(h-pad)+' L'+xs(0).toFixed(1)+','+(h-pad)+' Z';
+  const up=values[values.length-1]>=values[0],col=up?'#2f9e6b':'#e0533d';let marker='';
+  if(markerFrac!=null&&markerFrac>=0&&markerFrac<=1){const mxp=pad+markerFrac*(w-2*pad);
+    marker='<line x1="'+mxp.toFixed(1)+'" y1="'+pad+'" x2="'+mxp.toFixed(1)+'" y2="'+(h-pad)+'" stroke="#1f5fbf" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="'+mxp.toFixed(1)+'" cy="'+ys(values[Math.round(markerFrac*(values.length-1))]).toFixed(1)+'" r="3.5" fill="#1f5fbf"/><text x="'+(Math.min(mxp+5,w-70)).toFixed(1)+'" y="'+(pad+12)+'" font-size="10" fill="#1f5fbf">Your entry</text>';}
+  return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:150px"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity="0.22"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs><path d="'+area+'" fill="url(#sg)"/><path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2"/>'+marker+'</svg>';}
+function stratRange(r){const s=window.__strat;if(!s)return;const nav=stratNav(s.name);
+  const def=STRAT_RANGES.find(x=>x[0]===r)||['SI',null];let start=0;if(def[1]!=null)start=Math.max(0,nav.v.length-1-def[1]);
+  const vals=nav.v.slice(start);const ret=((vals[vals.length-1]/vals[0])-1)*100;
+  let markerFrac=null;if(s.monthsAgo!=null){const wm=(nav.v.length-1)-start;if(s.monthsAgo<=wm&&wm>0)markerFrac=(wm-s.monthsAgo)/wm;}
+  document.getElementById('stChart').innerHTML=stratChart(vals,markerFrac);
+  document.getElementById('stRangeRet').innerHTML=(ret>=0?'+':'')+ret.toFixed(1)+'% <span class="lead-sub" style="font-weight:400">'+(r==='SI'?'cumulative, since inception':'over '+r)+'</span>';
+  document.querySelectorAll('#stRangeBtns button').forEach(b=>b.className=(b.dataset.r===r?'btn sm':'btn ghost sm'));}
 function openStrat(name,cid){const c=DB.clients.find(x=>x.cid===cid);const inf=stratInfo(name);const pf=stratPerf(name);
   document.getElementById('stTitle').textContent=name;
-  // this client's position in this strategy (this account)
+  const a=c?stratAlloc(c).find(x=>x.name===name):null;const funded=!!(a&&c.funded);const cur=funded?a.current:0;
+  window.__strat={name:name,cid:cid,monthsAgo:funded?monthsBetween(c.signup):null};
+  // 1 · client position (this account)
   let pos='';
-  if(c){const a=stratAlloc(c).find(x=>x.name===name);
-    if(a&&c.funded){pos=`<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2 style="font-size:14px">${c.first} ${c.last} · this account (${c.cid})</h2><span class="lead-sub">${productTag(c.product)}</span></div>
+  if(c){if(funded){pos=`<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2 style="font-size:14px">${c.first} ${c.last} · this account (${c.cid})</h2><span class="lead-sub">${productTag(c.product)}</span></div>
       <div class="cards" style="padding:14px 16px;margin:0">
         <div class="metric"><div class="k">Invested in this strategy</div><div class="v">${fmtINR(a.invested)}</div></div>
         <div class="metric"><div class="k">Current value</div><div class="v">${fmtINR(a.current)}</div></div>
         <div class="metric"><div class="k">Gain</div><div class="v ${a.gain>=0?'pos':'neg'}">${a.gain>=0?'+':''}${fmtINR(a.gain)}</div></div>
-        <div class="metric"><div class="k">Return</div><div class="v ${a.ret>=0?'pos':'neg'}">${a.ret.toFixed(1)}%</div></div>
+        <div class="metric"><div class="k">Return since investment</div><div class="v ${a.ret>=0?'pos':'neg'}">${a.ret.toFixed(1)}%</div></div>
       </div></div>`;}
     else pos=`<div class="suspense-alert" style="margin-bottom:16px"><div><div class="t">Not yet funded in this strategy — showing the model fact sheet & holdings below.</div></div></div>`;}
-  // fact sheet
-  const facts=[['Category',inf.cat],['Benchmark',inf.bench],['Inception',fmtD(inf.inception)],['Strategy AUM',fmtINR(inf.aum)],['Min. investment',fmtINR(inf.minInv)],['Risk',inf.risk],['Fund manager',inf.manager]];
+  // 2 · performance — toggleable timeframes + graph + since-inception / since-investment
+  const sinceInc=`Since inception (CAGR) <b style="color:var(--green)">+${pf.since.toFixed(1)}% p.a.</b> <span class="lead-sub" style="font-weight:400">(from ${fmtD(inf.inception)})</span>`;
+  const sinceInv=funded?` &nbsp;·&nbsp; Since your investment <b style="color:${a.ret>=0?'var(--green)':'var(--hot)'}">${a.ret>=0?'+':''}${a.ret.toFixed(1)}%</b> <span class="lead-sub" style="font-weight:400">(from ${fmtD(c.signup)})</span>`:'';
+  const perf=`<div class="panel" style="margin-bottom:16px"><div class="panel-head" style="flex-wrap:wrap;gap:8px"><h2 style="font-size:14px">Performance <span class="sync-badge">⟳ FBC-Admin</span></h2>
+    <div id="stRangeBtns" style="display:flex;gap:6px;flex-wrap:wrap">${STRAT_RANGES.map(rr=>`<button class="btn ghost sm" data-r="${rr[0]}" onclick="stratRange('${rr[0]}')">${rr[0]==='SI'?'Since incep.':rr[0]}</button>`).join('')}</div></div>
+    <div style="padding:12px 16px"><div style="font-size:20px;font-weight:800" id="stRangeRet"></div>
+    <div id="stChart" style="margin-top:8px"></div>
+    <div style="margin-top:10px;font-size:13px">${sinceInc}${sinceInv}</div></div></div>`;
+  // 3 · asset allocation (equity / debt / cash)
+  const mix=stratMix(name);
+  const allocBar=`<div class="kv" style="margin-bottom:16px"><div class="kv-h">Asset allocation</div><div style="padding:14px 16px">
+    <div style="display:flex;height:18px;border-radius:6px;overflow:hidden"><div style="width:${mix.equity}%;background:#2f6fb0"></div><div style="width:${mix.debt}%;background:#caa53d"></div><div style="width:${mix.cash}%;background:#9aa6b4"></div></div>
+    <div style="display:flex;gap:18px;margin-top:10px;font-size:13px;flex-wrap:wrap">
+      <span><span style="display:inline-block;width:10px;height:10px;background:#2f6fb0;border-radius:2px"></span> Equity <b>${mix.equity}%</b></span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:#caa53d;border-radius:2px"></span> Debt <b>${mix.debt}%</b></span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:#9aa6b4;border-radius:2px"></span> Cash <b>${mix.cash}%</b></span></div>
+    ${cur?`<div class="lead-sub" style="margin-top:10px">In this account — Equity ${fmtINR(Math.round(cur*mix.equity/100))} · Debt ${fmtINR(Math.round(cur*mix.debt/100))} · Cash ${fmtINR(Math.round(cur*mix.cash/100))}</div>`:''}
+    </div></div>`;
+  // 4 · fact sheet
+  const facts=[['Category',inf.cat],['Benchmark',inf.bench],['Inception',fmtD(inf.inception)],['Strategy AUM',fmtINR(inf.aum)],['Min. investment',fmtINR(inf.minInv)],['Risk',inf.risk],['Fund manager',inf.manager],['Performance (CAGR)',`1Y +${pf.oneY.toFixed(1)}% · 3Y +${pf.threeY.toFixed(1)}% · SI +${pf.since.toFixed(1)}%`]];
   const fs=`<div class="kv" style="margin-bottom:16px"><div class="kv-h">Fact sheet</div>
     <div class="kv-row"><span class="lab" style="width:100%;color:var(--muted);font-weight:400">${inf.objective}</span></div>
-    ${facts.map(f=>`<div class="kv-row"><span class="lab">${f[0]}</span><span class="val">${f[1]}</span></div>`).join('')}
-    <div class="kv-row"><span class="lab">Performance (CAGR)</span><span class="val">1Y <b style="color:var(--green)">+${pf.oneY.toFixed(1)}%</b> · 3Y <b style="color:var(--green)">+${pf.threeY.toFixed(1)}%</b> · Since inception <b style="color:var(--green)">+${pf.since.toFixed(1)}%</b></span></div></div>`;
-  // model holdings — show client's value per holding when funded in this strategy
-  const a=c?stratAlloc(c).find(x=>x.name===name):null;const cur=(a&&c.funded)?a.current:0;
+    ${facts.map(f=>`<div class="kv-row"><span class="lab">${f[0]}</span><span class="val">${f[1]}</span></div>`).join('')}</div>`;
+  // 5 · holdings (model weights; client value when funded)
   const rows=inf.holdings.map(h=>`<tr><td class="lead-name">${h[0]}</td><td style="text-align:right">${h[1].toFixed(1)}%</td><td style="text-align:right">${cur?fmtINR(Math.round(cur*h[1]/100)):'—'}</td></tr>`).join('');
   const hold=`<div class="panel"><div class="panel-head"><h2 style="font-size:14px">Holdings <span class="sync-badge">⟳ FBC-Admin</span></h2><span class="lead-sub">model weights${cur?' · value in this account':''}</span></div>
     <table><thead><tr><th>Holding</th><th style="text-align:right">Weight</th><th style="text-align:right">Value (this account)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  document.getElementById('stBody').innerHTML=pos+fs+hold;
-  document.getElementById('stratScrim').classList.add('open');}
+  document.getElementById('stBody').innerHTML=pos+perf+allocBar+fs+hold;
+  document.getElementById('stratScrim').classList.add('open');
+  stratRange(funded?'SI':'1Y');}
 function closeStrat(){document.getElementById('stratScrim').classList.remove('open');}
 function addStrat(){const s=document.getElementById('addStratSel').value;if(!CURRENT.strategies.includes(s)){CURRENT.strategies.push(s);persistClient();renderProfile();toast('Strategy added');}else toast('Already recommended');}
 function removeStrat(s){CURRENT.strategies=CURRENT.strategies.filter(x=>x!==s);persistClient();renderProfile();toast('Strategy removed');}

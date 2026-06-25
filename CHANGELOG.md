@@ -9,6 +9,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - Each strategy opens a **Fact sheet & holdings** card: category, benchmark, inception, strategy AUM, minimum investment, risk, fund manager, objective and 1Y/3Y/since-inception performance — plus the **strategy's model holdings** (weights), with the client's value per holding shown for this account.
 - The same per-strategy breakdown and fact-sheet link now appear on the **Person Profile** account cards (under "Strategy performance").
 - New standalone **Strategies** page in the sidebar (RM, Investment, Leadership) — a catalog of every strategy with category, benchmark, 1Y/3Y/since-inception performance, risk, manager, min investment, strategy AUM, top holdings, how many of your clients are invested (+ their AUM in it), and one click into the full fact sheet & holdings.
+- The strategy **fact sheet is now a full report**: a **performance graph** with **toggleable timeframes** (1M / 3M / 6M / 1Y / 3Y / 5Y / Since inception), the **since-inception CAGR** *and* the client's **return since their own investment** (with a "Your entry" marker plotted on the chart), and an **asset-allocation split** across **equity / debt / cash** (shown both as % and as rupee amounts in the client's account) — alongside the existing fact-sheet fields and holdings.
 
 ## 2026-06-15
 
