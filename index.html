@@ -1378,7 +1378,7 @@
 
     <!-- CUSTODIAN REPORTS -->
     <section id="view-custreports" class="hidden">
-      <div class="page-head"><div><h1>Custodian Reports</h1><p>Each PMS client's custodian reports — sent per client, with email delivery / seen tracked via the connected 3rd-party email system.</p></div></div>
+      <div class="page-head"><div><h1>Custodian Reports</h1><p id="custIntro">Each PMS client's custodian reports — auto-sent per client, with email delivery / seen tracked via the connected 3rd-party email system.</p></div></div>
       <div class="cards" id="custCards"></div>
       <div class="panel"><table><thead><tr><th>Client</th><th>Reports sent</th><th>Last sent</th><th></th></tr></thead><tbody id="custBody"></tbody></table></div>
     </section>
@@ -1769,6 +1769,12 @@
   <div class="modal-f"><button class="btn ghost" onclick="closeCustClient()">Close</button></div>
 </div></div>
 
+<div class="modal-scrim" id="custDocScrim"><div class="modal wide">
+  <div class="modal-h"><h2 id="custDocTitle">Report</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeCustReport()">×</button></div>
+  <div class="modal-b" id="custDocBody"></div>
+  <div class="modal-f"><button class="btn ghost" onclick="toast('Report (PDF) downloading…')">⬇ Download PDF</button><button class="btn" onclick="closeCustReport()">Close</button></div>
+</div></div>
+
 <div class="modal-scrim" id="reportScrim"><div class="modal wide">
   <div class="modal-h"><h2 id="rpTitle">Reports</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeReports()">×</button></div>
   <div class="modal-b" id="rpBody"></div>
@@ -1963,7 +1969,7 @@ function demoHousehold(){
 
 /* roles */
 const ROLES={
-  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','strategies','reports','invoices','tasks','out','suggestions','hub']},
+  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','strategies','reports','custreports','invoices','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','feepay','riareport','tasks','clients','suggestions','hub']},
   PMSCompliance:{name:'Imran Khan',email:'imran@flamebackcapital.com',label:'PMS Compliance Team',nav:['pmsreview','pmsfilings','custreports','tasks','inbox','hub']},
@@ -2032,7 +2038,7 @@ function ensureClientExtras(c){
   if(!c.residentStatus)c.residentStatus=({'FBC-1002':'NRI','FBC-1006':'NRO'})[c.cid]||'Individual - Resident';
   if(!c.ckycLink)c.ckycLink='https://ckyc.gov.in/proof/'+c.cid+'.pdf';
   if(c.exitedOn===undefined)c.exitedOn=(c.cid==='FBC-1006'?dayStr(-15):'');
-  if(!c.reportsSent){c.reportsSent={};if(c.funded&&(c.product||'').indexOf('RIA')<0){c.reportsSent['Holding statement']={date:dayStr(-12),email:'Seen'};c.reportsSent['NAV / performance report']={date:dayStr(-12),email:'Delivered'};}}
+  if(!c.reportsSentV3){c.reportsSent={};if(c.funded&&(c.product||'').indexOf('RIA')<0){c.reportsSent['Portfolio Statement']={date:dayStr(-12),email:'Seen'};c.reportsSent['Performance Report']={date:dayStr(-12),email:'Delivered'};c.reportsSent['Factsheet']={date:dayStr(-12),email:'Seen'};}c.reportsSentV3=true;}
   if(!c.feeDebit){const _f={'FBC-1002':'Insufficient balance in linked bank account','FBC-1006':'e-NACH mandate expired — re-authorisation needed'};c.feeDebit=c.funded?{amount:Math.round((c.portfolio.current||0)*0.0025),date:dayStr(-3),status:_f[c.cid]?'Failed':'Success',reason:_f[c.cid]||''}:{amount:0,date:'',status:'—',reason:''};}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
   if(!c.product){c.product={'FBC-1001':'PMS','FBC-1002':'PMS Lite (RIA)','FBC-1003':'PMS Lite (RIA)','FBC-1004':'PMS','FBC-1005':'International investing','FBC-1006':'PMS Lite (RIA)'}[c.cid]||(c.goal==='Capital appreciation'?'PMS':'PMS Lite (RIA)');}
@@ -2162,16 +2168,18 @@ function migrate(){
     {name:'APMI — periodic submission',freq:'Quarterly',source:'CRM',due:dayStr(-2),status:'Pending'},
     {name:'PMSBazaar — performance upload',freq:'Monthly',source:'CRM',due:dayStr(3),status:'Pending'}
   ];}
-  if(!DB.custReports){DB.custReports=[
-    {name:'Holding statement',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:4,seen:3}},
-    {name:'Transaction statement',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:4,seen:2}},
-    {name:'Capital gains statement',freq:'Quarterly',auto:true,lastRun:'',tracking:null},
-    {name:'Corporate actions report',freq:'Monthly',auto:true,lastRun:'',tracking:null},
-    {name:'NAV / performance report',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:3,seen:2}},
-    {name:'Bank book',freq:'Monthly',auto:false,lastRun:'',tracking:null},
-    {name:'Securities / demat ledger',freq:'Quarterly',auto:true,lastRun:'',tracking:null},
-    {name:'Expense & fee statement',freq:'Quarterly',auto:false,lastRun:'',tracking:null}
-  ];}
+  if(!DB.custReportsV3){DB.custReports=[
+    {name:'Portfolio Statement',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:4,seen:3},desc:'Portfolio appraisal by asset class — holdings, cost, market value, gain/loss.'},
+    {name:'Transaction Statement',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:4,seen:2},desc:'All buys/sells with brokerage, STT, settlement.'},
+    {name:'Performance Report',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:3,seen:2},desc:'Portfolio allocation, summary and returns vs benchmark.'},
+    {name:'Factsheet',freq:'Monthly',auto:true,lastRun:dayStr(-12),tracking:{sent:4,delivered:4,seen:3},desc:'Sector allocation, TWRR performance and holdings.'},
+    {name:'Corporate Benefits',freq:'Monthly',auto:true,lastRun:'',tracking:null,desc:'Corporate actions — bonus, dividend, split, merger, spin-off.'},
+    {name:'Statement of Capital Gain/Loss',freq:'Quarterly',auto:true,lastRun:'',tracking:null,desc:'Realised gains — short-term / long-term, days held.'},
+    {name:'Statement of Dividend',freq:'Quarterly',auto:true,lastRun:'',tracking:null,desc:'Dividends received, TDS and outstanding.'},
+    {name:'Corpus Report',freq:'Quarterly',auto:true,lastRun:'',tracking:null,desc:'Capital register — contributions, withdrawals, balance.'},
+    {name:'Expense Statement',freq:'Quarterly',auto:false,lastRun:'',tracking:null,desc:'Management fees, custodian fees and charges.'},
+    {name:'Profit & Loss / Balance Sheet',freq:'Half-yearly',auto:false,lastRun:'',tracking:null,desc:'P&L account and balance sheet for the period.'}
+  ];DB.custReportsV3=true;}
   if(!DB.pmsFilingsV2){DB.pmsFilings=[
     {name:'SEBI — Monthly PMR (Portfolio Manager Report)',freq:'Monthly',source:'Custodian API',due:dayStr(4),status:'Pending',url:'https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doPmr=yes'},
     {name:'APMI — fund-level submission',freq:'Quarterly',source:'CRM',due:dayStr(-2),status:'Pending'},
@@ -3701,15 +3709,18 @@ function pmsFetch(i){DB.pmsFilings[i].status='Fetched';save();renderPmsFilings()
 function pmsUpload(i){const f=DB.pmsFilings[i];if(f.url)window.open(f.url,'_blank');f.status='Uploaded';f.uploadedOn=dayStr(0);save();renderPmsFilings();toast(f.name+(f.url?' — opened SEBI portal & marked uploaded':' uploaded'));}
 let CUST_CID=null;
 function custTypes(){return DB.custReports||[];}
+function custCanSend(){return currentRole==='PMSCompliance';}
 function renderCustReports(){
-  const cs=pmsClients().filter(c=>c.funded);const types=custTypes();
+  const rm=currentRole==='RM';
+  const cs=(rm?mine(pmsClients()):pmsClients()).filter(c=>c.funded);const types=custTypes();
+  const intro=document.getElementById('custIntro');if(intro)intro.textContent=rm?'Custodian reports for your PMS clients — auto-sent to clients by the PMS Compliance team; you can view and download each report here.':'Each PMS client’s custodian reports — auto-sent per client, with email delivery / seen tracked via the connected 3rd-party email system.';
   let sent=0;cs.forEach(c=>sent+=Object.keys(c.reportsSent||{}).length);
   document.getElementById('custCards').innerHTML=
-    dcard('PMS clients',cs.length,'On custodian reporting','var(--teal)',100)+
+    dcard(rm?'Your PMS clients':'PMS clients',cs.length,'On custodian reporting','var(--teal)',100)+
     dcard('Reports sent',sent,'of '+(cs.length*types.length)+' this period','var(--green)',(cs.length*types.length)?sent/(cs.length*types.length)*100:0)+
     dcard('Report types',types.length,'Per client','var(--navy)',100);
   document.getElementById('custBody').innerHTML=cs.length?cs.map(c=>{const n=Object.keys(c.reportsSent||{}).length;const last=Object.values(c.reportsSent||{}).map(r=>r.date).sort().slice(-1)[0];
-    return `<tr class="lead-row" onclick="openCustClient('${c.cid}')"><td class="lead-name">${c.first} ${c.last} <span class="cid">${c.cid}</span> <span class="ptag pt-pms">${c.product}</span></td><td>${n} / ${types.length}</td><td>${last?fmtD(last):'<span class="lead-sub">—</span>'}</td><td><button class="btn ghost sm" onclick="event.stopPropagation();openCustClient('${c.cid}')">Manage &amp; send</button></td></tr>`;}).join(''):`<tr><td colspan="4" class="empty">No PMS clients.</td></tr>`;
+    return `<tr class="lead-row" onclick="openCustClient('${c.cid}')"><td class="lead-name">${c.first} ${c.last} <span class="cid">${c.cid}</span> <span class="ptag pt-pms">${c.product}</span></td><td>${n} / ${types.length}</td><td>${last?fmtD(last):'<span class="lead-sub">—</span>'}</td><td><button class="btn ghost sm" onclick="event.stopPropagation();openCustClient('${c.cid}')">${custCanSend()?'Manage &amp; send':'View reports'}</button></td></tr>`;}).join(''):`<tr><td colspan="4" class="empty">No PMS clients.</td></tr>`;
   badges();
 }
 function emailBadge(st){const col=st==='Seen'?'var(--green)':st==='Delivered'?'var(--teal)':'var(--warm)';const ic=st==='Seen'?'👁':st==='Delivered'?'✅':'📤';return `<span style="color:${col};font-weight:600">${ic} ${st}</span>`;}
@@ -3717,17 +3728,98 @@ function openCustClient(cid){CUST_CID=cid;renderCustClient();document.getElement
 function closeCustClient(){document.getElementById('custClientScrim').classList.remove('open');CUST_CID=null;}
 function renderCustClient(){
   const c=DB.clients.find(x=>x.cid===CUST_CID);if(!c)return;
+  const canSend=custCanSend();
   document.getElementById('custClientTitle').textContent='Custodian reports — '+c.first+' '+c.last;
-  document.getElementById('custClientBody').innerHTML=`<div style="margin-bottom:12px"><button class="btn" onclick="sendAllCust('${c.cid}')">✉ Send all to client</button></div>`+
-    `<table style="width:100%;font-size:13px"><thead><tr><th style="text-align:left;padding:6px 0">Report</th><th style="text-align:left">Frequency</th><th style="text-align:left">Last sent</th><th style="text-align:left">Email</th><th></th></tr></thead><tbody>`+
-    custTypes().map(t=>{const r=(c.reportsSent||{})[t.name];
-      return `<tr><td style="padding:7px 0">${t.name}</td><td>${t.freq}</td><td>${r?fmtD(r.date):'<span class="lead-sub">—</span>'}</td><td>${r?emailBadge(r.email):'<span class="lead-sub">not sent</span>'}</td><td style="text-align:right"><button class="btn sm" onclick="sendCust('${c.cid}','${t.name.replace(/'/g,'')}')">Send</button></td></tr>`;}).join('')+
+  document.getElementById('custClientBody').innerHTML=
+    (canSend?`<div style="margin-bottom:12px;display:flex;align-items:center;gap:12px"><button class="btn" onclick="sendAllCust('${c.cid}')">✉ Send all to client</button><span class="lead-sub">Reports flagged <b>Auto</b> are dispatched to the client automatically each period.</span></div>`
+            :`<div class="lead-sub" style="margin-bottom:12px">Read-only — these are auto-sent to the client by PMS Compliance. Click <b>View</b> to open or download any report.</div>`)+
+    `<table style="width:100%;font-size:13px"><thead><tr><th style="text-align:left;padding:6px 0">Report</th><th style="text-align:left">Frequency</th><th style="text-align:left">Send</th><th style="text-align:left">Last sent</th><th style="text-align:left">Email</th><th></th></tr></thead><tbody>`+
+    custTypes().map(t=>{const r=(c.reportsSent||{})[t.name];const nm=t.name.replace(/'/g,"\\'");
+      return `<tr><td style="padding:7px 0"><b>${t.name}</b>${t.desc?`<div class="lead-sub" style="font-weight:400">${t.desc}</div>`:''}</td><td>${t.freq}</td><td>${t.auto?'<span class="verdict v-Verified">Auto</span>':'<span class="lead-sub">Manual</span>'}</td><td>${r?fmtD(r.date):'<span class="lead-sub">—</span>'}</td><td>${r?emailBadge(r.email):'<span class="lead-sub">not sent</span>'}</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="openCustReport('${c.cid}','${nm}')">👁 View</button>${canSend?` <button class="btn sm" onclick="sendCust('${c.cid}','${nm}')">Send</button>`:''}</td></tr>`;}).join('')+
     `</tbody></table>`;
 }
 function sendCust(cid,name){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.reportsSent=c.reportsSent||{};c.reportsSent[name]={date:dayStr(0),email:'Delivered'};
   DB.emails=DB.emails||[];if(!DB.nextEmail)DB.nextEmail=(DB.emails.length+1);DB.emails.push({id:DB.nextEmail++,from:'reports@flamebackcapital.com',to:c.email,subject:name+' — '+c.first+' '+c.last,body:'Hi '+c.first+',\n\nPlease find your '+name+' from the custodian for the period.\n\nFlameback Capital',date:new Date().toISOString(),read:false});
   save();renderCustClient();renderCustReports();toast(name+' sent to '+c.first+' · delivery & open tracked');}
 function sendAllCust(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.reportsSent=c.reportsSent||{};custTypes().forEach(t=>{c.reportsSent[t.name]={date:dayStr(0),email:'Delivered'};});save();renderCustClient();renderCustReports();toast('All custodian reports sent to '+c.first+' '+c.last);}
+/* ---- custodian report previews (per-client, real report structures) ---- */
+function openCustReport(cid,name){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;
+  document.getElementById('custDocTitle').textContent=name+' — '+c.first+' '+c.last;
+  document.getElementById('custDocBody').innerHTML=custDoc(c,name);
+  document.getElementById('custDocScrim').classList.add('open');}
+function closeCustReport(){document.getElementById('custDocScrim').classList.remove('open');}
+function custDoc(c,name){
+  const H=c.portfolio.holdings||[];const mix=stratMix((c.strategies&&c.strategies[0])||'Flameback Multicap');
+  const inv=c.portfolio.invested||0,curT=c.portfolio.current||0,gain=curT-inv;const pf=stratPerf((c.strategies&&c.strategies[0])||'Flameback Multicap');
+  const M=v=>fmtINR(Math.round(v));const SECTORS=['Financial Services','IT','Consumer Goods','Industrial Manufacturing','Pharma','Energy','Automobile'];
+  const qof=h=>{let s=0;for(let i=0;i<h[0].length;i++)s+=h[0].charCodeAt(i);const price=200+s%1800;const q=Math.max(1,Math.round(h[2]/price));return {price,q,unitCost:Math.round(h[1]/Math.max(1,q)),sec:SECTORS[s%SECTORS.length]};};
+  const head=`<div class="lead-sub" style="margin-bottom:12px;line-height:1.6">Custodian: <b>Axis Bank Custody</b> · Fund Accounting (Applied Software) · Account <b>${c.cid}</b> — ${c.first} ${c.last}<br>Period 01 Apr 2025 – 31 Mar 2026 · ${productTag(c.product)} · Generated ${fmtD(dayStr(0))}</div>`;
+  const T=(cols,rows,foot)=>`<table style="width:100%;font-size:12.5px"><thead><tr>${cols.map((x,i)=>`<th style="text-align:${i?'right':'left'}">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody>${foot||''}</table>`;
+  const cashVal=Math.round(curT*mix.cash/Math.max(1,mix.equity));const debtVal=Math.round(curT*mix.debt/Math.max(1,mix.equity));const grand=curT+cashVal+debtVal;
+  if(name==='Portfolio Statement'){
+    const rows=H.map(h=>{const q=qof(h);const g=h[2]-h[1];return `<tr><td class="lead-name">${h[0]}</td><td style="text-align:right">${q.q.toLocaleString('en-IN')}</td><td style="text-align:right">${M(q.unitCost)}</td><td style="text-align:right">${M(h[1])}</td><td style="text-align:right">${M(h[2])}</td><td style="text-align:right;color:${g>=0?'var(--green)':'var(--hot)'}">${g>=0?'+':''}${M(g)}</td><td style="text-align:right">${(h[1]?g/h[1]*100:0).toFixed(2)}%</td><td style="text-align:right">${(h[2]/grand*100).toFixed(2)}%</td></tr>`;}).join('');
+    const cashRow=`<tr><td class="lead-name">Cash & Equivalent</td><td></td><td></td><td style="text-align:right">${M(cashVal)}</td><td style="text-align:right">${M(cashVal)}</td><td style="text-align:right">—</td><td style="text-align:right">—</td><td style="text-align:right">${(cashVal/grand*100).toFixed(2)}%</td></tr>`;
+    return head+`<div class="kv-h" style="margin:0 0 6px">Portfolio Appraisal — by Asset Class</div>`+T(['Security','Qty','Unit Cost','Cost','Market Value','Gain/Loss','% G/L','% Assets'],rows+cashRow,`<tfoot><tr style="font-weight:700;border-top:2px solid var(--line)"><td>Total</td><td></td><td></td><td style="text-align:right">${M(inv+cashVal)}</td><td style="text-align:right">${M(grand)}</td><td style="text-align:right;color:${gain>=0?'var(--green)':'var(--hot)'}">${gain>=0?'+':''}${M(gain)}</td><td style="text-align:right">${(inv?gain/inv*100:0).toFixed(2)}%</td><td style="text-align:right">100.00%</td></tr></tfoot>`);
+  }
+  if(name==='Transaction Statement'){
+    const rows=H.map((h,i)=>{const q=qof(h);const brk=Math.round(h[1]*0.0003),stt=Math.round(h[1]*0.001);return `<tr><td>${fmtD(c.signup)}</td><td><span class="verdict v-Verified">Buy</span></td><td class="lead-name">${h[0]}</td><td style="text-align:right">${q.q.toLocaleString('en-IN')}</td><td style="text-align:right">${M(q.unitCost)}</td><td style="text-align:right">${M(h[1])}</td><td style="text-align:right">${M(brk)}</td><td style="text-align:right">${M(stt)}</td><td style="text-align:right">NSE</td></tr>`;}).join('');
+    return head+`<div class="kv-h" style="margin:0 0 6px">Transaction Statement</div>`+T(['Tran date','Type','Security','Qty','Unit price','Settlement amt','Brkg','STT','Exch'],rows);
+  }
+  if(name==='Performance Report'){
+    const alloc=[['Equity',curT,curT/grand*100],['Fixed Income',debtVal,debtVal/grand*100],['Cash and Equivalent',cashVal,cashVal/grand*100]];
+    const aRows=alloc.map(a=>`<tr><td>${a[0]}</td><td style="text-align:right">${M(a[1])}</td><td style="text-align:right">${a[2].toFixed(2)}%</td></tr>`).join('');
+    const perf=[['1 Month',pf.oneY/12*1.1,4.1],['3 Months',pf.oneY/4,6.0],['6 Months',pf.oneY/2,9.4],['1 Year',pf.oneY,pf.oneY-2.3],['3 Years',pf.threeY,pf.threeY-1.8],['Since inception',pf.since,pf.since-2.6]];
+    const pRows=perf.map(p=>`<tr><td>${p[0]}</td><td style="text-align:right;color:var(--green)">${p[1].toFixed(2)}%</td><td style="text-align:right">${p[2].toFixed(2)}%</td></tr>`).join('');
+    return head+`<div class="kv-h" style="margin:0 0 6px">Portfolio Allocation</div>`+T(['Description','Market Value','% Assets'],aRows,`<tfoot><tr style="font-weight:700"><td>Total</td><td style="text-align:right">${M(grand)}</td><td style="text-align:right">100.00%</td></tr></tfoot>`)+
+      `<div class="kv-h" style="margin:14px 0 6px">Portfolio Summary</div><div class="kv">${kvr('Net Capital In',M(inv))}${kvr('Unrealized Gain',M(gain))}${kvr('Realized Gain',M(Math.round(gain*0.12)))}${kvr('Income Received',M(Math.round(curT*0.004)))}${kvr('Fees & Expenses',M(Math.round(curT*0.0025)))}${kvr('Portfolio Value',M(grand))}</div>`+
+      `<div class="kv-h" style="margin:14px 0 6px">Portfolio Performance <span class="lead-sub" style="font-weight:400">returns over 1 year annualised</span></div>`+T(['Period','Portfolio','NIFTY 500 TRI'],pRows);
+  }
+  if(name==='Factsheet'){
+    const secMap={};H.forEach(h=>{const q=qof(h);secMap[q.sec]=(secMap[q.sec]||0)+h[2];});secMap['Cash and Equivalent']=cashVal;
+    const sRows=Object.keys(secMap).map(s=>`<tr><td>${s}</td><td style="text-align:right">${(secMap[s]/grand*100).toFixed(2)}%</td></tr>`).join('');
+    const hRows=H.map(h=>{const q=qof(h);return `<tr><td class="lead-name">${h[0]}</td><td>${q.sec}</td><td style="text-align:right">${M(h[2])}</td><td style="text-align:right">${(h[2]/grand*100).toFixed(2)}%</td></tr>`;}).join('');
+    const twrr=[['MTD',1.6,-1.3],['QTD',pf.oneY/4,-7.2],['YTD',pf.oneY*0.7,-6.8],['Since inception',pf.since,pf.since-2.7]];
+    const tRows=twrr.map(t=>`<tr><td>${t[0]}</td><td style="text-align:right;color:var(--green)">${t[1].toFixed(2)}%</td><td style="text-align:right">${t[2].toFixed(2)}%</td></tr>`).join('');
+    return head+`<div class="kv-h" style="margin:0 0 6px">Sector Allocation</div>`+T(['Sector','% Assets'],sRows)+
+      `<div class="kv-h" style="margin:14px 0 6px">Portfolio Summary</div><div class="kv">${kvr('Contribution',M(inv))}${kvr('Withdrawal',M(0))}${kvr('Profit / Loss',M(gain))}${kvr('Portfolio Value',M(grand))}</div>`+
+      `<div class="kv-h" style="margin:14px 0 6px">Performance (TWRR)</div>`+T(['Period','Portfolio','S&P BSE 200'],tRows)+
+      `<div class="kv-h" style="margin:14px 0 6px">Portfolio Holdings</div>`+T(['Security','Sector','Mkt Value','% Assets'],hRows);
+  }
+  if(name==='Corporate Benefits'){
+    const acts=[['Dividend',H[0]&&H[0][0],'@ 10',Math.round((H[0]?qof(H[0]).q:0)*10)],['Dividend',H[1]&&H[1][0],'@ 8',Math.round((H[1]?qof(H[1]).q:0)*8)],['Bonus Shares',H[2]&&H[2][0],'1:1',0],['Stock Split',H[0]&&H[0][0],'1:5',0]].filter(a=>a[1]);
+    const rows=acts.map((a,i)=>`<tr><td>${a[0]}</td><td class="lead-name">${a[1]}</td><td style="text-align:right">${a[2]}</td><td style="text-align:right">${a[3]?M(a[3]):'0.00'}</td><td style="text-align:right">${fmtD(dayStr(-30-i*40))}</td></tr>`).join('');
+    return head+`<div class="kv-h" style="margin:0 0 6px">Corporate Benefits — by Corporate Action Type</div>`+T(['Type','Security','Entitlement','Amount','Ex date'],rows);
+  }
+  if(name==='Statement of Capital Gain/Loss'){
+    const cg=capGains(c);const sells=H.slice(0,2).map((h,i)=>{const q=qof(h);const sale=Math.round(h[2]*0.4);const cost=Math.round(h[1]*0.4);const g=sale-cost;const ageM=monthsBetween(c.signup)||0;const lt=ageM*(1-i*0.4)>=12;return {n:h[0],sale,cost,g,lt};});
+    const rows=sells.map(s=>`<tr><td class="lead-name">${s.n}</td><td style="text-align:right">${M(s.sale)}</td><td style="text-align:right">${M(s.cost)}</td><td style="text-align:center">${s.lt?'<span class="verdict v-Verified">LT</span>':'<span class="verdict v-Pending">ST</span>'}</td><td style="text-align:right;color:${s.g>=0?'var(--green)':'var(--hot)'}">${s.g>=0?'+':''}${M(s.g)}</td></tr>`).join('');
+    const st=sells.filter(s=>!s.lt).reduce((a,b)=>a+b.g,0),lt=sells.filter(s=>s.lt).reduce((a,b)=>a+b.g,0);
+    return head+`<div class="kv-h" style="margin:0 0 6px">Statement of Capital Gain/Loss <span class="lead-sub" style="font-weight:400">listed equity, STT paid</span></div>`+T(['Security','Sale amount','Purchase amount','LT/ST','Realised G/L'],rows,`<tfoot><tr style="font-weight:700"><td colspan="4">Short-term gain/loss</td><td style="text-align:right;color:${st>=0?'var(--green)':'var(--hot)'}">${M(st)}</td></tr><tr style="font-weight:700"><td colspan="4">Long-term gain/loss</td><td style="text-align:right;color:${lt>=0?'var(--green)':'var(--hot)'}">${M(lt)}</td></tr></tfoot>`)+`<div class="lead-sub" style="margin-top:10px">For information only — please consult your tax advisor.</div>`;
+  }
+  if(name==='Statement of Dividend'){
+    const rows=H.slice(0,4).map((h,i)=>{const q=qof(h);const rate=[10,8,4.5,3][i]||5;const gross=Math.round(q.q*rate);const tds=0;return `<tr><td class="lead-name">${h[0]}</td><td style="text-align:right">${q.q.toLocaleString('en-IN')}</td><td style="text-align:right">${rate.toFixed(2)}</td><td style="text-align:right">${M(gross)}</td><td style="text-align:right">${M(tds)}</td><td style="text-align:right">${M(gross-tds)}</td></tr>`;}).join('');
+    const tot=H.slice(0,4).reduce((s,h,i)=>{const rate=[10,8,4.5,3][i]||5;return s+Math.round(qof(h).q*rate);},0);
+    return head+`<div class="kv-h" style="margin:0 0 6px">Statement of Dividend</div>`+T(['Security','Quantity','Rate','Gross amount','TDS','Net amount'],rows,`<tfoot><tr style="font-weight:700"><td colspan="3">Total</td><td style="text-align:right">${M(tot)}</td><td style="text-align:right">${M(0)}</td><td style="text-align:right">${M(tot)}</td></tr></tfoot>`);
+  }
+  if(name==='Corpus Report'){
+    const rows=`<tr><td>${fmtD(c.signup)}</td><td>Opening Balance</td><td style="text-align:right">—</td><td style="text-align:right">—</td><td style="text-align:right">${M(0)}</td></tr>
+      <tr><td>${fmtD(c.signup)}</td><td>Capital Contribution</td><td style="text-align:right">${M(inv)}</td><td style="text-align:right">—</td><td style="text-align:right">${M(inv)}</td></tr>`;
+    return head+`<div class="kv-h" style="margin:0 0 6px">Capital Register (Corpus)</div>`+T(['Date','Description','Credit','Debit','Balance'],rows,`<tfoot><tr style="font-weight:700"><td colspan="4">Closing Balance (at cost)</td><td style="text-align:right">${M(inv)}</td></tr></tfoot>`);
+  }
+  if(name==='Expense Statement'){
+    const mf=Math.round(curT*0.02),cf=Math.round(curT*0.0008),stt=Math.round(curT*0.0011),tc=Math.round(curT*0.0003);
+    const rows=[['Management Fees',mf],['Custodian Fees',cf],['Securities Transaction Tax (STT)',stt],['Transaction Charges',tc]].map(r=>`<tr><td>${r[0]}</td><td style="text-align:right">${M(r[1])}</td></tr>`).join('');
+    return head+`<div class="kv-h" style="margin:0 0 6px">Statement of Expenses</div>`+T(['Description','Amount'],rows,`<tfoot><tr style="font-weight:700"><td>Total Expenses</td><td style="text-align:right">${M(mf+cf+stt+tc)}</td></tr></tfoot>`);
+  }
+  if(name==='Profit & Loss / Balance Sheet'){
+    const div=Math.round(curT*0.004),rg=Math.round(gain*0.12),mf=Math.round(curT*0.02),cf=Math.round(curT*0.0008),stt=Math.round(curT*0.0011);
+    const income=div+rg;const exp=mf+cf+stt;const surplus=income-exp;
+    const pl=`<div class="kv-h" style="margin:0 0 6px">Profit & Loss Account</div><div class="kv">${kvr('Dividend income',M(div))}${kvr('Realised gain on shares',M(rg))}${kvr('<b>Total income</b>',M(income))}${kvr('Custodian fees',M(cf))}${kvr('Management fees',M(mf))}${kvr('STT',M(stt))}${kvr('<b>Total expenses</b>',M(exp))}${kvr('<b>Surplus for the period</b>',M(surplus))}</div>`;
+    const bs=`<div class="kv-h" style="margin:14px 0 6px">Balance Sheet</div><div class="kv">${kvr('Capital',M(inv))}${kvr('Reserves & surplus',M(surplus))}${kvr('<b>Total liabilities</b>',M(inv+surplus))}${kvr('Investments — at market',M(curT))}${kvr('Balance with banks',M(cashVal))}${kvr('<b>Total assets</b>',M(curT+cashVal))}</div>`;
+    return head+pl+bs;
+  }
+  return head+'<div class="empty">Preview not available for this report.</div>';
+}
 function custSend(i){const r=DB.custReports[i];const n=pmsClients().length;r.lastRun=dayStr(0);r.tracking={sent:n,delivered:n,seen:Math.max(0,n-1)};save();renderCustReports();toast(r.name+' emailed to '+n+' clients · delivery & open tracked');}
 function custToggle(i,v){DB.custReports[i].auto=v;save();toast('Auto-send '+(v?'on':'off')+' for '+DB.custReports[i].name);}
 

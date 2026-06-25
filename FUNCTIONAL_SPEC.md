@@ -126,7 +126,7 @@ Entities and relationships are summarised in Appendix A; detailed attributes bel
 | S-33 | SEBI RIA Daily Report | RIA Compliance |
 | S-34 | PMS Review (FIU) | PMS Compliance |
 | S-35 | Regulatory Filings | PMS Compliance |
-| S-36 | Custodian Reports | PMS Compliance |
+| S-36 | Custodian Reports | PMS Compliance (send); RM (view own) |
 | S-37 | Partner Pipeline (B2B) | Partnerships RM, Head |
 | S-38 | B2B Dashboard | Partnerships Head |
 | S-39 | Leadership | Leadership |
@@ -605,9 +605,24 @@ Header: avatar; name; kind badge; phone; email. Meta: DOB · RM · Source · Acc
 - **Actions:** **Fetch from custodian** (custodian-sourced filings) → Fetched; **Upload / Upload via SEBI portal** → opens the portal, marks Uploaded with date. **BR-FILING-1** these are fund-level, not per client. [PM INPUT — custodian mapping (INT-5); PMR portal confirmation flow (INT-10); APMI/PMSBazaar formats.]
 
 #### S-36 — Custodian Reports
-- **The 8 reports:** Holding statement (Monthly) · Transaction statement (Monthly) · Capital gains statement (Quarterly) · Corporate actions report (Monthly) · NAV / performance report (Monthly) · Bank book (Monthly) · Securities / demat ledger (Quarterly) · Expense & fee statement (Quarterly). Each has an auto-send flag.
-- **Scope.** Funded PMS clients. **Tiles:** PMS clients · Reports sent (of clients × types) · Report types (8). **List:** Client (+ product) · Sent count (n/8) · Last sent · **Manage & send**.
-- **Per-client view:** **Send all to client**; per report: name · frequency · last sent · **delivery status** (Pending / Delivered / Seen) · **Send**. **BR-FILING-2** per-client (distinct from S-35). [PM INPUT — custodian source per report (INT-5); delivered-vs-seen tracking (INT-6); scheduled auto-send.]
+- **The 10 reports (the actual custodian set for PMS clients):**
+| Report | Frequency | Contents (mirrors the custodian PDF) |
+|---|---|---|
+| Portfolio Statement | Monthly | Portfolio appraisal by asset class — security, qty, unit cost, cost, market value, gain/loss, %G/L, %assets, + cash |
+| Transaction Statement | Monthly | Buys/sells — date, security, qty, unit price, settlement amount, brokerage, STT, exchange |
+| Performance Report | Monthly | Portfolio allocation; summary (net capital in, realised/unrealised gain, income, fees, value); returns 1M–SI vs **NIFTY 500 TRI** |
+| Factsheet | Monthly | Sector allocation; portfolio summary; **TWRR** (MTD/QTD/YTD/SI) vs S&P BSE 200; holdings |
+| Corporate Benefits | Monthly | Corporate actions — bonus, dividend, split, merger, spin-off |
+| Statement of Capital Gain/Loss | Quarterly | Realised gains — sale/purchase, **LT/ST**, days held; ST/LT summary |
+| Statement of Dividend | Quarterly | Dividends — security, qty, rate, gross, TDS, net; summary |
+| Corpus Report | Quarterly | Capital register — contributions, withdrawals, balance |
+| Expense Statement | Quarterly | Management fees, custodian fees, STT, transaction charges |
+| Profit & Loss / Balance Sheet | Half-yearly | P&L account + balance sheet for the period |
+| *(Custody cut-off timings — Axis Bank)* | Reference | Operational custody cut-offs — not a per-client report |
+  Each report type has an **auto-send** flag (auto-dispatched to the client each period).
+- **Scope.** Funded PMS clients. **Tiles:** PMS clients · Reports sent (of clients × types) · Report types (10). **List:** Client (+ product) · Sent count (n/10) · Last sent · **Manage & send** (Compliance) / **View reports** (RM).
+- **Per-client view:** per report — name + description · frequency · **Auto/Manual** flag · last sent · **delivery status** (Pending / Delivered / Seen) · **👁 View** (opens a faithful preview built from the client's holdings; Download PDF) · **Send** (Compliance only); plus **Send all to client** (Compliance). **BR-FILING-2** per-client (distinct from S-35).
+- **RM access (read-only).** RMs get the same screen **scoped to their own PMS clients** — they can **view and download** each report but **not send** (sending is auto-dispatched by PMS Compliance). [PM INPUT — custodian source & field mapping per report (INT-5); delivered-vs-seen tracking (INT-6); auto-send schedule per type.]
 
 ---
 
