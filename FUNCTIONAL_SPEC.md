@@ -27,7 +27,7 @@ Prepared by: Shashank Shenoy | Status: Draft for PM sign-off
 **Conventions**
 - **Field tables** read: *Field — Type — Options / values — Source — Editable — Validation / notes.* "Source" is who owns the value: **User** (entered here), **System** (computed/auto), **Custodian** (from the custodian/administrator), **DIGIO/CKYC/KRA/FIU** (from that integration), or **Admin** (upstream admin/onboarding system).
 - **"Confirmation"** is the message the system shows after a successful action.
-- Identifiers **S-01…S-40** (screens) and **BR-\*** (rules) are stable cross-references.
+- Identifiers **S-01…S-41** (screens) and **BR-\*** (rules) are stable cross-references.
 - Money is ₹ with Indian digit grouping; dates use the `en-IN` locale (e.g. *24 Jun 2026*).
 - **[PM INPUT]** = decision required before building the affected area.
 
@@ -88,7 +88,7 @@ Entities and relationships are summarised in Appendix A; detailed attributes bel
 | B2B | Partnerships | S-37 → S-38 |
 | PARTNER | Distributor portal | S-26 → S-29 |
 
-### 2.5 Screen Inventory (40)
+### 2.5 Screen Inventory (41)
 | ID | Screen | Primary roles |
 |----|--------|---------------|
 | S-01 | Login / Authentication | All |
@@ -131,6 +131,7 @@ Entities and relationships are summarised in Appendix A; detailed attributes bel
 | S-38 | B2B Dashboard | Partnerships Head |
 | S-39 | Leadership | Leadership |
 | S-40 | Role Dashboards | Qualifier / Investment / Ops / Compliance / Distributor |
+| S-41 | Strategies Catalog (internal) | RM, Investment, Leadership |
 
 ---
 
@@ -677,6 +678,10 @@ RM-style experience scoped to the partner's own book; the only difference from a
 ---
 
 ### 4.10 · Universal screens
+
+#### S-41 — Strategies Catalog (internal)
+- **Scope.** RM, Investment, Leadership (sidebar **Strategies**). A firm-wide catalog of every strategy, independent of any one client.
+- **Per strategy card:** name · category · benchmark · **1Y / 3Y / since-inception** performance · risk band · fund manager · minimum investment · strategy AUM · top-3 holdings preview · **count of the viewer's funded clients invested + their AUM in the strategy** (scoped per 3.2: RM/Distributor = own book, Investment/Leadership = all). Action **View fact sheet & holdings** opens the same modal as S-11 Tab 5 — here with no client position (the model fact sheet + holdings only). **BR-STRAT-1** (read-only). [PM INPUT — fact-sheet & holdings system of record (INT-5).]
 
 #### S-21 — Knowledge Hub
 In-app documentation for every role (overview, teams & duties, lead flow, five-strike, assignment, onboarding, clients, tasks, compliance, reviews, leadership, a team-handoff diagram, a "how do I…" guide, and a glossary). [PM INPUT — ownership and update process.]

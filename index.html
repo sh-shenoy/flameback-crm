@@ -608,6 +608,7 @@
       <button data-view="reminders"><span class="ico">🔔</span> Reviews & Reminders <span class="count" id="navRem">0</span></button>
       <button data-view="clients"><span class="ico">💼</span> Clients <span class="count" id="navClients">0</span></button>
       <button data-view="profiles"><span class="ico">🪪</span> Profiles</button>
+      <button data-view="strategies"><span class="ico">📈</span> Strategies</button>
       <button data-view="b2bdash"><span class="ico">📊</span> B2B Dashboard</button>
       <button data-view="b2bpipeline"><span class="ico">🤝</span> Partner Pipeline <span class="count" id="navB2b">0</span></button>
       <button data-view="reports"><span class="ico">📑</span> Client Reports</button>
@@ -1323,6 +1324,11 @@
       <div class="page-head"><div><h1>Strategies</h1><p>Flameback strategies available to you, with live performance.</p></div></div>
       <div class="cards" id="distStratCards"></div>
     </section>
+    <!-- STRATEGIES CATALOG (internal) -->
+    <section id="view-strategies" class="hidden">
+      <div class="page-head"><div><h1>Strategies</h1><p>Every Flameback strategy — fact sheet, performance and model holdings. Open any strategy for full details.</p></div></div>
+      <div id="stratCatalog"></div>
+    </section>
     <!-- INBOX -->
     <section id="view-inbox" class="hidden">
       <div class="page-head"><div><h1>Inbox</h1><p>Your email, synced with Gmail — messages to and from you across the firm.</p></div>
@@ -1950,15 +1956,15 @@ function demoHousehold(){
 
 /* roles */
 const ROLES={
-  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','reports','invoices','tasks','out','suggestions','hub']},
+  RM:{name:'Shashank',email:'shashank@flamebackcapital.com',label:'Relationship Manager',nav:['dashboard','leads','onboarding','calendar','reminders','clients','profiles','strategies','reports','invoices','tasks','out','suggestions','hub']},
   Qualifier:{name:'Maya Sharma',email:'maya@flamebackcapital.com',label:'Qualifier · Lead Desk',nav:['dashboard','assignment','calendar','tasks','suggestions','hub']},
   Compliance:{name:'Neha Gupta',email:'neha@flamebackcapital.com',label:'RIA Compliance Team',nav:['dashboard','verification','compreport','feepay','riareport','tasks','clients','suggestions','hub']},
   PMSCompliance:{name:'Imran Khan',email:'imran@flamebackcapital.com',label:'PMS Compliance Team',nav:['pmsreview','pmsfilings','custreports','tasks','inbox','hub']},
   B2BRM:{name:'Aditya Rao',email:'aditya@flamebackcapital.com',label:'Partnerships RM (B2B)',nav:['b2bpipeline','calendar','tasks','inbox','hub']},
   B2BHead:{name:'Vikram Sethi',email:'vikram@flamebackcapital.com',label:'Partnerships Head (B2B)',nav:['b2bdash','b2bpipeline','calendar','tasks','inbox','hub']},
   Operations:{name:'Ravi Menon',email:'ravi@flamebackcapital.com',label:'Operations Team',nav:['dashboard','tasks','clients','suggestions','hub']},
-  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','reports','invoices','calendar','tasks','suggestions','hub']},
-  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','reports','invoices','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
+  Investment:{name:'Anjali Rao',email:'anjali@flamebackcapital.com',label:'Investment Team',nav:['dashboard','ips','reminders','clients','profiles','strategies','reports','invoices','calendar','tasks','suggestions','hub']},
+  Owner:{name:'R. Sharma',email:'leadership@flamebackcapital.com',label:'Leadership · Dept Heads',nav:['owner','clients','profiles','strategies','reports','invoices','tasks','verification','ips','reminders','calendar','leads','out','suggestions','hub']},
   Marketing:{name:'Tanvi Shah',email:'tanvi@flamebackcapital.com',label:'Marketing Team',nav:['events','lists','content','calendar','tasks','suggestions','hub']},
   Distributor:{name:'ABC Wealth',email:'partners@abcwealth.in',label:'Distributor / Wealth Manager',nav:['dashboard','distclients','reports','invoices','calendar','reminders','ips','diststrategies']}
 };
@@ -2173,7 +2179,7 @@ function clientName(cid){const c=DB.clients.find(x=>x.cid===cid);return c?c.firs
 function go(v){
   const navMap={clientProfile:'clients'};
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===(navMap[v]||v)));
-  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','b2bdash','b2bpipeline','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','feepay','riareport','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
+  ['dashboard','owner','leads','assignment','onboarding','calendar','reminders','clients','clientProfile','profiles','profile','strategies','b2bdash','b2bpipeline','reports','events','lists','content','distdash','distclients','diststrategies','invoices','tasks','verification','compreport','feepay','riareport','pmsreview','pmsfilings','custreports','ips','out','suggestions','hub','inbox'].forEach(x=>document.getElementById('view-'+x).classList.toggle('hidden',x!==v));
   if(v==='owner')renderOwner();
   if(v==='dashboard')renderDash();
   if(v==='leads')renderLeads();
@@ -2202,6 +2208,7 @@ function go(v){
   if(v==='distdash')renderDistDash();
   if(v==='distclients')renderDistClients();
   if(v==='diststrategies')renderDistStrategies();
+  if(v==='strategies')renderStrategies();
   if(v==='invoices')renderInvoices();
   if(v==='inbox')renderInbox();
   if(v==='suggestions'){subscribeSugg();loadSugg();}
@@ -3349,6 +3356,31 @@ function renderDistDash(){
 function renderDistClients(){
   const cs=distClients();
   document.getElementById('distClientsBody').innerHTML=cs.length?cs.map(c=>'<tr class="lead-row" onclick="openClient(\''+c.cid+'\')"><td><span class="cid">'+c.cid+'</span></td><td class="lead-name">'+c.first+' '+c.last+'</td><td>'+((c.kyc&&c.kyc.city)||'—')+'</td><td>'+fmtINR(c.portfolio.current)+'</td><td>'+cagr(c).toFixed(1)+'%</td><td>'+productTag(c.product)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No clients yet.</td></tr>';
+  badges();
+}
+function renderStrategies(){
+  const scope=(currentRole==='Distributor'?distClients():mine(DB.clients)).filter(c=>c.funded);
+  const cards=STRATEGIES.map(st=>{
+    const inf=stratInfo(st);const pf=stratPerf(st);
+    const holders=scope.filter(c=>(c.strategies||[]).indexOf(st)>=0);
+    const aum=holders.reduce((s,c)=>{const a=stratAlloc(c).find(x=>x.name===st);return s+(a?a.current:0);},0);
+    const top=inf.holdings.slice(0,3).map(h=>h[0]).join(' · ');
+    return `<div class="card" style="text-align:left;display:flex;flex-direction:column;gap:0">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div><div class="k" style="font-size:15px">${st}</div><div class="lead-sub">${inf.cat} · ${inf.bench}</div></div>
+        <span class="strat-chip" style="white-space:nowrap">${inf.risk}</span>
+      </div>
+      <div style="display:flex;gap:18px;margin-top:14px">
+        <div><div class="lead-sub">1Y</div><div style="font-weight:800;color:var(--green)">+${pf.oneY.toFixed(1)}%</div></div>
+        <div><div class="lead-sub">3Y CAGR</div><div style="font-weight:800;color:var(--green)">+${pf.threeY.toFixed(1)}%</div></div>
+        <div><div class="lead-sub">Since incep.</div><div style="font-weight:800;color:var(--navy)">+${pf.since.toFixed(1)}%</div></div>
+      </div>
+      <div class="lead-sub" style="margin-top:12px">Manager ${inf.manager} · Min ${fmtINR(inf.minInv)} · Strategy AUM ${fmtINR(inf.aum)}</div>
+      <div class="lead-sub" style="margin-top:6px">Top holdings: ${top}…</div>
+      <div class="lead-sub" style="margin-top:6px;color:var(--navy)">${holders.length} of your client${holders.length!==1?'s':''} invested · ${fmtINR(aum)}</div>
+      <div style="margin-top:14px"><button class="btn ghost sm" onclick="openStrat('${st.replace(/'/g,"\\'")}')">📄 View fact sheet & holdings</button></div>
+    </div>`;}).join('');
+  document.getElementById('stratCatalog').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px">${cards}</div>`;
   badges();
 }
 function stratPerf(name){let h=0;for(let i=0;i<name.length;i++)h+=name.charCodeAt(i);return {oneY:(8+h%12)+(h%10)/10,threeY:(11+h%9)+(h%7)/10,since:(12+h%8)+(h%5)/10};}

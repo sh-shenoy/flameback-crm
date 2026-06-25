@@ -8,6 +8,7 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 - The account view now has a **Strategies** tab showing **what the client has invested in each strategy in that account** — invested, current value, gain, return and since-inception CAGR per strategy, summing exactly to the account total. Read-only (strategies are assigned by the Investment team).
 - Each strategy opens a **Fact sheet & holdings** card: category, benchmark, inception, strategy AUM, minimum investment, risk, fund manager, objective and 1Y/3Y/since-inception performance — plus the **strategy's model holdings** (weights), with the client's value per holding shown for this account.
 - The same per-strategy breakdown and fact-sheet link now appear on the **Person Profile** account cards (under "Strategy performance").
+- New standalone **Strategies** page in the sidebar (RM, Investment, Leadership) — a catalog of every strategy with category, benchmark, 1Y/3Y/since-inception performance, risk, manager, min investment, strategy AUM, top holdings, how many of your clients are invested (+ their AUM in it), and one click into the full fact sheet & holdings.
 
 ## 2026-06-15
 
