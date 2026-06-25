@@ -1418,8 +1418,9 @@
       <div class="page-head"><div><h1>SEBI RIA Report</h1><p>Daily client register submitted to SEBI — view all RIA clients and export. Month metrics (new / exited / active / inactive) viewable over the last 5 years.</p></div>
         <button class="btn" onclick="exportRiaReport()">⬇ Export (CSV)</button></div>
       <div class="panel" style="padding:13px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><label style="font-size:13px;color:var(--muted);font-weight:600">Month</label><input type="month" id="riaMonth" onchange="renderRiaReport()"><span class="lead-sub">— counts as of this month (5-year history)</span></div>
+      <div class="lead-sub" style="margin:-4px 2px 10px">Click a metric below to see that list of clients; each is exportable.</div>
       <div class="cards" id="riaCards"></div>
-      <div class="panel"><div class="panel-head"><h2>Client register</h2><span class="lead-sub">submitted to SEBI daily</span></div>
+      <div class="panel"><div class="panel-head"><h2>Client register <span id="riaSegLabel" class="lead-sub" style="font-weight:400"></span></h2><button class="btn ghost sm" onclick="exportRiaReport()">⬇ Export this list (CSV)</button></div>
         <div style="overflow-x:auto"><table><thead><tr><th>Start date</th><th>Client</th><th>Contact</th><th>Email</th><th>Product</th><th>Strategy</th><th>PAN</th><th>CKYC/KRA</th><th>Resident status</th><th>Agreement</th><th>City / State</th><th>Country</th><th>Gender</th></tr></thead><tbody id="riaBody"></tbody></table></div></div>
     </section>
 
@@ -2042,6 +2043,7 @@ function ensureClientExtras(c){
   if(!c.residentStatus)c.residentStatus=({'FBC-1002':'NRI','FBC-1006':'NRO'})[c.cid]||'Individual - Resident';
   if(!c.ckycLink)c.ckycLink='https://ckyc.gov.in/proof/'+c.cid+'.pdf';
   if(c.exitedOn===undefined)c.exitedOn=(c.cid==='FBC-1006'?dayStr(-15):'');
+  if(!c.boardingLetterV1){c.boardingLetter=null;if(c.funded&&(c.product||'').indexOf('RIA')>=0){c.welcomeKit=true;const _st={'FBC-1005':'Sent','FBC-1008':'Delivered'};c.boardingLetter={sent:dayStr(-18),status:_st[c.cid]||'Seen',seenOn:(_st[c.cid]?'':dayStr(-16))};}c.boardingLetterV1=true;}
   if(!c.reportsSentV3){c.reportsSent={};if(c.funded&&c.product==='PMS'){c.reportsSent['Portfolio Statement']={date:dayStr(-12),email:'Seen'};c.reportsSent['Performance Report']={date:dayStr(-12),email:'Delivered'};c.reportsSent['Factsheet']={date:dayStr(-12),email:'Seen'};}c.reportsSentV3=true;}
   if(!c.feeDebit){const _f={'FBC-1002':'Insufficient balance in linked bank account','FBC-1006':'e-NACH mandate expired — re-authorisation needed'};c.feeDebit=c.funded?{amount:Math.round((c.portfolio.current||0)*0.0025),date:dayStr(-3),status:_f[c.cid]?'Failed':'Success',reason:_f[c.cid]||''}:{amount:0,date:'',status:'—',reason:''};}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
@@ -3101,7 +3103,7 @@ function renderVerification(){
       flagItem('Client Disclosure Document read & accepted',!!c.disclosure)+
       flagItem('Risk profile questionnaire — '+(rp.category||'—')+(rp.communicated?' · communicated to client':''),!!rp.communicated)+
       agreementRow(c)+
-      flagItem('Boarding letter / welcome kit dispatched',!!c.welcomeKit)+
+      boardingRow(c)+
       chkSection('Suitability assessment & demat access')+
       suitabilityRow(c)+
       dematRow(c);
@@ -3121,6 +3123,14 @@ function formRow(lab,val){return `<div class="chk-item"><span class="chk-ico chk
 function docItem(lab,file){return `<div class="chk-item"><span class="chk-ico chk-ok">📎</span><span class="lab">${lab}</span><span class="cmp"><b>${file}</b> <button class="btn ghost sm" onclick="viewDoc('${file}')">View</button></span></div>`;}
 function agreementRow(c){return `<div class="chk-item"><span class="chk-ico ${c.signed?'chk-ok':'chk-pend'}">${c.signed?'✓':'!'}</span><span class="lab">Client Agreement (DIGIO e-sign)</span><span class="cmp">${c.signed?`<b style="color:var(--green)">Signed</b> <a class="meet-link" href="${c.agreementUrl}" target="_blank">📄 Open signed PDF</a>`:'<b style="color:#a96a16">Pending signature</b>'}</span></div>`;}
 function viewDoc(f){toast('Opening '+f+' (demo upload)');}
+function boardingRow(c){const b=c.boardingLetter;
+  if(!b||!b.sent)return `<div class="chk-item"><span class="chk-ico chk-pend">!</span><span class="lab">Boarding letter / welcome kit</span><span class="cmp"><b style="color:#a96a16">Not dispatched</b> <button class="btn sm" onclick="sendBoarding('${c.cid}')">✉ Send boarding letter</button></span></div>`;
+  const seen=b.status==='Seen';const recv=seen||b.status==='Delivered';
+  const track=`Dispatched <b>${fmtD(b.sent)}</b> · ${emailBadge(b.status)}${seen&&b.seenOn?' '+fmtD(b.seenOn):''}`;
+  return `<div class="chk-item"><span class="chk-ico ${recv?'chk-ok':'chk-pend'}">${recv?'✓':'…'}</span><span class="lab">Boarding letter / welcome kit</span><span class="cmp">${track} ${seen?'':`<button class="btn ghost sm" onclick="sendBoarding('${c.cid}')">Resend</button>`}</span></div>`;}
+function sendBoarding(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.boardingLetter={sent:dayStr(0),status:'Delivered',seenOn:''};c.welcomeKit=true;
+  DB.emails=DB.emails||[];if(!DB.nextEmail)DB.nextEmail=(DB.emails.length+1);DB.emails.push({id:DB.nextEmail++,from:'onboarding@flamebackcapital.com',to:c.email,subject:'Welcome to Flameback Capital — your boarding letter',body:'Dear '+c.first+',\n\nWelcome aboard. Please find attached your boarding letter and welcome kit.\n\nFlameback Capital',date:new Date().toISOString(),read:false});
+  save();renderVerification();toast('Boarding letter dispatched to '+c.first+' · delivery & open tracked');}
 function suitabilityRow(c){const su=c.suitability||{};const ok=!!su.preparedOn;
   return `<div class="chk-item"><span class="chk-ico ${ok?'chk-ok':'chk-pend'}">${ok?'✓':'!'}</span><span class="lab">Suitability assessment (IPS)</span><span class="cmp">${ok?`<b style="color:var(--green)">Prepared</b> <a class="meet-link" href="#" onclick="viewDoc('${su.doc}');return false">📄 ${su.doc}</a> <span class="lead-sub">· sent to client ${su.sentOn?fmtD(su.sentOn):'—'}</span> <button class="btn ghost sm" onclick="sendIPS('${c.cid}')">✉ Send to client</button>`:'<b style="color:#a96a16">Pending — advisor to prepare IPS</b>'}</span></div>`;}
 function dematRow(c){const d=c.demat||{};const active=d.status==='Active';
@@ -3966,36 +3976,44 @@ function renderB2bDash(){
 
 /* ---------- SEBI RIA daily report + 5-year client metrics ---------- */
 function monthOf(d){return (d||'').slice(0,7);}
-function renderRiaReport(){
-  const all=riaClients();
-  const inp=document.getElementById('riaMonth');
-  if(inp&&!inp.value){inp.value=dayStr(0).slice(0,7);const y=new Date().getFullYear();inp.min=(y-5)+'-01';inp.max=dayStr(0).slice(0,7);}
-  const m=(inp&&inp.value)||dayStr(0).slice(0,7);
-  const endM=new Date(m+'-01');endM.setMonth(endM.getMonth()+1);
+let RIA_SEG='total';
+function riaSeg(s){RIA_SEG=s;renderRiaReport();}
+function riaSegCard(seg,label,val,meta,col){const active=RIA_SEG===seg;return `<div class="card" onclick="riaSeg('${seg}')" style="cursor:pointer;${active?'box-shadow:0 0 0 2px '+col+' inset':''}"><div class="k">${label}</div><div class="v">${val}</div><div class="meta">${meta}</div><div class="bar"><i style="width:${active?100:0}%;background:${col}"></i></div></div>`;}
+function riaSegments(m){
+  const all=riaClients();const endM=new Date(m+'-01');endM.setMonth(endM.getMonth()+1);
   const newAdd=all.filter(c=>monthOf(c.signup)===m);
   const exited=all.filter(c=>c.exitedOn&&monthOf(c.exitedOn)===m);
   const asOf=all.filter(c=>c.signup&&new Date(c.signup)<endM&&(!c.exitedOn||new Date(c.exitedOn)>=endM));
   const active=asOf.filter(c=>c.funded),inactive=asOf.filter(c=>!c.funded);
+  return {all:all,total:asOf,new:newAdd,exited:exited,active:active,inactive:inactive};}
+function renderRiaReport(){
+  const inp=document.getElementById('riaMonth');
+  if(inp&&!inp.value){inp.value=dayStr(0).slice(0,7);const y=new Date().getFullYear();inp.min=(y-5)+'-01';inp.max=dayStr(0).slice(0,7);}
+  const m=(inp&&inp.value)||dayStr(0).slice(0,7);
+  const S=riaSegments(m);
   document.getElementById('riaCards').innerHTML=
-    dcard('New added',newAdd.length,'Onboarded in '+m,'var(--teal)',0)+
-    dcard('Exited',exited.length,'Left in '+m,'var(--hot)',0)+
-    dcard('Active',active.length,'Funded · month-end','var(--green)',0)+
-    dcard('Inactive',inactive.length,'Not funded / dormant','var(--warm)',0)+
-    dcard('Total on books',asOf.length,'As of '+m,'var(--navy)',0);
-  document.getElementById('riaBody').innerHTML=all.length?all.map(c=>`<tr>
+    riaSegCard('total','Total on books',S.total.length,'As of '+m,'var(--navy)')+
+    riaSegCard('new','New added',S.new.length,'Onboarded in '+m,'var(--teal)')+
+    riaSegCard('exited','Exited',S.exited.length,'Left in '+m,'var(--hot)')+
+    riaSegCard('active','Active',S.active.length,'Funded · month-end','var(--green)')+
+    riaSegCard('inactive','Inactive',S.inactive.length,'Not funded / dormant','var(--warm)');
+  const labels={total:'Total on books',new:'New added',exited:'Exited',active:'Active',inactive:'Inactive'};
+  const list=S[RIA_SEG]||S.total;window.__riaList=list;window.__riaSegName=labels[RIA_SEG]||'Total';
+  const lab=document.getElementById('riaSegLabel');if(lab)lab.textContent='· '+(labels[RIA_SEG]||'Total')+' — '+list.length+' client'+(list.length!==1?'s':'')+' · '+m;
+  document.getElementById('riaBody').innerHTML=list.length?list.map(c=>`<tr>
     <td>${c.signup?fmtD(c.signup):'—'}</td><td class="lead-name">${c.first} ${c.last}${c.exitedOn?' <span class="verdict v-Flagged">exited</span>':''}</td><td>${c.contact}</td><td>${c.email}</td>
     <td>${c.product}</td><td>${(c.strategies&&c.strategies[0])||'—'}</td><td>${c.kyc.pan}</td>
     <td><a class="meet-link" href="${c.ckycLink}" target="_blank">Proof ↗</a></td>
     <td>${c.residentStatus}</td>
     <td>${c.agreementUrl?`<a class="meet-link" href="${c.agreementUrl}" target="_blank">PDF ↗</a>`:'—'}</td>
-    <td>${c.kyc.city}, ${c.kyc.state}</td><td>${c.country}</td><td>${c.kyc.gender}</td></tr>`).join(''):`<tr><td colspan="13" class="empty">No RIA clients.</td></tr>`;
+    <td>${c.kyc.city}, ${c.kyc.state}</td><td>${c.country}</td><td>${c.kyc.gender}</td></tr>`).join(''):`<tr><td colspan="13" class="empty">No clients in this list for ${m}.</td></tr>`;
   badges();
 }
-function exportRiaReport(){const all=riaClients();
-  const hdr=['Start date','Client name','Contact','Email','Product','Strategy','PAN','CKYC/KRA proof','Resident status','Agreement link','City','State','Country','Gender'];
-  const rows=all.map(c=>[c.signup,c.first+' '+c.last,c.contact,c.email,c.product,(c.strategies&&c.strategies[0])||'',c.kyc.pan,c.ckycLink,c.residentStatus,c.agreementUrl||'',c.kyc.city,c.kyc.state,c.country,c.kyc.gender].map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(','));
+function exportRiaReport(){const list=window.__riaList||riaClients();const seg=window.__riaSegName||'All';
+  const hdr=['Start date','Client name','Contact','Email','Product','Strategy','PAN','CKYC/KRA proof','Resident status','Agreement link','City','State','Country','Gender','Exit date'];
+  const rows=list.map(c=>[c.signup,c.first+' '+c.last,c.contact,c.email,c.product,(c.strategies&&c.strategies[0])||'',c.kyc.pan,c.ckycLink,c.residentStatus,c.agreementUrl||'',c.kyc.city,c.kyc.state,c.country,c.kyc.gender,c.exitedOn||''].map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(','));
   const csv=[hdr.join(',')].concat(rows).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='RIA-SEBI-report-'+dayStr(0)+'.csv';document.body.appendChild(a);a.click();a.remove();toast('RIA SEBI report exported ('+all.length+' clients)');}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='RIA-SEBI-'+seg.replace(/\s+/g,'-')+'-'+dayStr(0)+'.csv';document.body.appendChild(a);a.click();a.remove();toast('Exported '+seg+' list ('+list.length+' clients)');}
 
 /* ---------- Inbox (Gmail-linked) ---------- */
 function myEmail(){return (ROLES[currentRole]&&ROLES[currentRole].email)||'';}

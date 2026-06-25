@@ -4,6 +4,10 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-25
 
+**RIA Compliance — boarding letter tracking + drillable SEBI register**
+- In the RIA Compliance KYC file, the **Boarding letter / welcome kit** line now shows full **dispatch tracking**: when it was dispatched, whether **delivered** (received), and whether **seen** (with the seen date) — via the connected email system — plus **Send boarding letter** / **Resend** actions.
+- In the **SEBI RIA Report**, the month metrics (**Total on books · New added · Exited · Active · Inactive**) are now **clickable** — each opens that **list of clients** in the register, and **Export this list (CSV)** exports exactly the selected segment (with exit date). Still month-selectable across 5 years.
+
 **Filter by tag — Clients & Profiles**
 - Both the **Clients** list and the **Profiles** directory now have an **All tags** filter (pain points / interests). On Clients it matches at the household level (any account on the number carrying the tag), so filtering by a tag surfaces the whole household; on Profiles it matches the person's tags. The dropdown lists the full tag vocabulary (presets + any tag in use).
 

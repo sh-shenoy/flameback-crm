@@ -560,7 +560,7 @@ Header: avatar; name; kind badge; phone; email. Meta: DOB · RM · Source · Acc
 | Agreement etc. | Disclosure document accepted | accepted |
 | | Risk profile questionnaire (+ communicated) | present (+ communicated flag) |
 | | Client agreement (DIGIO e-sign) | signed (link to signed PDF; else "Pending signature") |
-| | Boarding letter / welcome kit | dispatched |
+| | Boarding letter / welcome kit | **dispatched, with delivery tracking** — shows dispatch date and status **Sent → Delivered (received) → Seen** (with seen date) via the email system (INT-6); **Send / Resend boarding letter** action. Complete when delivered/seen. |
 | Suitability & demat | Suitability assessment (IPS) | prepared (+ sent date); **Send to client** action |
 | | Demat / trading access | client-granted, **read-only**, **not revocable by Flameback** (BR-DEMAT-1); officer records the grant + access log |
 - **Rules.** **BR-KYC-1** RIA KYC is digital via DIGIO — **no manual proof uploads, no CRM-vs-document matching.** **BR-DEMAT-1** demat is client-granted read-only and non-revocable. [PM INPUT — DIGIO/CKYC/KRA fields & exact complete rules; who may mark verified.]
@@ -591,9 +591,10 @@ Header: avatar; name; kind badge; phone; email. Meta: DOB · RM · Source · Acc
 - **Actions (failed rows):** **Retry** (mark cleared, today's date; confirmation "Auto-debit retried — cleared") · **Raise to RM** (create an RM follow-up task). **BR-FEE-1.** Example failure reasons: insufficient balance; mandate expired — re-authorisation needed. [PM INPUT — fee computation source, debit cadence, mandate lifecycle (#12).] Empty: "No fee debits."
 
 #### S-33 — SEBI RIA Daily Report
-- **Controls.** Month selector (multi-year range). **Export CSV.**
-- **Tiles (selected month):** New added (signed-up in month) · Exited (exit date in month) · Active (funded & not exited) · Inactive (not funded & not exited) · Total on books (signed up ≤ month-end and not exited before month-end).
-- **Register columns (14):** Start date · Client name (+ "exited" flag) · Contact · Email · Product · Strategy · **PAN** · CKYC/KRA proof (link) · Resident status · Agreement link · City · State · Country · Gender. Empty: "No RIA clients."
+- **Controls.** Month selector (multi-year range).
+- **Tiles (selected month), each clickable to drill into that list:** Total on books (signed up ≤ month-end and not exited before month-end) · New added (signed-up in month) · Exited (exit date in month) · Active (funded & not exited) · Inactive (not funded & not exited). Selecting a tile filters the register to that segment (the active tile is highlighted) and the heading shows the segment + count.
+- **Register columns (14):** Start date · Client name (+ "exited" flag) · Contact · Email · Product · Strategy · **PAN** · CKYC/KRA proof (link) · Resident status · Agreement link · City · State · Country · Gender. Empty: "No clients in this list for <month>."
+- **Export this list (CSV).** Exports exactly the currently-selected segment (adds an Exit date column); filename includes the segment name.
 - **BR-METRIC-3** register definitions. [PM INPUT — confirm SEBI column set; PAN shown unmasked here — confirm authority + audit (BR-PII-1).]
 
 #### S-34 — PMS Review (FIU / grey list)
