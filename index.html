@@ -2044,6 +2044,15 @@ function ensureClientExtras(c){
   if(!c.ckycLink)c.ckycLink='https://ckyc.gov.in/proof/'+c.cid+'.pdf';
   if(c.exitedOn===undefined)c.exitedOn=(c.cid==='FBC-1006'?dayStr(-15):'');
   if(!c.boardingLetterV1){c.boardingLetter=null;if(c.funded&&(c.product||'').indexOf('RIA')>=0){c.welcomeKit=true;const _st={'FBC-1005':'Sent','FBC-1008':'Delivered'};c.boardingLetter={sent:dayStr(-18),status:_st[c.cid]||'Seen',seenOn:(_st[c.cid]?'':dayStr(-16))};}c.boardingLetterV1=true;}
+  if(!c.rebalancesV1){c.rebalances=[];if(c.funded){const isRia=(c.product||'').indexOf('RIA')>=0;let h=0;for(let i=0;i<c.cid.length;i++)h+=c.cid.charCodeAt(i);
+    const secs=(c.portfolio.holdings||[]).map(x=>x[0]);if(!secs.length)secs.push('Reliance Industries','HDFC Bank');
+    [1,3,5,8].forEach((mo,i)=>{const seed=(h+i*7)%10;const s1=secs[i%secs.length],s2=secs[(i+1)%secs.length];const detail='Trim '+s1+' ~'+(2+seed%3)+'%, add '+s2+' ~'+(2+seed%3)+'%';
+      let status,reason,by;
+      if(seed<6){status='Executed';by=isRia?'Client (approved proposal)':'Investment team (discretionary)';reason='';}
+      else if(seed<8){status='Not done';by=isRia?'Client':'Investment team';reason=isRia?'Proposal not approved within the validity window':'Drift within tolerance band — no action needed';}
+      else{status='Failed';by='System';reason=['Insufficient cash — awaiting fund inflow','Order rejected at exchange (price band hit)','Demat debit authorisation pending'][seed%3];}
+      c.rebalances.push({date:dayStr(-(mo*30)-seed),status:status,reason:reason,by:by,detail:detail});});
+    c.rebalances.sort((a,b)=>new Date(b.date)-new Date(a.date));}c.rebalancesV1=true;}
   if(!c.reportsSentV3){c.reportsSent={};if(c.funded&&c.product==='PMS'){c.reportsSent['Portfolio Statement']={date:dayStr(-12),email:'Seen'};c.reportsSent['Performance Report']={date:dayStr(-12),email:'Delivered'};c.reportsSent['Factsheet']={date:dayStr(-12),email:'Seen'};}c.reportsSentV3=true;}
   if(!c.feeDebit){const _f={'FBC-1002':'Insufficient balance in linked bank account','FBC-1006':'e-NACH mandate expired — re-authorisation needed'};c.feeDebit=c.funded?{amount:Math.round((c.portfolio.current||0)*0.0025),date:dayStr(-3),status:_f[c.cid]?'Failed':'Success',reason:_f[c.cid]||''}:{amount:0,date:'',status:'—',reason:''};}
   if(!c.compliance){c.compliance={status:c.cid==='FBC-1001'?'Verified':(c.cid==='FBC-1003'?'Flagged':'Pending')};}
@@ -2787,7 +2796,8 @@ function paintTabs(){
     <div class="panel"><div class="panel-head"><h2>Flameback Portfolio Holdings <span class="sync-badge">⟳ FBC-Admin</span></h2><button class="btn gold sm" onclick="openReviewPrep('${c.cid}')">📋 Review prep</button></div>
     <table><thead><tr><th>Holding</th><th>Invested</th><th>Current value</th><th>Gain</th></tr></thead><tbody>
     ${p.holdings.length?p.holdings.map(h=>{const g=h[2]-h[1];return `<tr><td class="lead-name">${h[0]}</td><td>${fmtINR(h[1])}</td><td>${fmtINR(h[2])}</td><td style="color:${g>=0?'var(--green)':'var(--hot)'};font-weight:700">${g>=0?'+':''}${fmtINR(g)}</td></tr>`;}).join(''):'<tr><td colspan="4" class="empty">No holdings yet — client not funded.</td></tr>'}
-    </tbody></table></div>`;
+    </tbody></table></div>
+    ${rebalancePanel(c)}`;
 
   // INVOICES
   document.getElementById('tab-invoices').innerHTML=`<div class="panel"><div class="panel-head"><h2>Client Invoices <span class="sync-badge">⟳ FBC-Admin</span></h2><button class="btn ghost sm" onclick="dlClientInvoicesCsv('${c.cid}')">⬇ Download all (CSV)</button></div>
@@ -2835,6 +2845,29 @@ function renderAcctProfile(c){
 }
 function atAddTag(){const t=document.getElementById('atTagSel').value;if(!t)return;const s=personStore(CURRENT_PROFILE);if(!s)return;s.tags=s.tags||[];if(s.tags.indexOf(t)<0)s.tags.push(t);if((DB.tags||[]).indexOf(t)<0){DB.tags=DB.tags||[];DB.tags.push(t);}save();renderAcctProfile(CURRENT);toast('Tag added');}
 function atRemoveTag(t){const p=CURRENT_PROFILE;(p.accounts||[]).concat(p.leads||[]).forEach(o=>{if(o.tags)o.tags=o.tags.filter(x=>x!==t);});save();renderAcctProfile(CURRENT);toast('Tag removed');}
+function rebBadge(s){const col=s==='Executed'?'Verified':s==='Failed'?'Flagged':'Pending';const lbl=s==='Executed'?'✓ Successful':s==='Failed'?'✕ Failed':'— Not done';return `<span class="verdict v-${col}">${lbl}</span>`;}
+function rebalancePanel(c){
+  if(!c.funded)return '';
+  const rb=c.rebalances||[];
+  const lastExec=rb.find(r=>r.status==='Executed');
+  const isRia=(c.product||'').indexOf('RIA')>=0;
+  const summary=`<div class="cards" style="margin:0;padding:12px 16px">
+    <div class="metric"><div class="k">Last successful rebalance</div><div class="v" style="font-size:16px">${lastExec?fmtD(lastExec.date):'—'}</div></div>
+    <div class="metric"><div class="k">Total rebalances</div><div class="v" style="font-size:16px">${rb.length}</div></div>
+    <div class="metric"><div class="k">Failed / not done</div><div class="v" style="font-size:16px">${rb.filter(r=>r.status!=='Executed').length}</div></div>
+    <div class="metric"><div class="k">Next review</div><div class="v" style="font-size:16px">${c.ips&&c.ips.nextQuarterlyReview?fmtD(c.ips.nextQuarterlyReview):'—'}</div></div>
+  </div>`;
+  const rows=rb.length?rb.map((r,i)=>`<tr><td>${fmtD(r.date)}</td><td>${rebBadge(r.status)}</td><td class="lead-name" style="font-weight:500">${r.detail}</td><td>${r.by}</td><td>${r.reason?`<span style="color:${r.status==='Failed'?'var(--hot)':'#a9561f'}">${r.reason}</span>`:'<span class="lead-sub">—</span>'}${r.status==='Failed'?` <button class="btn ghost sm" onclick="retryRebalance('${c.cid}',${i})">↻ Retry</button>`:''}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">No rebalances yet.</td></tr>';
+  return `<div class="panel" style="margin-top:18px"><div class="panel-head"><h2>Rebalance history <span class="sync-badge">⟳ FBC-Admin</span></h2>
+      <button class="btn sm" onclick="proposeRebalance('${c.cid}')">${isRia?'✉ Send rebalance proposal':'⚖ Record rebalance'}</button></div>
+    ${summary}
+    <table><thead><tr><th>Date</th><th>Status</th><th>What changed</th><th>By</th><th>Reason / action</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="lead-sub" style="padding:8px 16px">${isRia?'RIA: rebalances are proposals the client approves & executes — "Not done" means the client didn’t act within the validity window.':'PMS: rebalances are executed by the Investment team on a discretionary basis.'}</div></div>`;
+}
+function proposeRebalance(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.rebalances=c.rebalances||[];const isRia=(c.product||'').indexOf('RIA')>=0;const s=(c.portfolio.holdings||[])[0];
+  c.rebalances.unshift({date:dayStr(0),status:isRia?'Not done':'Executed',reason:isRia?'Proposal sent — awaiting client approval':'',by:isRia?'Client':'Investment team (discretionary)',detail:'Trim '+((s&&s[0])||'Reliance Industries')+' ~3%, add to debt/cash buffer'});
+  if(!isRia){c.ips.lastQuarterlyReview=dayStr(0);}save();renderProfile();toast(isRia?'Rebalance proposal sent to '+c.first:'Rebalance executed & logged for '+c.first);}
+function retryRebalance(cid,i){const c=DB.clients.find(x=>x.cid===cid);if(!c||!c.rebalances[i])return;c.rebalances[i].status='Executed';c.rebalances[i].reason='';c.rebalances[i].by='Investment team (retried)';c.rebalances[i].date=dayStr(0);c.rebalances.sort((a,b)=>new Date(b.date)-new Date(a.date));save();renderProfile();toast('Rebalance retried — executed');}
 function kvr(l,v){return `<div class="kv-row"><span class="lab">${l}</span><span class="val">${v}</span></div>`;}
 function kin(id,l,v){return `<div class="kv-row"><span class="lab">${l}</span><input id="kyc_${id}" value="${(v||'').replace(/"/g,'&quot;')}"></div>`;}
 function yn(v){return v==='Yes'?'<span class="yes">Yes</span>':'<span class="no">No</span>';}

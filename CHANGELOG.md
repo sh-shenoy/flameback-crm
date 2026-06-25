@@ -4,6 +4,10 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-25
 
+**Rebalance history on the client account (RM view)**
+- The account **Portfolio** tab now has a **Rebalance history** panel: summary (last successful rebalance date, total rebalances, failed/not-done count, next review) and a full event log — **Date · Status (✓ Successful / — Not done / ✕ Failed) · What changed · By · Reason**. Failed rows show *why* (e.g. "Insufficient cash — awaiting fund inflow", "Order rejected at exchange (price band)", "Demat debit authorisation pending") and a **Retry**; not-done rows show why (e.g. "Drift within tolerance band", RIA "proposal not approved within validity window").
+- RIA accounts show **Send rebalance proposal** (client approves & executes); PMS accounts show **Record rebalance** (discretionary by the Investment team). Seeded a realistic mixed history per funded client.
+
 **RIA Compliance — boarding letter tracking + drillable SEBI register**
 - In the RIA Compliance KYC file, the **Boarding letter / welcome kit** line now shows full **dispatch tracking**: when it was dispatched, whether **delivered** (received), and whether **seen** (with the seen date) — via the connected email system — plus **Send boarding letter** / **Resend** actions.
 - In the **SEBI RIA Report**, the month metrics (**Total on books · New added · Exited · Active · Inactive**) are now **clickable** — each opens that **list of clients** in the register, and **Export this list (CSV)** exports exactly the selected segment (with exit date). Still month-selectable across 5 years.
