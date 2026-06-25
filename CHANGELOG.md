@@ -2,6 +2,13 @@
 
 Live demo: https://sh-shenoy.github.io/flameback-crm/
 
+## 2026-06-25
+
+**Strategy-level visibility for RMs**
+- The account view now has a **Strategies** tab showing **what the client has invested in each strategy in that account** — invested, current value, gain, return and since-inception CAGR per strategy, summing exactly to the account total. Read-only (strategies are assigned by the Investment team).
+- Each strategy opens a **Fact sheet & holdings** card: category, benchmark, inception, strategy AUM, minimum investment, risk, fund manager, objective and 1Y/3Y/since-inception performance — plus the **strategy's model holdings** (weights), with the client's value per holding shown for this account.
+- The same per-strategy breakdown and fact-sheet link now appear on the **Person Profile** account cards (under "Strategy performance").
+
 ## 2026-06-15
 
 **Profiles**

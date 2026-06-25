@@ -401,7 +401,7 @@ Worklist **"Follow-ups due today & overdue"** (link: *View all leads →* S-03).
 - Empty: "No clients match your filters." [PM INPUT — canonical lifecycle stages (#16).]
 
 #### S-11 — Account Detail
-Header: avatar (initials); name; sub-line — for a family member "🔗 linked to <holder> <relationship> ·" then product · CID · contact · RM. A lifecycle **stepper** and a **next-step** prompt. **Seven tabs:**
+Header: avatar (initials); name; sub-line — for a family member "🔗 linked to <holder> <relationship> ·" then product · CID · contact · RM. A lifecycle **stepper** and a **next-step** prompt. **Eight tabs:**
 
 **Tab 1 — Overview** (two columns).
 *Client information* (read-only; source: Admin):
@@ -426,11 +426,14 @@ Header: avatar (initials); name; sub-line — for a family member "🔗 linked t
 
 **Tab 4 — Portfolio.** A reconciliation **suspense alert** when unreconciled positions exist (each: holding — amount · reason; action **Send repair notification** to the client). Metric cards: Investment amount · Current value · **Gain** (signed) · Absolute return % · IRR %. Holdings table: **Holding · Invested · Current value · Gain** (signed). Empty: "No holdings yet — client not funded." All figures: source Custodian (A1).
 
-**Tab 5 — Reports.** Downloadable account reports: **Holding statement · Tax report — capital gains · Strategy performance report · Fund inflows & outflows · Basic information report** (PDF, on demand). [PM INPUT — definitions & generator; INT-5/6.]
+**Tab 5 — Strategies.** *What the client has invested in each strategy in this account* (read-only — **BR-STRAT-1**). A table, one row per assigned strategy: **Strategy** (+ category · benchmark) · **Invested** (this account) · **Current value** · **Gain** (signed) · **Return %** · **Since-inception CAGR** · **Fact sheet & holdings** action. The per-strategy invested/current are derived by allocating the account's portfolio across its strategies (deterministic weights) and **sum exactly to the account total** (BR-METRIC-5). For an unfunded account, amounts show "—". The same breakdown is mirrored on the Person Profile account card (S-13).
+- **Strategy fact sheet & holdings (modal).** Opens for a strategy in the context of this account and shows: **(a)** the client's position in this strategy — invested · current · gain · return; **(b)** the **fact sheet** — category, benchmark, inception, strategy AUM, minimum investment, risk, fund manager, objective, and 1Y / 3Y / since-inception performance; **(c)** the strategy's **model holdings** — each holding with its model **weight %** and, when funded, the client's **value** in that holding for this account (weight × current). Download fact sheet (PDF). Source: Investment team / custodian (A1, INT-5). [PM INPUT — authoritative per-strategy allocation & holdings source; today derived for the demo.]
 
-**Tab 6 — Invoices.** Table: **Date · Description · Amount · Status (Paid/▢) · Download**; plus **Download all (CSV)**. Empty: "No invoices generated yet."
+**Tab 6 — Reports.** Downloadable account reports: **Holding statement · Tax report — capital gains · Strategy performance report · Fund inflows & outflows · Basic information report** (PDF, on demand). [PM INPUT — definitions & generator; INT-5/6.]
 
-**Tab 7 — Call Sync.** Follow-ups synced from the calendar (datetime · note · source); **+ Schedule follow-up**. Empty: "No follow-ups scheduled."
+**Tab 7 — Invoices.** Table: **Date · Description · Amount · Status (Paid/▢) · Download**; plus **Download all (CSV)**. Empty: "No invoices generated yet."
+
+**Tab 8 — Call Sync.** Follow-ups synced from the calendar (datetime · note · source); **+ Schedule follow-up**. Empty: "No follow-ups scheduled."
 
 - **Rules.** **BR-STRAT-1** strategy is backend-assigned, read-only in the CRM. **BR-KYC-OWN-1** KYC editing is a Compliance function (S-30), not here. **BR-METRIC-1** under one year show return-since-inception, not annualised CAGR. [PM INPUT — field edit authority (#11).]
 
@@ -705,6 +708,7 @@ Navigation surfaces live, scope-respecting counts to draw attention: active lead
 - **BR-METRIC-2 (Gain).** current − invested, signed and colour-coded.
 - **BR-METRIC-3 (RIA register).** active = funded & not exited; inactive = not funded & not exited; exited = exit date set; counts as of month-end; new/exited keyed to the month.
 - **BR-METRIC-4 (AUM).** Σ current value over the scoped funded accounts. [PM INPUT — CAGR "years" basis; absReturn/IRR sourced from custodian.]
+- **BR-METRIC-5 (per-strategy allocation).** An account's invested/current value is split across its assigned strategies by deterministic weights; the parts **reconcile exactly** to the account total (the last strategy absorbs the rounding remainder). [PM INPUT — replace the demo derivation with the custodian's true per-strategy holdings (INT-5).]
 
 ### 5.5 Compliance status (SEBI report)
 - **BR-COMP-1.** Each item i–x green/amber/red (5.31 rules); fully compliant only when all green (any red → gap; else any amber → pending).

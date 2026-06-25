@@ -777,6 +777,7 @@
         <button data-tab="investment">Investment & SIP</button>
         <button data-tab="docs">Risk Profile & Agreement</button>
         <button data-tab="portfolio">Portfolio</button>
+        <button data-tab="strategies">Strategies</button>
         <button data-tab="reports">Reports</button>
         <button data-tab="invoices">Invoices</button>
         <button data-tab="calls">Call Sync</button>
@@ -1515,6 +1516,13 @@
 </div>
 
 <!-- TASK MODAL -->
+<div class="modal-scrim" id="stratScrim">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-h"><h2 id="stTitle">Strategy</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeStrat()">×</button></div>
+    <div class="modal-b" id="stBody"></div>
+    <div class="modal-f"><button class="btn ghost" onclick="toast('Strategy fact sheet (PDF) downloading…')">⬇ Download fact sheet</button><button class="btn" onclick="closeStrat()">Close</button></div>
+  </div>
+</div>
 <div class="modal-scrim" id="taskScrim">
   <div class="modal">
     <div class="modal-h"><h2 id="tmTitle">New request</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeTask()">×</button></div>
@@ -1827,6 +1835,29 @@ function nextDays(n){const d=new Date();d.setDate(d.getDate()+n);d.setHours(11,0
 function dayStr(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
 
 const STRATEGIES=['Flameback Multicap','Flameback Momentum','Flameback Dividend Yield','Flameback Bluechip','Flameback Small-Cap Alpha'];
+// Per-strategy fact sheet + model holdings (weights in %). Firm-level reference data.
+const STRATEGY_INFO={
+  'Flameback Multicap':{cat:'Multi-cap equity',objective:'All-weather equity compounding across large, mid and small caps; bottom-up, quality-at-a-reasonable-price.',bench:'NIFTY 500 TRI',inception:'2019-04-01',aum:8400000000,risk:'High',minInv:5000000,manager:'Anjali Mehta, CFA',
+    holdings:[['Reliance Industries',9.2],['HDFC Bank',8.1],['ICICI Bank',6.8],['Infosys',6.0],['Larsen & Toubro',5.4],['TCS',4.9],['Bharti Airtel',4.3],['State Bank of India',3.9],['Axis Bank',3.4],['Titan Company',3.0],['Avenue Supermarts',2.6],['Bajaj Finance',2.4],['Other equities',26.0],['Cash & equivalents',8.0]]},
+  'Flameback Momentum':{cat:'Momentum factor equity',objective:'Ride medium-term price and earnings momentum; systematic monthly rebalance into the strongest trending names.',bench:'NIFTY 200 Momentum 30 TRI',inception:'2020-07-01',aum:3100000000,risk:'Very High',minInv:5000000,manager:'Rohan Iyer, CMT',
+    holdings:[['Trent',6.5],['Bharat Electronics',6.0],['Power Finance Corp',5.5],['REC',5.2],['Mahindra & Mahindra',4.8],['Bajaj Auto',4.4],['Adani Ports',4.0],['Coal India',3.7],['Hindustan Aeronautics',3.5],['Cholamandalam Inv',3.2],['Other momentum names',45.7],['Cash & equivalents',7.5]]},
+  'Flameback Dividend Yield':{cat:'Dividend / income equity',objective:'Steady income with capital preservation; high free-cash-flow companies with durable, growing payouts.',bench:'NIFTY Dividend Opportunities 50 TRI',inception:'2018-10-01',aum:2600000000,risk:'Moderate',minInv:2500000,manager:'Kavya Nair',
+    holdings:[['ITC',8.4],['Power Grid Corp',7.6],['Coal India',7.1],['NTPC',6.8],['Hindustan Zinc',5.5],['ONGC',5.0],['REC',4.6],['Indian Oil',4.2],['HCL Technologies',3.8],['GAIL',3.4],['Other high-yield',37.6],['Cash & equivalents',6.0]]},
+  'Flameback Bluechip':{cat:'Large-cap equity',objective:'Core large-cap allocation; market-leading franchises with strong balance sheets, low drawdowns.',bench:'NIFTY 50 TRI',inception:'2017-04-01',aum:11200000000,risk:'Moderate',minInv:2500000,manager:'Anjali Mehta, CFA',
+    holdings:[['HDFC Bank',9.8],['Reliance Industries',9.1],['ICICI Bank',7.9],['Infosys',7.2],['TCS',6.4],['Bharti Airtel',5.6],['Larsen & Toubro',5.0],['ITC',4.5],['Kotak Mahindra Bank',4.0],['Hindustan Unilever',3.6],['Other large-caps',31.9],['Cash & equivalents',5.0]]},
+  'Flameback Small-Cap Alpha':{cat:'Small-cap equity',objective:'High-conviction small-cap growth; emerging leaders well before broad coverage, 5-year holding view.',bench:'NIFTY Smallcap 250 TRI',inception:'2021-01-01',aum:1450000000,risk:'Very High',minInv:5000000,manager:'Rohan Iyer, CMT',
+    holdings:[['KEI Industries',5.8],['PNC Infratech',5.2],['Cera Sanitaryware',4.9],['Birlasoft',4.5],['Carborundum Universal',4.2],['JK Lakshmi Cement',3.9],['Galaxy Surfactants',3.6],['Aether Industries',3.3],['Krsnaa Diagnostics',3.0],['Rolex Rings',2.8],['Other small-caps',49.8],['Cash & equivalents',9.0]]}
+};
+function stratInfo(name){return STRATEGY_INFO[name]||{cat:'Equity',objective:'—',bench:'NIFTY 500 TRI',inception:'2020-01-01',aum:0,risk:'High',minInv:2500000,manager:'Investment Team',holdings:[['Diversified equities',92.0],['Cash & equivalents',8.0]]};}
+// Split an account's invested/current across its strategies (deterministic weights from the strategy name).
+function stratAlloc(c){const list=(c.strategies||[]);if(!list.length)return [];
+  const w=list.map(s=>{let h=0;for(let i=0;i<s.length;i++)h+=s.charCodeAt(i);return 50+h%50;});
+  const tot=w.reduce((a,b)=>a+b,0);const inv=c.portfolio.invested||0,cur=c.portfolio.current||0;
+  let usedI=0,usedC=0;
+  return list.map((s,i)=>{const last=i===list.length-1;
+    const ai=last?inv-usedI:Math.round(inv*w[i]/tot);const ac=last?cur-usedC:Math.round(cur*w[i]/tot);
+    usedI+=ai;usedC+=ac;const ret=ai?((ac-ai)/ai*100):0;
+    return {name:s,invested:ai,current:ac,gain:ac-ai,ret:ret};});}
 function seedClients(){
   return [
     {cid:'FBC-1001',contact:'+91 98200 11223',whatsapp:'+91 98200 11223',sameWa:true,signup:dayStr(-95),first:'Fatima',last:'Sheikh',email:'fatima.sheikh@email.com',country:'India',postal:'400050',source:'Direct',zerodha:'Yes',
@@ -2665,11 +2696,24 @@ function paintTabs(){
     <div class="doc-row"><div><div class="nm">Subscription Invoice — latest</div><div class="meta">${c.invoices.length?c.invoices[c.invoices.length-1].desc:'No invoices yet'}</div></div>
       <button class="btn ghost sm" onclick="go2tab('invoices')">View invoices →</button></div>`;
 
-  // STRATEGIES
-  document.getElementById('tab-strategies').innerHTML=`<div class="kv"><div class="kv-h">Recommended Strategies <span class="lead-sub" style="font-weight:400">multiple allowed</span></div>
-    <div style="padding:16px">${c.strategies.map(s=>`<span class="strat-chip">★ ${s} <span onclick="removeStrat('${s}')" style="cursor:pointer;opacity:.6">×</span></span>`).join('')||'<span class="lead-sub">No strategies recommended yet.</span>'}
-    <div style="margin-top:12px;display:flex;gap:8px"><select id="addStratSel" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px">${STRATEGIES.map(s=>`<option>${s}</option>`).join('')}</select>
-    <button class="btn sm" onclick="addStrat()">+ Add strategy</button></div></div></div>`;
+  // STRATEGIES — what's invested in each strategy in this account, + fact sheet & holdings
+  const alloc=stratAlloc(c);
+  const stratRows=alloc.length?alloc.map(a=>{const inf=stratInfo(a.name);const pf=stratPerf(a.name);
+    return `<tr>
+      <td class="lead-name">${a.name}<div class="lead-sub" style="font-weight:400">${inf.cat} · ${inf.bench}</div></td>
+      <td>${c.funded?fmtINR(a.invested):'—'}</td>
+      <td>${c.funded?fmtINR(a.current):'—'}</td>
+      <td style="color:${a.gain>=0?'var(--green)':'var(--hot)'};font-weight:700">${c.funded?(a.gain>=0?'+':'')+fmtINR(a.gain):'—'}</td>
+      <td style="color:${a.ret>=0?'var(--green)':'var(--hot)'};font-weight:700">${c.funded?a.ret.toFixed(1)+'%':'—'}</td>
+      <td style="color:var(--green);font-weight:600">+${pf.since.toFixed(1)}%</td>
+      <td style="white-space:nowrap"><button class="btn ghost sm" onclick="openStrat('${a.name.replace(/'/g,"\\'")}','${c.cid}')">📄 Fact sheet & holdings</button></td>
+    </tr>`;}).join(''):'<tr><td colspan="7" class="empty">No strategies assigned yet.</td></tr>';
+  document.getElementById('tab-strategies').innerHTML=`
+    <div class="panel"><div class="panel-head"><h2>Strategy allocation — this account <span class="sync-badge">⟳ FBC-Admin</span></h2>
+      <span class="lead-sub">${productTag(c.product)} · ${c.cid}</span></div>
+    <table><thead><tr><th>Strategy</th><th>Invested</th><th>Current value</th><th>Gain</th><th>Return</th><th>Since inception</th><th></th></tr></thead>
+    <tbody>${stratRows}</tbody></table>
+    <div class="lead-sub" style="padding:10px 14px">Strategies are assigned by the Investment team and are read-only here. Open any strategy for its fact sheet and holdings.</div></div>`;
 
   // KYC (editable)
   const k=c.kyc;
@@ -2732,6 +2776,33 @@ function saveKyc(){
   CURRENT.kyc={namePan:g('namePan'),pan:g('pan'),gender:g('gender'),address:g('address'),city:g('city'),dob:g('dob'),profession:g('profession'),marital:g('marital'),pep:g('pep'),kra:g('kra'),ckyc:g('ckyc')};
   persistClient();renderProfile();toast('KYC details saved');
 }
+function openStrat(name,cid){const c=DB.clients.find(x=>x.cid===cid);const inf=stratInfo(name);const pf=stratPerf(name);
+  document.getElementById('stTitle').textContent=name;
+  // this client's position in this strategy (this account)
+  let pos='';
+  if(c){const a=stratAlloc(c).find(x=>x.name===name);
+    if(a&&c.funded){pos=`<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2 style="font-size:14px">${c.first} ${c.last} · this account (${c.cid})</h2><span class="lead-sub">${productTag(c.product)}</span></div>
+      <div class="cards" style="padding:14px 16px;margin:0">
+        <div class="metric"><div class="k">Invested in this strategy</div><div class="v">${fmtINR(a.invested)}</div></div>
+        <div class="metric"><div class="k">Current value</div><div class="v">${fmtINR(a.current)}</div></div>
+        <div class="metric"><div class="k">Gain</div><div class="v ${a.gain>=0?'pos':'neg'}">${a.gain>=0?'+':''}${fmtINR(a.gain)}</div></div>
+        <div class="metric"><div class="k">Return</div><div class="v ${a.ret>=0?'pos':'neg'}">${a.ret.toFixed(1)}%</div></div>
+      </div></div>`;}
+    else pos=`<div class="suspense-alert" style="margin-bottom:16px"><div><div class="t">Not yet funded in this strategy — showing the model fact sheet & holdings below.</div></div></div>`;}
+  // fact sheet
+  const facts=[['Category',inf.cat],['Benchmark',inf.bench],['Inception',fmtD(inf.inception)],['Strategy AUM',fmtINR(inf.aum)],['Min. investment',fmtINR(inf.minInv)],['Risk',inf.risk],['Fund manager',inf.manager]];
+  const fs=`<div class="kv" style="margin-bottom:16px"><div class="kv-h">Fact sheet</div>
+    <div class="kv-row"><span class="lab" style="width:100%;color:var(--muted);font-weight:400">${inf.objective}</span></div>
+    ${facts.map(f=>`<div class="kv-row"><span class="lab">${f[0]}</span><span class="val">${f[1]}</span></div>`).join('')}
+    <div class="kv-row"><span class="lab">Performance (CAGR)</span><span class="val">1Y <b style="color:var(--green)">+${pf.oneY.toFixed(1)}%</b> · 3Y <b style="color:var(--green)">+${pf.threeY.toFixed(1)}%</b> · Since inception <b style="color:var(--green)">+${pf.since.toFixed(1)}%</b></span></div></div>`;
+  // model holdings — show client's value per holding when funded in this strategy
+  const a=c?stratAlloc(c).find(x=>x.name===name):null;const cur=(a&&c.funded)?a.current:0;
+  const rows=inf.holdings.map(h=>`<tr><td class="lead-name">${h[0]}</td><td style="text-align:right">${h[1].toFixed(1)}%</td><td style="text-align:right">${cur?fmtINR(Math.round(cur*h[1]/100)):'—'}</td></tr>`).join('');
+  const hold=`<div class="panel"><div class="panel-head"><h2 style="font-size:14px">Holdings <span class="sync-badge">⟳ FBC-Admin</span></h2><span class="lead-sub">model weights${cur?' · value in this account':''}</span></div>
+    <table><thead><tr><th>Holding</th><th style="text-align:right">Weight</th><th style="text-align:right">Value (this account)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  document.getElementById('stBody').innerHTML=pos+fs+hold;
+  document.getElementById('stratScrim').classList.add('open');}
+function closeStrat(){document.getElementById('stratScrim').classList.remove('open');}
 function addStrat(){const s=document.getElementById('addStratSel').value;if(!CURRENT.strategies.includes(s)){CURRENT.strategies.push(s);persistClient();renderProfile();toast('Strategy added');}else toast('Already recommended');}
 function removeStrat(s){CURRENT.strategies=CURRENT.strategies.filter(x=>x!==s);persistClient();renderProfile();toast('Strategy removed');}
 function persistClient(){const i=DB.clients.findIndex(c=>c.cid===CURRENT.cid);DB.clients[i]=CURRENT;save();}
@@ -3906,7 +3977,7 @@ function renderPfAccounts(p){
   if(!p.accounts.length){el.innerHTML=`<div class="empty" style="padding:24px">No accounts yet — ${p.kind==='Lead'?('prospect in the pipeline'+(p.leads[0]?' (stage '+p.leads[0].stage+')':'')):'not onboarded'}. Accounts appear here once onboarding is completed and funded.</div>`;return;}
   el.innerHTML=p.accounts.map(c=>{
     const inv=c.portfolio.invested,cur=c.portfolio.current,isRia=(c.product||'').indexOf('RIA')>=0;
-    const strat=(c.strategies||[]).map((st,i)=>`<div class="doc-row" style="display:flex;justify-content:space-between;padding:7px 14px"><span class="nm">${st}</span><span style="color:var(--green);font-weight:700">+${(c.portfolio.irr+i*1.4).toFixed(1)}%</span></div>`).join('')||'<div class="lead-sub" style="padding:10px 14px">No strategy assigned</div>';
+    const strat=stratAlloc(c).map(a=>`<div class="doc-row" style="display:flex;justify-content:space-between;align-items:center;padding:7px 14px"><span class="nm" style="cursor:pointer" onclick="openStrat('${a.name.replace(/'/g,"\\'")}','${c.cid}')">${a.name} <span class="lead-sub" style="font-weight:400">— ${c.funded?fmtINR(a.invested)+' → '+fmtINR(a.current):'not funded'}</span></span><span style="display:flex;gap:10px;align-items:center"><span style="color:${a.gain>=0?'var(--green)':'var(--hot)'};font-weight:700">${c.funded?(a.ret>=0?'+':'')+a.ret.toFixed(1)+'%':'—'}</span><button class="btn ghost sm" onclick="openStrat('${a.name.replace(/'/g,"\\'")}','${c.cid}')">Fact sheet & holdings</button></span></div>`).join('')||'<div class="lead-sub" style="padding:10px 14px">No strategy assigned</div>';
     const hold=(c.portfolio.holdings||[]).map(h=>`<tr><td style="padding:7px 14px">${h[0]}</td><td style="text-align:right;padding:7px 14px">${fmtINR(h[1])} → <b>${fmtINR(h[2])}</b></td></tr>`).join('')||'<tr><td class="lead-sub" style="padding:10px 14px">No holdings yet</td></tr>';
     return `<div class="acct-card" id="ac-${c.cid}">
       <div class="acct-head" onclick="document.getElementById('ac-${c.cid}').classList.toggle('open')">
