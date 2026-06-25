@@ -4,6 +4,10 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-25
 
+**RM dashboard — client book & monthly touch-base**
+- The RM dashboard now covers servicing, not just the lead pipeline: cards for **Clients** (funded count), **AUM** (your book), and **Touch-base due** (monthly check-in), alongside reviews-due and follow-ups-due.
+- New **Monthly touch-base** panel — clients not contacted in 30+ days, sorted by longest-since-contact, each with product, AUM, last contact, next review, and **📅 Schedule** (creates a 30-min touch-base call + Meet invite) / **✓ Log call** (records the contact, clears them from the list).
+
 **Clients → account view now includes the merged profile**
 - Clicking a client (CID or number) opens the account view as before — now with a **Profile** tab (shown first) that merges the **household/person information** alongside the account: person details, **Tags** (pain points/interests, add/remove), **all accounts on that mobile number** (click to switch), **communication preferences**, **timeline** and **notes**, plus an **Open full profile ↗** link to the dedicated profile page. So one click gives both the account detail and the profile in one place.
 

@@ -191,17 +191,21 @@ Authenticate the user, resolve role(s) and scope, present the role's modules, an
 #### S-02 / S-40 — Role Dashboard
 A role-specific page: a title, subtitle, optional header action, a row of **KPI tiles** (each = label, value, caption, proportional bar), and one **priority worklist** table. All values respect the user's scope (Section 3.2).
 
-**RM dashboard.** Header action: **+ Add Lead** → opens new Lead Detail (S-04).
+**RM dashboard.** Covers both the **lead pipeline** and the **client book / servicing**. Header action: **+ Add Lead** → opens new Lead Detail (S-04).
 KPI tiles:
 | Tile | Value | Formula |
 |---|---|---|
 | Active leads | count | the RM's leads not out-listed |
-| Hot leads | count | leads with status = Hot |
-| Onboarding + | count | leads at stage L3 or L4 |
+| Clients | count | the RM's funded clients |
+| AUM | ₹ | Σ current value over the RM's funded clients |
+| Touch-base due | count | funded clients not contacted in ≥30 days (BR-TOUCH-1) |
+| Reviews due this week | count | funded clients where next annual OR next quarterly review is within 7 days |
 | Follow-ups due | count | leads whose follow-up date ≤ today (local midnight) |
-| Reviews due this week | count | the RM's funded clients where next annual OR next quarterly review is within 7 days |
 
-Worklist **"Follow-ups due today & overdue"** (link: *View all leads →* S-03). Columns: **Lead · RM · Stage · Status · Interaction · Follow-up**. Row → Lead Detail. Empty: "🎉 No follow-ups due."
+Two worklists:
+- **"Monthly touch-base — clients to check in with"** (link *View all clients →* S-10). Clients due a monthly check-in, sorted by longest-since-contact. Columns: **Client · Product · AUM · Last contact · Next review · actions**. Actions: **📅 Schedule** (creates a 30-min touch-base call + Meet invite, logged to the client's calls) · **✓ Log call** (records contact today, clearing them from the list). Row → Account Detail. Empty: "🎉 Everyone's been contacted this month."
+- **"Follow-ups due today & overdue"** (link *View all leads →* S-03). Columns: **Lead · RM · Stage · Status · Interaction · Follow-up**. Row → Lead Detail. Empty: "🎉 No follow-ups due."
+- **BR-TOUCH-1 (monthly touch-base).** Last contact = most recent of the client's past calls, last IPS/quarterly review, or sign-up; due when ≥30 days elapsed. [PM INPUT — cadence per segment; auto-reminders.]
 
 **Qualifier dashboard.** Tiles: Awaiting qualification (app sign-ups not yet qualified) · Recovery (those flagged as self-serve drop-offs) · Meetings today (all RMs, not done) · RM availability *[PM INPUT — real capacity]*. Worklist **"Leads awaiting assignment"** (link *Open queue →* S-05). Columns: **Lead (+ "recovery" flag) · Source · Flow · Recommended RM · (Qualify & assign)**. Empty: "Queue is clear."
 

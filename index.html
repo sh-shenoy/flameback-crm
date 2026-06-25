@@ -2265,17 +2265,24 @@ function renderDash(){
   if(currentRole==='RM'){
     const c=counts();
     const due=mine(active()).filter(l=>l.follow).filter(l=>{const d=new Date(l.follow);d.setHours(0,0,0,0);const t=new Date();t.setHours(0,0,0,0);return d<=t;});
-    T.textContent='RM Dashboard';S.textContent='Your pipeline & client follow-ups';
+    const myClients=mine(DB.clients).filter(x=>x.funded);
+    const aum=myClients.reduce((s,x)=>s+(x.portfolio.current||0),0);
+    const revDue=myClients.filter(x=>weekDue(x.ips.nextAnnualReview)||weekDue(x.ips.nextQuarterlyReview)).length;
+    const touch=myClients.filter(x=>touchDue(x)).sort((p,q)=>(lastTouch(p)||0)-(lastTouch(q)||0));
+    T.textContent='RM Dashboard';S.textContent='Your pipeline, client book & servicing';
     A.innerHTML='<button class="btn" onclick="openLead(null)">+ Add Lead</button>';
-    const revDue=mine(DB.clients).filter(c=>c.funded&&(weekDue(c.ips.nextAnnualReview)||weekDue(c.ips.nextQuarterlyReview))).length;
     C.innerHTML=`${dcard('Active leads',c.total,'In pipeline','var(--teal)',100)}
-      ${dcard('Hot leads',c.hot,'Status = Hot','var(--hot)',c.total?c.hot/c.total*100:0)}
-      ${dcard('Onboarding +',c.L3+c.L4,'L3 & L4 stages','var(--green)',c.total?(c.L3+c.L4)/c.total*100:0)}
-      ${dcard('Follow-ups due',due.length,'Today & overdue','var(--warm)',0)}
-      ${dcard('Reviews due this week',revDue,'Annual + quarterly','#5b3aa8',0)}`;
-    P.innerHTML=panelTable('Follow-ups due today & overdue','View all leads →',"go('leads')",
-      ['Lead','RM','Stage','Status','Interaction','Follow-up'],
-      due.length?due.map(l=>`<tr class="lead-row" onclick="openLead(${l.id})"><td class="lead-name">${l.name}</td><td>${l.rm}</td><td><span class="stage-tag stage-${l.stage}">${STAGE_LABEL[l.stage]}</span></td><td>${statusPill(l.status)}</td><td>${l.type}</td><td>${fmtDate(l.follow)}</td></tr>`).join(''):`<tr><td colspan="6" class="empty">🎉 No follow-ups due.</td></tr>`);
+      ${dcard('Clients',myClients.length,'Funded & active','var(--navy)',100)}
+      ${dcard('AUM',fmtINR(aum),'Your book','var(--green)',100)}
+      ${dcard('Touch-base due',touch.length,'Monthly check-in','#a9561f',0)}
+      ${dcard('Reviews due this week',revDue,'Annual + quarterly','#5b3aa8',0)}
+      ${dcard('Follow-ups due',due.length,'Leads · today & overdue','var(--warm)',0)}`;
+    const touchRows=touch.length?touch.map(x=>{const lt=lastTouch(x);const nr=[x.ips&&x.ips.nextQuarterlyReview,x.ips&&x.ips.nextAnnualReview].filter(Boolean).sort()[0];return `<tr class="lead-row" onclick="openClient('${x.cid}')"><td class="lead-name">${x.first} ${x.last}</td><td>${productTag(x.product)}</td><td>${fmtINR(x.portfolio.current)}</td><td>${lt?fmtD(lt):'—'}</td><td>${nr?fmtDue(nr):'—'}</td><td style="white-space:nowrap"><button class="btn sm" onclick="event.stopPropagation();scheduleTouch('${x.cid}')">📅 Schedule</button> <button class="btn ghost sm" onclick="event.stopPropagation();logTouch('${x.cid}')">✓ Log call</button></td></tr>`;}).join(''):`<tr><td colspan="6" class="empty">🎉 Everyone's been contacted this month.</td></tr>`;
+    P.innerHTML=panelTable('Monthly touch-base — clients to check in with','View all clients →',"go('clients')",
+        ['Client','Product','AUM','Last contact','Next review',''],touchRows)
+      +panelTable('Follow-ups due today & overdue','View all leads →',"go('leads')",
+        ['Lead','RM','Stage','Status','Interaction','Follow-up'],
+        due.length?due.map(l=>`<tr class="lead-row" onclick="openLead(${l.id})"><td class="lead-name">${l.name}</td><td>${l.rm}</td><td><span class="stage-tag stage-${l.stage}">${STAGE_LABEL[l.stage]}</span></td><td>${statusPill(l.status)}</td><td>${l.type}</td><td>${fmtDate(l.follow)}</td></tr>`).join(''):`<tr><td colspan="6" class="empty">🎉 No follow-ups due.</td></tr>`);
   }
   else if(currentRole==='Qualifier'){
     const unq=DB.leads.filter(l=>l.appUser&&!l.qualified);
@@ -3174,6 +3181,11 @@ function scheduleReviewCall(cid,type){const c=DB.clients.find(x=>x.cid===cid);c.
   c.calls.push({when:d.toISOString().slice(0,16),note:title,source:'Calendar sync'});
   save();rerender();toast('Review call scheduled · Google Meet invite sent');}
 function scheduleMeeting(cid){const c=DB.clients.find(x=>x.cid===cid);c.calls=c.calls||[];const d=new Date();d.setDate(d.getDate()+7);d.setHours(15,0,0,0);c.calls.push({when:d.toISOString().slice(0,16),note:'Portfolio review meeting (Investment team)',source:'Calendar sync'});save();toast('Meeting scheduled & synced to calendar');}
+// monthly touch-base servicing
+function lastTouch(c){const now=Date.now();const cand=[];(c.calls||[]).forEach(x=>{const t=new Date(x.when).getTime();if(t<=now)cand.push(t);});[c.ips&&c.ips.lastReview,c.ips&&c.ips.lastQuarterlyReview,c.signup].forEach(d=>{if(d)cand.push(new Date(d).getTime());});return cand.length?new Date(Math.max.apply(null,cand)):null;}
+function touchDue(c){const lt=lastTouch(c);if(!lt)return true;return (Date.now()-lt.getTime())>=30*864e5;}
+function logTouch(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.calls=c.calls||[];c.calls.push({when:new Date().toISOString().slice(0,16),note:'Monthly touch-base call',source:'Logged'});save();rerender();toast('Touch-base logged for '+c.first+' '+c.last);}
+function scheduleTouch(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;c.calls=c.calls||[];const d=new Date();d.setDate(d.getDate()+2);d.setHours(15,0,0,0);if(!DB.nextMtg)DB.nextMtg=DB.meetings.length+1;const meet=genMeet();DB.meetings.push({id:DB.nextMtg++,title:'Monthly touch-base — '+c.first+' '+c.last,rm:c.rm,when:d.toISOString().slice(0,16),dur:30,attendees:[a(c.first+' '+c.last,'Client'),a(c.rm,'RM')],meet,status:'Scheduled'});c.calls.push({when:d.toISOString().slice(0,16),note:'Monthly touch-base call',source:'Calendar sync'});save();rerender();toast('Touch-base call scheduled · Google Meet invite sent');}
 
 /* ---------- onboarding flow / app / assignment ---------- */
 function sameDay(iso,off){const d=new Date(iso);const t=new Date();t.setDate(t.getDate()+off);return d.toDateString()===t.toDateString();}
