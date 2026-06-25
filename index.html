@@ -1522,6 +1522,13 @@
 </div>
 
 <!-- TASK MODAL -->
+<div class="modal-scrim" id="prepScrim">
+  <div class="modal" style="max-width:780px">
+    <div class="modal-h"><h2 id="prepTitle">Review prep</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeReviewPrep()">×</button></div>
+    <div class="modal-b" id="prepBody"></div>
+    <div class="modal-f"><button class="btn ghost" onclick="toast('Review brief (PDF) downloading…')">⬇ Download brief</button><button class="btn" onclick="closeReviewPrep()">Close</button></div>
+  </div>
+</div>
 <div class="modal-scrim" id="stratScrim">
   <div class="modal" style="max-width:680px">
     <div class="modal-h"><h2 id="stTitle">Strategy</h2><button class="x" style="background:none;border:none;font-size:22px;color:var(--muted)" onclick="closeStrat()">×</button></div>
@@ -1935,7 +1942,7 @@ function demoLeads(){
 function demoHousehold(){
   const ph='+91 98111 30000';
   const mk=(cid,first,last,relation,product,goal,plan,iv,cv,risk,teq,pan,prof,nqr,nar)=>({
-    cid,contact:ph,whatsapp:ph,sameWa:true,signup:dayStr(-150),first,last,
+    cid,contact:ph,whatsapp:ph,sameWa:true,signup:dayStr(-800),first,last,
     email:(first+'.'+last).toLowerCase()+'@email.com',country:'India',postal:'110001',source:'Referral',zerodha:'Yes',
     questionnaire:'Done',agreement:'Done',signed:true,plan,goal,rm:'Shashank',holder:'Rajesh Khanna',relation,product,
     sip:'Yes',sipDetails:{investment:'Flameback Multicap',frequency:'Monthly',start:'Jan 2026',amount:30000},
@@ -2751,7 +2758,7 @@ function paintTabs(){
       <div class="metric"><div class="k">Absolute Return</div><div class="v ${p.absReturn>=0?'pos':'neg'}">${p.absReturn}%</div></div>
       <div class="metric"><div class="k">IRR</div><div class="v ${p.irr>=0?'pos':'neg'}">${p.irr}%</div></div>
     </div>
-    <div class="panel"><div class="panel-head"><h2>Flameback Portfolio Holdings <span class="sync-badge">⟳ FBC-Admin</span></h2></div>
+    <div class="panel"><div class="panel-head"><h2>Flameback Portfolio Holdings <span class="sync-badge">⟳ FBC-Admin</span></h2><button class="btn gold sm" onclick="openReviewPrep('${c.cid}')">📋 Review prep</button></div>
     <table><thead><tr><th>Holding</th><th>Invested</th><th>Current value</th><th>Gain</th></tr></thead><tbody>
     ${p.holdings.length?p.holdings.map(h=>{const g=h[2]-h[1];return `<tr><td class="lead-name">${h[0]}</td><td>${fmtINR(h[1])}</td><td>${fmtINR(h[2])}</td><td style="color:${g>=0?'var(--green)':'var(--hot)'};font-weight:700">${g>=0?'+':''}${fmtINR(g)}</td></tr>`;}).join(''):'<tr><td colspan="4" class="empty">No holdings yet — client not funded.</td></tr>'}
     </tbody></table></div>`;
@@ -3259,9 +3266,84 @@ function remRow(c,type,due,last){
       <button class="btn sm" onclick="scheduleReviewCall('${c.cid}','${type}')">📅 Schedule call</button>
       <button class="btn ghost sm" onclick="emailReview('${c.cid}','${type}')">✉ Reminder</button>
       <button class="btn ghost sm" onclick="openIpsDoc('${c.cid}')">📄 IPS</button>
+      <button class="btn gold sm" onclick="openReviewPrep('${c.cid}')">📋 Review prep</button>
       <button class="btn ghost sm" onclick="markReviewed('${c.cid}','${type}')">✓ Done</button>
     </td></tr>`;
 }
+
+/* ---------- Pre-review brief ---------- */
+// blended model holdings across the account's strategies (weighted by each strategy's current value)
+function blendedModel(c){const alloc=stratAlloc(c);const tot=alloc.reduce((s,a)=>s+a.current,0)||1;const m={};
+  alloc.forEach(a=>{const inf=stratInfo(a.name);const w=a.current/tot;inf.holdings.forEach(h=>{m[h[0]]=(m[h[0]]||0)+h[1]*w;});});return m;}
+function actualWeights(c){const tot=(c.portfolio.holdings||[]).reduce((s,h)=>s+h[2],0)||1;const m={};(c.portfolio.holdings||[]).forEach(h=>m[h[0]]=(m[h[0]]||0)+h[2]/tot*100);return m;}
+// blended actual equity/debt/cash from the strategies the account holds
+function actualMix(c){const alloc=stratAlloc(c);const tot=alloc.reduce((s,a)=>s+a.current,0)||1;let eq=0,dt=0,csh=0;
+  alloc.forEach(a=>{const mx=stratMix(a.name);const w=a.current/tot;eq+=mx.equity*w;dt+=mx.debt*w;csh+=mx.cash*w;});return {equity:eq,debt:dt,cash:csh};}
+// per-holding capital-gains classification (deterministic holding period; later lots = SIP top-ups, more recent)
+function capGains(c){const ageM=monthsBetween(c.signup)||0;const fy=125000;let stcg=0,ltcg=0,loss=0;const lots=[];
+  (c.portfolio.holdings||[]).forEach((h,i)=>{const g=h[2]-h[1];const hp=Math.max(1,Math.round(ageM*(1-Math.min(0.85,i*0.2))));const lt=hp>=12;
+    lots.push({name:h[0],gain:g,hp:hp,lt:lt,ret:h[1]?g/h[1]*100:0});
+    if(g<0)loss+=-g;else if(lt)ltcg+=g;else stcg+=g;});
+  const tax=stcg*0.20+Math.max(0,ltcg-fy)*0.125;const ltHeadroom=Math.max(0,fy-0);
+  return {stcg,ltcg,loss,tax,ltHeadroom,lots,fy};}
+// SIP last-installment status (deterministic bounce for some accounts)
+function sipStatus(c){if(c.sip!=='Yes'||!c.sipDetails)return null;let h=0;const id=c.cid||'';for(let i=0;i<id.length;i++)h+=id.charCodeAt(i);
+  const bounced=h%3===0;return {amount:c.sipDetails.amount,when:dayStr(-6),bounced:bounced,reason:bounced?(h%2?'Insufficient balance in linked bank account':'e-NACH mandate expired — re-authorisation needed'):''};}
+function driftBar(t,a){return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="width:64px;font-size:13px">${t}</span><div style="flex:1;height:14px;background:#eef2f7;border-radius:4px;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:${Math.min(100,a)}%;background:#2f6fb0;border-radius:4px"></div></div></div>`;}
+function openReviewPrep(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c){toast('Client not found');return;}
+  document.getElementById('prepTitle').textContent='Review prep · '+c.first+' '+c.last;
+  if(!c.funded){document.getElementById('prepBody').innerHTML='<div class="empty" style="padding:24px">Account not funded yet — no portfolio to review.</div>';document.getElementById('prepScrim').classList.add('open');return;}
+  const cur=c.portfolio.current||0;
+  // 1 · concentration
+  const aw=actualWeights(c);const conc=Object.keys(aw).map(k=>({name:k,w:aw[k]})).sort((a,b)=>b.w-a.w);
+  const top=conc[0];const concFlag=top&&top.w>=25?'high':top&&top.w>=15?'watch':'ok';
+  const concRows=conc.slice(0,5).map(x=>`<tr><td class="lead-name">${x.name}</td><td style="text-align:right">${x.w.toFixed(1)}%</td><td style="text-align:right">${x.w>=25?'<span class="verdict v-Flagged">over-concentrated</span>':x.w>=15?'<span class="verdict v-Pending">watch</span>':'<span class="lead-sub">ok</span>'}</td></tr>`).join('');
+  const concPanel=`<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2 style="font-size:14px">① Portfolio concentration</h2><span class="lead-sub">${concFlag==='high'?'⚠ single-name risk':concFlag==='watch'?'monitor top names':'well diversified'}</span></div>
+    <table><thead><tr><th>Holding</th><th style="text-align:right">Weight</th><th style="text-align:right">Flag</th></tr></thead><tbody>${concRows}</tbody></table></div>`;
+  // 2 · drift from target + model-vs-actual
+  const am=actualMix(c);const teq=c.ips.targetEquity,tdebt=Math.max(0,95-teq),tcash=100-teq-tdebt;
+  const adrift=[['Equity',teq,am.equity],['Debt',tdebt,am.debt],['Cash',tcash,am.cash]];
+  const driftRows=adrift.map(d=>{const dr=d[2]-d[1];return `<tr><td>${d[0]}</td><td style="text-align:right">${d[1].toFixed(0)}%</td><td style="text-align:right">${d[2].toFixed(1)}%</td><td style="text-align:right;color:${Math.abs(dr)>=5?'var(--hot)':'var(--muted)'};font-weight:${Math.abs(dr)>=5?'700':'400'}">${dr>=0?'+':''}${dr.toFixed(1)} pp</td></tr>`;}).join('');
+  const bm=blendedModel(c);const names=Array.from(new Set(Object.keys(bm).concat(Object.keys(aw))));
+  const dev=names.map(n=>({name:n,model:bm[n]||0,actual:aw[n]||0,d:(aw[n]||0)-(bm[n]||0)})).filter(x=>x.name.indexOf('Cash')<0&&x.name.indexOf('Other')<0).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)).slice(0,5);
+  const devRows=dev.map(x=>{const amt=Math.round(Math.abs(x.d)/100*cur);const act=x.d>1?'Trim':x.d<-1?'Add':'Hold';return `<tr><td class="lead-name">${x.name}</td><td style="text-align:right">${x.model.toFixed(1)}%</td><td style="text-align:right">${x.actual.toFixed(1)}%</td><td style="text-align:right;color:${Math.abs(x.d)>=2?'var(--hot)':'var(--muted)'};font-weight:${Math.abs(x.d)>=2?'700':'400'}">${x.d>=0?'+':''}${x.d.toFixed(1)} pp</td><td style="text-align:right">${Math.abs(x.d)>=2?`<b>${act}</b> ~${fmtINR(amt)}`:'<span class="lead-sub">in band</span>'}</td></tr>`;}).join('');
+  const driftPanel=`<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2 style="font-size:14px">② Drift from target allocation</h2><span class="lead-sub">model vs actual · IPS target equity ${teq}%</span></div>
+    <table><thead><tr><th>Asset class</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th style="text-align:right">Drift</th></tr></thead><tbody>${driftRows}</tbody></table>
+    <div class="kv-h" style="margin-top:0;border-top:1px solid var(--line)">Model vs actual — security deviation (delta to rebalance)</div>
+    <table><thead><tr><th>Holding</th><th style="text-align:right">Model</th><th style="text-align:right">Actual</th><th style="text-align:right">Dev.</th><th style="text-align:right">Action</th></tr></thead><tbody>${devRows||'<tr><td colspan="5" class="empty">On model.</td></tr>'}</tbody></table>
+    <div style="padding:10px 14px"><button class="btn sm" onclick="toast('Draft rebalance proposal created from the model deltas — sent to Investment for review')">⚖ Generate rebalance proposal</button></div></div>`;
+  // 3 · gainers / losers
+  const lots=(c.portfolio.holdings||[]).map(h=>({name:h[0],ret:h[1]?(h[2]-h[1])/h[1]*100:0,gain:h[2]-h[1]})).sort((a,b)=>b.ret-a.ret);
+  const gl=arr=>arr.map(x=>`<tr><td class="lead-name">${x.name}</td><td style="text-align:right;color:${x.ret>=0?'var(--green)':'var(--hot)'};font-weight:700">${x.ret>=0?'+':''}${x.ret.toFixed(1)}%</td><td style="text-align:right;color:${x.gain>=0?'var(--green)':'var(--hot)'}">${x.gain>=0?'+':''}${fmtINR(x.gain)}</td></tr>`).join('');
+  const glPanel=`<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2 style="font-size:14px">③ Top gainers & losers</h2></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <div><div class="kv-h" style="margin:0">Gainers</div><table><tbody>${gl(lots.slice(0,3))}</tbody></table></div>
+      <div><div class="kv-h" style="margin:0">Losers</div><table><tbody>${gl(lots.slice(-3).reverse())}</tbody></table></div></div></div>`;
+  // 4 · capital gains tax
+  const cg=capGains(c);const lossHarvest=cg.lots.filter(l=>l.gain<0).sort((a,b)=>a.gain-b.gain).slice(0,3);
+  const cgPanel=`<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2 style="font-size:14px">④ Capital-gains tax position <span class="lead-sub">(this FY)</span></h2></div>
+    <div class="cards" style="padding:14px 16px;margin:0">
+      <div class="metric"><div class="k">Unrealised STCG</div><div class="v">${fmtINR(cg.stcg)}</div></div>
+      <div class="metric"><div class="k">Unrealised LTCG</div><div class="v">${fmtINR(cg.ltcg)}</div></div>
+      <div class="metric"><div class="k">Harvestable losses</div><div class="v ${cg.loss?'neg':''}">${fmtINR(cg.loss)}</div></div>
+      <div class="metric"><div class="k">Est. tax if sold now</div><div class="v">${fmtINR(Math.round(cg.tax))}</div></div>
+    </div>
+    <div style="padding:0 16px 12px">
+      <div class="doc-row" style="padding:8px 0"><div><div class="nm">💡 LTCG harvesting</div><div class="meta">Realise up to <b>${fmtINR(cg.ltHeadroom)}</b> of long-term gains tax-free this FY (₹1.25L exemption), then re-buy to step up cost basis.</div></div></div>
+      ${cg.loss?`<div class="doc-row" style="padding:8px 0"><div><div class="nm">💡 Tax-loss harvesting</div><div class="meta">Book <b>${fmtINR(cg.loss)}</b> in losses${lossHarvest.length?' ('+lossHarvest.map(l=>l.name).join(', ')+')':''} to offset realised gains — saves up to <b>${fmtINR(Math.round(cg.loss*0.20))}</b> at STCG rates.</div></div></div>`:''}
+      <div class="lead-sub" style="margin-top:6px">STCG taxed 20%, LTCG 12.5% above ₹1.25L (equity, FY rates). Holding period estimated from funding & SIP dates. Not tax advice.</div>
+    </div></div>`;
+  // 5 · SIP status
+  const sp=sipStatus(c);
+  const sipPanel=`<div class="panel"><div class="panel-head"><h2 style="font-size:14px">⑤ SIP status</h2></div><div style="padding:12px 16px">${
+    !sp?'<span class="lead-sub">No SIP configured for this account.</span>':
+    sp.bounced?`<div class="suspense-alert" style="margin:0"><div><h4>⚠ SIP bounced</h4><div class="t">${c.sipDetails.frequency} SIP of <b>${fmtINR(sp.amount)}</b> into ${c.sipDetails.investment} on ${fmtD(sp.when)} failed — ${sp.reason}.</div></div>
+      <div style="display:flex;gap:8px"><button class="btn gold sm" onclick="toast('Retrying SIP debit…')">↻ Retry</button><button class="btn ghost sm" onclick="raiseSipIssue('${c.cid}')">Raise to RM</button></div></div>`:
+    `<span style="color:var(--green);font-weight:600">✓ On track</span> <span class="lead-sub">— ${c.sipDetails.frequency} SIP of ${fmtINR(sp.amount)} into ${c.sipDetails.investment}; last installment cleared on ${fmtD(sp.when)}.</span>`}</div></div>`;
+  document.getElementById('prepBody').innerHTML=`<div class="lead-sub" style="margin-bottom:14px">Pre-review brief · ${productTag(c.product)} · ${c.cid} · current value ${fmtINR(cur)} · risk ${c.ips.riskBand}</div>`+concPanel+driftPanel+glPanel+cgPanel+sipPanel;
+  document.getElementById('prepScrim').classList.add('open');}
+function closeReviewPrep(){document.getElementById('prepScrim').classList.remove('open');}
+function raiseSipIssue(cid){const c=DB.clients.find(x=>x.cid===cid);if(!c)return;const sp=sipStatus(c);openTask(null,{team:'RM',type:'Follow up',cid,title:'SIP bounced — '+c.first+' '+c.last});document.getElementById('tmNotes').value='SIP installment ('+fmtINR(sp.amount)+' into '+c.sipDetails.investment+') bounced — reason: '+sp.reason+'. Please follow up with the client to fund the account / re-authorise the mandate, then retry.';toast('Raising SIP-bounce task to RM');}
 
 /* ---------- IPS document ---------- */
 function age(dob){if(!dob)return '—';const d=new Date(dob);const t=new Date();let a=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))a--;return a;}

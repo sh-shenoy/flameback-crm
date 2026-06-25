@@ -4,6 +4,15 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-25
 
+**Pre-review brief (Review prep)**
+- A one-click **Review prep** brief on every funded client (Reviews & Reminders page, and the account's Portfolio tab) that surfaces, ahead of a client review:
+  1. **Portfolio concentration** — top holdings by weight, flagged when a single name is over-concentrated (watch ≥15%, over-concentrated ≥25%).
+  2. **Drift from target allocation** — actual vs the IPS target across equity/debt/cash (drift in pp, flagged ≥5pp), **plus model-vs-actual security deviation**: the blended model weight (across the account's strategies) vs the client's actual holding, the deviation, and the **trim/add delta in ₹** — i.e. live, per-account delta-rebalancing. **Generate rebalance proposal** button.
+  3. **Top gainers & losers** — best/worst holdings by return.
+  4. **Capital-gains tax position** — unrealised **STCG / LTCG**, harvestable losses, estimated tax if sold now, and India-specific **harvesting opportunities**: realise up to the ₹1.25L LTCG exemption tax-free (re-buy to step up basis), and **tax-loss harvesting** to offset gains.
+  5. **SIP status** — flags any **SIP that bounced** (amount, date, reason) with Retry / Raise-to-RM, else confirms on-track.
+- Demo data now spans realistic client **tenure** (new clients → STCG; the established Khanna household → LTCG) so both tax cases show.
+
 **Strategy-level visibility for RMs**
 - The account view now has a **Strategies** tab showing **what the client has invested in each strategy in that account** — invested, current value, gain, return and since-inception CAGR per strategy, summing exactly to the account total. Read-only (strategies are assigned by the Investment team).
 - Each strategy opens a **Fact sheet & holdings** card: category, benchmark, inception, strategy AUM, minimum investment, risk, fund manager, objective and 1Y/3Y/since-inception performance — plus the **strategy's model holdings** (weights), with the client's value per holding shown for this account.

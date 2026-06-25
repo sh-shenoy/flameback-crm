@@ -509,6 +509,13 @@ Header: avatar; name; kind badge; phone; email. Meta: DOB · RM · Source · Acc
 | Email IPS | send the IPS to the client |
 | Mark reviewed | set last review = today, next = +1 year (annual) / +1 quarter (quarterly) |
 - **BR-REVIEW-1** cadence (annual IPS + quarterly portfolio). **BR-REVIEW-2** annual risk refresh; no client response within 14 days → flag the RM [PM INPUT — required automation]. Empty: "No reviews due this week — you're all caught up."
+- **Review prep (pre-review brief).** A **📋 Review prep** action (here and on S-11 Portfolio) opens a per-account brief the RM reads before the meeting, with five sections:
+  1. **Portfolio concentration** — holdings ranked by weight of current value; flag **watch ≥15%**, **over-concentrated ≥25%** (BR-REVIEW-3).
+  2. **Drift from target allocation** — actual vs IPS target for **equity / debt / cash** (target equity = `ips.targetEquity`, debt = `max(0,95−equity)`, cash = remainder), drift in **pp**, flagged at **≥5pp**; **plus model-vs-actual security deviation** — the account's **blended model weight** (each strategy's model holdings weighted by that strategy's current value) vs the client's **actual** weight, the deviation in pp (flag ≥2pp), and the **Trim/Add amount in ₹** (= |dev| × current value). A **Generate rebalance proposal** action drafts the deltas to Investment. (BR-REVIEW-4 — live, per-account delta-rebalancing; divergence arises from entry date, cash flows and partial fills.)
+  3. **Top gainers & losers** — holdings by return %.
+  4. **Capital-gains tax position (this FY)** — **unrealised STCG / LTCG**, harvestable losses, and **estimated tax if sold now** (equity: STCG 20%, LTCG 12.5% on gains above the ₹1.25L FY exemption); harvesting prompts: realise up to the **₹1.25L LTCG exemption tax-free** then re-buy to step up basis, and **tax-loss harvesting** to offset realised gains. Holding period is estimated per lot from the funding/SIP dates (BR-REVIEW-5). *Not tax advice.* [PM INPUT — per-lot cost basis & acquisition dates from custodian (INT-5); confirm current FY rates/exemption.]
+  5. **SIP status** — flags any **bounced SIP** (amount, date, reason) with **Retry** / **Raise to RM** (creates an RM follow-up task), else "on track". [PM INPUT — SIP mandate/bounce feed (INT-9).]
+  - Download brief (PDF). Source: custodian holdings (A1, INT-5) + IPS + strategy models.
 
 #### S-18 — Inbox
 - **Scope.** Per user — Inbox = messages to the user; Sent = messages from the user. Unread indicator on the inbox.
@@ -729,6 +736,11 @@ Navigation surfaces live, scope-respecting counts to draw attention: active lead
 
 ### 5.9 B2B engagement-by-city
 - **BR-B2B-1.** Assigned RM's city = partner's city → in-person visit; else online. Scheduling advances stage to "Meeting set".
+
+### 5.10a Review prep & rebalancing
+- **BR-REVIEW-3 (concentration).** A holding ≥15% of current value = *watch*; ≥25% = *over-concentrated*.
+- **BR-REVIEW-4 (model-vs-actual drift).** The account's model is the **blend of its strategies' model holdings**, each weighted by that strategy's current value. Per-security deviation = actual weight − model weight; |deviation| ≥2pp is actionable (Trim if over, Add if under), sized in ₹ as |deviation| × current value. Asset-class drift vs the IPS target is flagged at ≥5pp. Divergence from the model is expected (entry date, cash flows, partial fills); the brief makes it visible per account and feeds a rebalance proposal.
+- **BR-REVIEW-5 (capital gains).** Equity STCG (held <12m) taxed 20%; LTCG (≥12m) 12.5% on gains above the ₹1.25L FY exemption. Estimated tax = STCG×20% + max(0, LTCG−₹1.25L)×12.5%. Per-lot holding period estimated from funding & SIP dates pending true cost-basis data. [PM INPUT — custodian cost basis; current FY rates.]
 
 ### 5.10 Content routing & strategy
 - **BR-CONTENT-1.** A client receives an article when the article's tags intersect the client's tags.
