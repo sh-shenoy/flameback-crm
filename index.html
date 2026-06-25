@@ -740,6 +740,7 @@
             <option value="">All products</option>
             <option>PMS Lite (RIA)</option><option>PMS</option><option>International investing</option>
           </select>
+          <select class="filter" id="cTag" onchange="renderClients()"><option value="">All tags</option></select>
         </div>
         <table>
           <thead><tr>
@@ -1245,6 +1246,7 @@
         <div class="filterbar">
           <div class="search"><input id="pfSearch" placeholder="Search by name, email or number…" oninput="renderProfiles()"></div>
           <select class="filter" id="pfKind" onchange="renderProfiles()"><option value="">Leads &amp; clients</option><option>Client</option><option>Lead</option></select>
+          <select class="filter" id="pfTag" onchange="renderProfiles()"><option value="">All tags</option></select>
         </div>
         <table><thead><tr><th>Name</th><th>Type</th><th>Contact No.</th><th>RM</th><th>Accounts</th></tr></thead><tbody id="profilesBody"></tbody></table>
       </div>
@@ -2625,11 +2627,12 @@ function nextStepText(c){
 function currentStageName(c){const s=stagesOf(c);return s.every(x=>x.done)?'Invested':s.find(x=>x.current).key;}
 
 function renderClients(){
+  fillTagFilter('cTag');
   const q=(document.getElementById('cSearch').value||'').toLowerCase();
-  const fp=document.getElementById('cPlan').value, fs=document.getElementById('cStageF').value, fpr=document.getElementById('cProduct').value;
+  const fp=document.getElementById('cPlan').value, fs=document.getElementById('cStageF').value, fpr=document.getElementById('cProduct').value, ft=document.getElementById('cTag').value;
   const rows=mine(DB.clients).filter(c=>{
     const hay=(c.cid+c.first+c.last+c.contact+c.rm+(c.holder||'')).toLowerCase();
-    return (!q||hay.includes(q))&&(!fp||c.plan===fp)&&(!fs||currentStageName(c)===fs)&&(!fpr||c.product===fpr);
+    return (!q||hay.includes(q))&&(!fp||c.plan===fp)&&(!fs||currentStageName(c)===fs)&&(!fpr||c.product===fpr)&&(!ft||clientTags(c).includes(ft));
   }).sort((a,b)=>(a.contact+'|'+(a.holder||'')+'|'+a.product).localeCompare(b.contact+'|'+(b.holder||'')+'|'+b.product));
   document.getElementById('clientsBody').innerHTML = rows.length? rows.map(c=>{
     const gain=c.portfolio.current-c.portfolio.invested;
@@ -4045,6 +4048,10 @@ const TAG_KEYWORDS=[
 ];
 function personStore(p){return (p.accounts&&p.accounts[0])||(p.leads&&p.leads[0])||null;}
 function personTags(p){const set=new Set();(p.accounts||[]).forEach(c=>(c.tags||[]).forEach(t=>set.add(t)));(p.leads||[]).forEach(l=>(l.tags||[]).forEach(t=>set.add(t)));return [...set];}
+// the full tag vocabulary (presets + any tag in use), and a client's household tag set
+function allTags(){const set=new Set(DB.tags||[]);DB.clients.forEach(c=>(c.tags||[]).forEach(t=>set.add(t)));(DB.leads||[]).forEach(l=>(l.tags||[]).forEach(t=>set.add(t)));return [...set].sort();}
+function clientTags(c){const num=digits(c.contact)||c.cid;const set=new Set();DB.clients.forEach(x=>{if((digits(x.contact)||x.cid)===num)(x.tags||[]).forEach(t=>set.add(t));});return [...set];}
+function fillTagFilter(id){const sel=document.getElementById(id);if(!sel)return;const cur=sel.value;sel.innerHTML='<option value="">All tags</option>'+allTags().map(t=>`<option ${t===cur?'selected':''}>${t}</option>`).join('');}
 function suggestTags(p){const store=personStore(p);const notes=((store&&store.profileNotes)||'').toLowerCase();const cmts=(p.leads||[]).map(l=>l.comments||'').join(' ').toLowerCase();const blob=notes+' '+cmts;const have=personTags(p);const out=[];TAG_KEYWORDS.forEach(function(e){if(have.indexOf(e[0])<0&&e[1].some(k=>blob.indexOf(k)>=0))out.push(e[0]);});return out.slice(0,5);}
 function renderPfTags(p){
   const tags=personTags(p);
@@ -4236,9 +4243,11 @@ function buildProfiles(){
 }
 function profilesScope(){let ps=buildProfiles();if(currentRole==='RM'){const me=ROLES.RM.name;ps=ps.filter(p=>p.rm===me||p.accounts.some(a=>a.rm===me)||p.leads.some(l=>(l.rm||l.assignedRM)===me));}return ps;}
 function renderProfiles(){
+  fillTagFilter('pfTag');
   const q=(document.getElementById('pfSearch').value||'').toLowerCase();
   const kind=document.getElementById('pfKind').value;
-  let ps=profilesScope().filter(p=>{const hay=(p.name+(p.phone||'')+(p.email||'')).toLowerCase();return (!q||hay.includes(q))&&(!kind||p.kind===kind);});
+  const ft=document.getElementById('pfTag').value;
+  let ps=profilesScope().filter(p=>{const hay=(p.name+(p.phone||'')+(p.email||'')).toLowerCase();return (!q||hay.includes(q))&&(!kind||p.kind===kind)&&(!ft||personTags(p).includes(ft));});
   ps.sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('profilesBody').innerHTML=ps.length?ps.map(p=>`<tr class="lead-row" onclick="openProfile('${p.pid}')">
     <td><div class="lead-name">${p.name}</div><div class="lead-sub">${p.email||'—'}</div></td>

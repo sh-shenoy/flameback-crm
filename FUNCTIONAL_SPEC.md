@@ -388,7 +388,7 @@ Two worklists:
 
 #### S-10 — Clients
 - **Scope.** Per Section 3.2. **Sort:** accounts within a household cluster together (by mobile, then holder, then product).
-- **Filters:** Search (id + name + contact + RM + holder) · Billing plan (Monthly/Quarterly/Yearly) · Lifecycle stage · Product (PMS Lite (RIA)/PMS/International investing).
+- **Filters:** Search (id + name + contact + RM + holder) · Billing plan (Monthly/Quarterly/Yearly) · Lifecycle stage · Product (PMS Lite (RIA)/PMS/International investing) · **Tag** (pain point/interest — matches at the household level: any account on the number carrying the tag, so the whole household surfaces). Tag options = full vocabulary (presets + tags in use).
 - **Columns:**
 | Column | Content |
 |---|---|
@@ -448,7 +448,7 @@ Then the account-specific tabs:
 
 #### S-12 — Profiles Directory
 - **Consolidation (BR-PROFILE-1):** all accounts + leads sharing a mobile number form one **person**; the primary holder is canonical; account-less leads appear as prospects.
-- **Columns:** Name + email · Kind (Client / Lead) · Phone · RM (or "unassigned") · Account count (or "— prospect"). Search matches name + phone + email; filter by kind. Row → Person Profile. Empty: "No profiles match." Scope per 3.2.
+- **Columns:** Name + email · Kind (Client / Lead) · Phone · RM (or "unassigned") · Account count (or "— prospect"). Search matches name + phone + email; **filter by kind and by tag** (the person's pain points/interests). Row → Person Profile. Empty: "No profiles match." Scope per 3.2.
 
 #### S-13 — Person Profile
 Header: avatar; name; kind badge; phone; email. Meta: DOB · RM · Source · Accounts (count). **Five tabs:**

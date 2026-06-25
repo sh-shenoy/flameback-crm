@@ -4,6 +4,9 @@ Live demo: https://sh-shenoy.github.io/flameback-crm/
 
 ## 2026-06-25
 
+**Filter by tag — Clients & Profiles**
+- Both the **Clients** list and the **Profiles** directory now have an **All tags** filter (pain points / interests). On Clients it matches at the household level (any account on the number carrying the tag), so filtering by a tag surfaces the whole household; on Profiles it matches the person's tags. The dropdown lists the full tag vocabulary (presets + any tag in use).
+
 **RM dashboard — client book & monthly touch-base**
 - The RM dashboard now covers servicing, not just the lead pipeline: cards for **Clients** (funded count), **AUM** (your book), and **Touch-base due** (monthly check-in), alongside reviews-due and follow-ups-due.
 - New **Monthly touch-base** panel — clients not contacted in 30+ days, sorted by longest-since-contact, each with product, AUM, last contact, next review, a **contextual "why now" talking point** (e.g. "Portfolio below cost — reassure", "Quarterly review overdue", "Discuss tax-harvesting before FY-end", "SIP step-up opportunity"), and **📅 Schedule** (creates a 30-min touch-base call + Meet invite) / **✓ Log call** (records the contact, clears them from the list).
