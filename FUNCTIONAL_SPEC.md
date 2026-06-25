@@ -390,7 +390,7 @@ Worklist **"Follow-ups due today & overdue"** (link: *View all leads →* S-03).
 |---|---|
 | CID | account id (e.g. FBC-1001) → opens Account Detail |
 | Name | first + last; a relationship chip if not Self; for a family member a "↳ linked to <holder>" sub-line, else "source · country" |
-| Contact | phone → opens the **merged Person Profile** (S-13) for that mobile number — all accounts + family on the number, with Tags / Accounts / Communication / Timeline / Notes (falls back to Account Detail if no merged profile). The **CID** opens the specific Account Detail. |
+| Contact | phone → opens the Account Detail (S-11) — same as the CID. The Account Detail now leads with a **Profile** tab that merges the person/household info (see S-11). |
 | RM | owning RM |
 | Product | product tag |
 | Plan | billing cycle |
@@ -402,7 +402,11 @@ Worklist **"Follow-ups due today & overdue"** (link: *View all leads →* S-03).
 - Empty: "No clients match your filters." [PM INPUT — canonical lifecycle stages (#16).]
 
 #### S-11 — Account Detail
-Header: avatar (initials); name; sub-line — for a family member "🔗 linked to <holder> <relationship> ·" then product · CID · contact · RM. A lifecycle **stepper** and a **next-step** prompt. **Eight tabs:**
+Header: avatar (initials); name; sub-line — for a family member "🔗 linked to <holder> <relationship> ·" then product · CID · contact · RM. A lifecycle **stepper** and a **next-step** prompt. **Nine tabs** (Profile shown first):
+
+**Tab 0 — Profile (merged person/household).** Surfaced alongside the account so one click gives both the account *and* the profile. Built from the merged person for this mobile number (S-13): person details (name, DOB, RM, source, email, phone); **Tags** — pain points/interests, add from vocabulary / remove; **Accounts on this number** — every account + family member on the number, each row → switches the account view; **Communication preferences** (read-only summary); **Timeline** (recent outreach/lifecycle/calls); **Notes** (read-only); and **Open full profile ↗** → the dedicated Person Profile (S-13) for full editing. Falls back to an empty state if no merged profile exists.
+
+Then the account-specific tabs:
 
 **Tab 1 — Overview** (two columns).
 *Client information* (read-only; source: Admin):

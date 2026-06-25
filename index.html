@@ -774,7 +774,8 @@
       </div>
 
       <div class="tabs" id="cpTabs">
-        <button class="active" data-tab="overview">Overview</button>
+        <button class="active" data-tab="personprofile">Profile</button>
+        <button data-tab="overview">Overview</button>
         <button data-tab="investment">Investment & SIP</button>
         <button data-tab="docs">Risk Profile & Agreement</button>
         <button data-tab="portfolio">Portfolio</button>
@@ -784,7 +785,8 @@
         <button data-tab="calls">Call Sync</button>
       </div>
 
-      <div class="tab-pane active" id="tab-overview"></div>
+      <div class="tab-pane active" id="tab-personprofile"></div>
+      <div class="tab-pane" id="tab-overview"></div>
       <div class="tab-pane" id="tab-investment"></div>
       <div class="tab-pane" id="tab-docs"></div>
       <div class="tab-pane" id="tab-strategies"></div>
@@ -2628,7 +2630,7 @@ function renderClients(){
     return `<tr class="lead-row">
       <td><span class="cid" onclick="openClient('${c.cid}')">${c.cid}</span></td>
       <td><div class="lead-name">${c.first} ${c.last}${(c.relation&&c.relation!=='Self')?` <span class="rel-chip">${c.relation}</span>`:''}</div><div class="lead-sub">${(c.relation&&c.relation!=='Self')?('↳ linked to '+c.holder):(c.source+' · '+c.country)}</div></td>
-      <td><span class="phone-link" onclick="openClientProfile('${c.cid}')">${c.contact}</span></td>
+      <td><span class="phone-link" onclick="openClient('${c.cid}')">${c.contact}</span></td>
       <td>${c.rm}</td>
       <td>${productTag(c.product)}</td>
       <td>${c.plan}</td>
@@ -2787,7 +2789,38 @@ function paintTabs(){
     ${c.calls.length?c.calls.map(cl=>`<div class="callsync"><span class="dt">${fmtDT(cl.when)}</span><span>${cl.note}</span><span class="src-cal">⟳ ${cl.source}</span></div>`).join(''):'<div class="empty">No follow-ups scheduled.</div>'}
     <div style="margin-top:10px"><button class="btn ghost sm" onclick="toast('Opening scheduler — would create a calendar event & sync back')">+ Schedule follow-up</button></div>
   </div>`;
+
+  // PROFILE (merged person/household info shown alongside the account)
+  renderAcctProfile(c);
 }
+function renderAcctProfile(c){
+  const el=document.getElementById('tab-personprofile');if(!el)return;
+  const pid='n'+(digits(c.contact)||('cid'+c.cid));const person=buildProfiles().find(p=>p.pid===pid);
+  if(!person){el.innerHTML='<div class="empty" style="padding:24px">No merged profile for this number.</div>';return;}
+  CURRENT_PROFILE=person;
+  const tags=personTags(person),cm=commStore(),store=personStore(person);
+  const accs=person.accounts.map(a=>`<tr class="lead-row" onclick="openClient('${a.cid}')"><td>${productTag(a.product)}</td><td class="lead-name">${a.first} ${a.last}${a.relation&&a.relation!=='Self'?` <span class="rel-chip">${a.relation}</span>`:''}${a.cid===c.cid?' <span class="lead-sub">· viewing</span>':''}</td><td><span class="cid">${a.cid}</span></td><td style="text-align:right">${fmtINR(a.portfolio.current)}</td></tr>`).join('');
+  const ev=[];person.leads.forEach(l=>(l.hist||[]).forEach(h=>ev.push({d:h.when,t:h.type||'Outreach',txt:'Reached out by '+String(h.type||'').toLowerCase()})));
+  person.accounts.forEach(x=>{if(x.signup)ev.push({d:x.signup,t:'Onboarded',txt:'Signed up — '+x.cid});if(x.funded)ev.push({d:(x.ips&&x.ips.lastReview)||x.signup,t:'Funded',txt:'Funded & deployed — '+x.cid});(x.calls||[]).forEach(call=>ev.push({d:call.when,t:'Call',txt:call.note}));});
+  ev.sort((a,b)=>new Date(b.d)-new Date(a.d));
+  const tl=ev.slice(0,8).map(e=>`<div class="callsync"><span class="dt">${fmtD(e.d)}</span><span><b>${e.t}</b> — ${e.txt}</span></div>`).join('')||'<div class="lead-sub" style="padding:8px 0">No timeline events.</div>';
+  const vocab=(DB.tags||[]).filter(t=>tags.indexOf(t)<0);
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="lead-sub">Merged household profile · ${person.phone} · ${person.accounts.length} account${person.accounts.length!==1?'s':''} on this number</div>
+      <button class="btn ghost sm" onclick="openProfile('${person.pid}')">Open full profile ↗</button></div>
+    <div class="kv" style="margin-bottom:14px"><div class="kv-h">Profile</div>${kvr('Name',person.name)}${kvr('Date of birth',person.dob?fmtD(person.dob):'—')}${kvr('RM',person.rm||'—')}${kvr('Source',person.source||'—')}${kvr('Email',person.email||'—')}${kvr('Phone',person.phone)}</div>
+    <div class="kv" style="margin-bottom:14px"><div class="kv-h">Tags — pain points & interests <span class="lead-sub" style="font-weight:400">route relevant content automatically</span></div>
+      <div style="padding:12px 14px"><div class="chipset">${tags.map(t=>`<span class="strat-chip">${t} <span onclick="atRemoveTag('${t.replace(/'/g,"\\'")}')" style="cursor:pointer;opacity:.6">×</span></span>`).join('')||'<span class="lead-sub">No tags yet.</span>'}</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><select id="atTagSel" class="filter"><option value="">Pick a tag…</option>${vocab.map(t=>`<option>${t}</option>`).join('')}</select><button class="btn ghost sm" onclick="atAddTag()">+ Add</button></div></div></div>
+    <div class="panel" style="margin-bottom:14px"><div class="panel-head"><h2 style="font-size:14px">Accounts on this number</h2></div>
+      <table><thead><tr><th>Product</th><th>Holder</th><th>CID</th><th style="text-align:right">Current value</th></tr></thead><tbody>${accs}</tbody></table></div>
+    <div class="kv" style="margin-bottom:14px"><div class="kv-h">Communication preferences</div>${kvr('Channels',(cm.channels||[]).join(', ')||'—')}${kvr('Frequency',cm.freq||'—')}${kvr('Language',cm.lang||'—')}${kvr('Preferred time',cm.time||'—')}${kvr('Do not disturb',cm.dnd?'Yes':'No')}</div>
+    <div class="kv" style="margin-bottom:14px"><div class="kv-h">Timeline</div><div style="padding:8px 14px">${tl}</div></div>
+    <div class="kv"><div class="kv-h">Notes</div><div style="padding:12px 14px;white-space:pre-wrap;color:${(store&&store.profileNotes)?'inherit':'var(--muted)'}">${(store&&store.profileNotes)?esc(store.profileNotes):'No notes yet — add on the full profile.'}</div></div>`;
+}
+function atAddTag(){const t=document.getElementById('atTagSel').value;if(!t)return;const s=personStore(CURRENT_PROFILE);if(!s)return;s.tags=s.tags||[];if(s.tags.indexOf(t)<0)s.tags.push(t);if((DB.tags||[]).indexOf(t)<0){DB.tags=DB.tags||[];DB.tags.push(t);}save();renderAcctProfile(CURRENT);toast('Tag added');}
+function atRemoveTag(t){const p=CURRENT_PROFILE;(p.accounts||[]).concat(p.leads||[]).forEach(o=>{if(o.tags)o.tags=o.tags.filter(x=>x!==t);});save();renderAcctProfile(CURRENT);toast('Tag removed');}
 function kvr(l,v){return `<div class="kv-row"><span class="lab">${l}</span><span class="val">${v}</span></div>`;}
 function kin(id,l,v){return `<div class="kv-row"><span class="lab">${l}</span><input id="kyc_${id}" value="${(v||'').replace(/"/g,'&quot;')}"></div>`;}
 function yn(v){return v==='Yes'?'<span class="yes">Yes</span>':'<span class="no">No</span>';}
