@@ -19,11 +19,11 @@ const ONBOARDING_ROUTE: Record<string, string> = {
   PMS: 'Silver Bullet',
 };
 
-type Dialog = null | 'task' | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
+type Dialog = null | 'booking' | 'task' | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
 
 export default function LeadPage() {
   const { id } = useParams();
-  const { isAdmin, team, teamName } = useApp();
+  const { isAdmin, team, teamName, me } = useApp();
   const toast = useToast();
   const [lead, setLead] = useState<Lead | null>(null);
   const [entries, setEntries] = useState<LeadEntry[]>([]);
@@ -105,7 +105,8 @@ export default function LeadPage() {
             ) : <span className="muted">—</span>}
           </div>
           {lead.bucket === 'awaiting_meeting' && (
-            <div><div className="k">Meeting</div>{lead.meeting_at ? fmtDateTime(lead.meeting_at) : <span className="amber">Not booked yet</span>}</div>
+            <div><div className="k">Meeting</div>{lead.meeting_at ? fmtDateTime(lead.meeting_at) : <span className="amber">Not booked yet</span>}
+              {lead.meeting_url && <div><a href={lead.meeting_url} target="_blank" rel="noreferrer">Join Google Meet</a></div>}</div>
           )}
           {lead.bucket === 'deferred' && <div><div className="k">Returns on</div>{fmtDate(lead.deferred_until)}</div>}
           <div>
@@ -149,7 +150,8 @@ export default function LeadPage() {
           {(lead.bucket === 'holding' || lead.bucket === 'awaiting_meeting') && <button className="btn ghost" onClick={() => setDialog('defer')}>Defer</button>}
           {open && <button className="btn ghost danger-text" onClick={() => setDialog('not_interested')}>Not interested</button>}
           {lead.bucket === 'out' && <button className="btn" onClick={() => setDialog('bring_back')}>Bring back</button>}
-          <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('task')}>Raise task</button>
+          {open && <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('booking')}>Send booking link</button>}
+          <button className="btn ghost" style={open ? undefined : { marginLeft: 'auto' }} onClick={() => setDialog('task')}>Raise task</button>
         </div>
         {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
       </div>
@@ -174,6 +176,7 @@ export default function LeadPage() {
         </div>
       </div>
 
+      {dialog === 'booking' && <BookingLinkDialog lead={lead} calendlyUrl={me!.calendly_url} rmName={me!.full_name ?? ''} onClose={() => setDialog(null)} />}
       {dialog === 'task' && <NewTaskModal lead={{ id: lead.id, name: lead.name }} onClose={() => setDialog(null)} onSaved={load} />}
       {openTask && <TaskDrawer id={openTask} onClose={() => setOpenTask(null)} onChanged={load} />}
       {dialog === 'entry' && <AddEntry lead={lead} onClose={() => setDialog(null)} onSaved={load} />}
@@ -294,7 +297,7 @@ function Timeline({ entries, events, teamName, onChanged }: {
 
 function describeEvent(ev: LeadEvent, teamName: (id: string | null) => string): string {
   switch (ev.kind) {
-    case 'created': return ev.detail?.via === 'upload' ? 'Lead added from an upload' : 'Lead added';
+    case 'created': return ev.detail?.via === 'upload' ? 'Lead added from an upload' : ev.detail?.via === 'calendly' ? 'Lead created from a Calendly booking' : 'Lead added';
     case 'assigned': return ev.from_value ? `Reassigned from ${teamName(ev.from_value)} to ${teamName(ev.to_value)}` : `Assigned to ${teamName(ev.to_value)}`;
     case 'bucket': {
       const reason = (ev.detail?.reason as string) ?? '';
@@ -532,3 +535,44 @@ export function BringBackDialog({ lead, onClose, act }: { lead: Lead; onClose: (
   );
 }
 
+
+/* ───────── Calendly booking link ───────── */
+function BookingLinkDialog({ lead, calendlyUrl, rmName, onClose }: { lead: Lead; calendlyUrl: string | null; rmName: string; onClose: () => void }) {
+  const toast = useToast();
+  if (!calendlyUrl) {
+    return (
+      <Modal title="Send booking link" onClose={onClose}
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/settings" onClick={onClose}>Connect Calendly</Link></>}>
+        <p>Connect your Calendly first (Settings → Calendly). After that, this button gives you a link with {lead.name}'s details already filled in.</p>
+      </Modal>
+    );
+  }
+  const params = new URLSearchParams({ name: lead.name, utm_source: 'flameback_crm', utm_content: lead.id });
+  if (lead.email) params.set('email', lead.email);
+  const link = `${calendlyUrl}${calendlyUrl.includes('?') ? '&' : '?'}${params.toString()}`;
+  const first = lead.name.split(' ')[0];
+  const message = `Hi ${first}, thank you for your time. Please pick a slot that suits you for a short call: ${link}\n\n${rmName}, Flameback Capital`;
+  const waNumber = lead.phone ? (/^\d{10}$/.test(lead.phone) ? '91' + lead.phone : lead.phone.replace(/\D/g, '')) : '';
+  const copy = async (text: string, what: string) => {
+    try { await navigator.clipboard.writeText(text); toast(`${what} copied`); } catch { toast('Couldn\'t copy. Select the text and copy it.', 'err'); }
+  };
+  return (
+    <Modal title={`Send ${first} your booking link`} onClose={onClose} wide
+      footer={<button className="btn ghost" onClick={onClose}>Done</button>}>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        When {first} books through this link, the CRM matches it to this lead and moves it to <b>Awaiting meeting</b> with the time, even if they type a different email.
+      </p>
+      <Field label="Link (name and email already filled in)">
+        <div className="row-gap"><input readOnly value={link} onFocus={(e) => e.target.select()} /><button className="btn ghost sm" onClick={() => copy(link, 'Link')}>Copy link</button></div>
+      </Field>
+      <Field label="Message">
+        <textarea readOnly rows={4} value={message} onFocus={(e) => e.target.select()} />
+      </Field>
+      <div className="row-gap">
+        <button className="btn ghost" onClick={() => copy(message, 'Message')}>Copy message</button>
+        {waNumber && <a className="btn ghost" href={`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">Open in WhatsApp</a>}
+        {lead.email && <a className="btn ghost" href={`mailto:${lead.email}?subject=${encodeURIComponent('Scheduling a call with Flameback Capital')}&body=${encodeURIComponent(message)}`}>Open in email</a>}
+      </div>
+    </Modal>
+  );
+}

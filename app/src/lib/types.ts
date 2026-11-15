@@ -20,6 +20,8 @@ export interface Profile {
   in_rotation: boolean;
   last_assigned_at: string | null;
   team: Team;
+  calendly_url: string | null;
+  calendly_connected_at: string | null;
 }
 
 export interface Lead {
@@ -43,6 +45,7 @@ export interface Lead {
   strikes: number;
   next_follow_up: string | null;
   meeting_at: string | null;
+  meeting_url: string | null;
   deferred_until: string | null;
   out_reason: string | null;
   out_from_bucket: Bucket | null;
