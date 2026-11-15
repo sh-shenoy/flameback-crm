@@ -225,7 +225,7 @@ export default function Upload() {
     <div className="main-inner">
       <div className="page-head">
         <div><h1>Upload leads</h1><p>Bring in a list from an Excel or CSV file. New leads are shared out round-robin.</p></div>
-        <button className="btn ghost" onClick={downloadTemplate}>⬇️ Download template</button>
+        <button className="btn ghost" onClick={downloadTemplate}>Download template</button>
       </div>
 
       <div className="steps">
@@ -265,7 +265,6 @@ export default function Upload() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); if (source && product && e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
             <input type="file" accept=".xlsx,.csv" disabled={!source || !product} onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} hidden />
-            <div className="dz-ico">📄</div>
             <b>{source && product ? 'Drop an .xlsx or .csv file here, or click to choose' : 'Pick the source and product first'}</b>
             <div className="muted small">Up to {MAX_ROWS.toLocaleString('en-IN')} rows. The first row must be the column headers.</div>
           </label>
@@ -309,10 +308,10 @@ export default function Upload() {
           <div className="panel-head">
             <div className="chips">
               <button className={`chip ${pFilter === 'all' ? 'on' : ''}`} onClick={() => setPFilter('all')}>All {preview.length}</button>
-              <button className={`chip ${pFilter === 'ok' ? 'on' : ''}`} onClick={() => setPFilter('ok')}>✅ New {counts.ok ?? 0}</button>
-              <button className={`chip ${pFilter === 'db_dup' ? 'on' : ''}`} onClick={() => setPFilter('db_dup')}>⚠️ Already in CRM {counts.db_dup ?? 0}</button>
-              <button className={`chip ${pFilter === 'file_dup' ? 'on' : ''}`} onClick={() => setPFilter('file_dup')}>⚠️ Repeated in file {counts.file_dup ?? 0}</button>
-              <button className={`chip ${pFilter === 'invalid' ? 'on' : ''}`} onClick={() => setPFilter('invalid')}>❌ Can't import {counts.invalid ?? 0}</button>
+              <button className={`chip ${pFilter === 'ok' ? 'on' : ''}`} onClick={() => setPFilter('ok')}><i className="dot ok" />New {counts.ok ?? 0}</button>
+              <button className={`chip ${pFilter === 'db_dup' ? 'on' : ''}`} onClick={() => setPFilter('db_dup')}><i className="dot warn" />Already in CRM {counts.db_dup ?? 0}</button>
+              <button className={`chip ${pFilter === 'file_dup' ? 'on' : ''}`} onClick={() => setPFilter('file_dup')}><i className="dot warn" />Repeated in file {counts.file_dup ?? 0}</button>
+              <button className={`chip ${pFilter === 'invalid' ? 'on' : ''}`} onClick={() => setPFilter('invalid')}><i className="dot bad" />Can't import {counts.invalid ?? 0}</button>
             </div>
           </div>
           <div className="table-wrap tall">
@@ -327,7 +326,7 @@ export default function Upload() {
                     <td>{r.email ?? <span className="muted">{r.data.email}</span>}</td>
                     <td>{r.data.product || product}</td>
                     <td>{r.data.source || source}</td>
-                    <td className="small">{r.status === 'ok' ? '✅ New' : r.note}</td>
+                    <td className="small">{r.status === 'ok' ? 'New' : r.note}</td>
                   </tr>
                 ))}
               </tbody>
@@ -365,7 +364,7 @@ export default function Upload() {
                 <div className="card"><div className="k">Not imported</div><div className={`v ${rc.failed ? 'red' : ''}`}>{rc.failed ?? 0}</div></div>
               </div>
               <div className="row-gap">
-                {(rc.failed || rc.skipped) ? <button className="btn ghost" onClick={downloadIssues}>⬇️ Download skipped & failed rows</button> : null}
+                {(rc.failed || rc.skipped) ? <button className="btn ghost" onClick={downloadIssues}>Download skipped & failed rows</button> : null}
                 <button className="btn" onClick={reset}>Upload another file</button>
               </div>
             </>

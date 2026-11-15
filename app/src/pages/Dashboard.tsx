@@ -21,9 +21,8 @@ function monthStart(offset = 0): string {
 }
 
 export default function Dashboard() {
-  const { me, isAdmin } = useApp();
+  const { me } = useApp();
   const nav = useNavigate();
-  const [scope, setScope] = useState<'mine' | 'all'>(isAdmin ? 'all' : 'mine');
   const [stats, setStats] = useState<Stats | null>(null);
   const [actions, setActions] = useState<Action[] | null>(null);
   const [actFilter, setActFilter] = useState<'all' | 'follow' | 'meeting'>('all');
@@ -32,7 +31,7 @@ export default function Dashboard() {
   const [period, setPeriod] = useState<0 | -1>(0);
   const [err, setErr] = useState<string | null>(null);
 
-  const scoped = (q: any) => (scope === 'mine' ? q.eq('rm_id', me!.id) : q);
+  const scoped = (q: any) => q.eq('rm_id', me!.id);
   const count = async (build: (q: any) => any) => {
     const { count: c, error } = await build(scoped(supabase.from('leads').select('id', { count: 'exact', head: true })));
     if (error) throw error;
@@ -80,7 +79,7 @@ export default function Dashboard() {
     Promise.all(BUCKETS.map(async (b) => [b.key, await count((q) => q.eq('bucket', b.key))] as const))
       .then((pairs) => setPipeline(Object.fromEntries(pairs)))
       .catch(() => undefined);
-  }, [scope]);
+  }, [me]);
 
   useEffect(() => {
     setFunnel(null);
@@ -92,25 +91,19 @@ export default function Dashboard() {
       count((q) => inMonth(q).eq('bucket', 'converting')),
       count((q) => inMonth(q).eq('bucket', 'out')),
     ]).then(([n, follow, conv, out]) => setFunnel({ n, follow, conv, out })).catch(() => undefined);
-  }, [scope, period]);
+  }, [me, period]);
 
   const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Asia/Kolkata' }).format(new Date()));
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const first = me?.full_name?.split(' ')[0] ?? '';
   const todayLong = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }).format(new Date());
   const shown = (actions ?? []).filter((a) => actFilter === 'all' || a.kind === actFilter);
-  const leadsLink = (params: string) => `/leads${params}${scope === 'mine' && isAdmin ? `${params ? '&' : '?'}rm=${me!.id}` : ''}`;
+  const leadsLink = (params: string) => `/leads${params}`;
 
   return (
     <div className="main-inner">
       <div className="page-head">
         <div><h1>{greet}, {first}</h1><p>{todayLong}</p></div>
-        {isAdmin && (
-          <div className="seg">
-            <button className={scope === 'mine' ? 'on' : ''} onClick={() => setScope('mine')}>My leads</button>
-            <button className={scope === 'all' ? 'on' : ''} onClick={() => setScope('all')}>Everyone</button>
-          </div>
-        )}
       </div>
       {err && <div className="banner warn">Couldn't load the numbers: {err}</div>}
 
@@ -142,7 +135,7 @@ export default function Dashboard() {
           {actions && actions.length === 0 && (
             stats?.active === 0
               ? <Empty>You're all caught up. New leads and follow-ups will show here.<br /><br />
-                  <button className="btn" onClick={() => window.dispatchEvent(new Event('crm:add-lead'))}>＋ Add lead</button></Empty>
+                  <button className="btn" onClick={() => window.dispatchEvent(new Event('crm:add-lead'))}>Add lead</button></Empty>
               : <Empty>Nothing due today. <Link to="/leads">See all leads →</Link></Empty>
           )}
           {shown.length > 0 && (
@@ -151,7 +144,7 @@ export default function Dashboard() {
                 const r = a.kind === 'follow' ? relativeDay(a.when) : null;
                 return (
                   <div key={a.kind + a.lead.id} className="action-row" onClick={() => nav(`/leads/${a.lead.id}`)}>
-                    <span className={`a-type t-${a.kind}`}>{a.kind === 'meeting' ? '🎥 Meeting' : '📞 Follow-up'}</span>
+                    <span className={`a-type t-${a.kind}`}>{a.kind === 'meeting' ? 'Meeting' : 'Follow-up'}</span>
                     <div className="a-what">
                       <b>{a.kind === 'meeting' ? `Meet ${a.lead.name}` : `Contact ${a.lead.name}`}</b>
                       <span className="muted small"> · <ProductTag product={a.lead.product} /> · {BUCKETS.find((b) => b.key === a.lead.bucket)?.label}</span>

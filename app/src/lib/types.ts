@@ -117,13 +117,13 @@ export const BUCKETS: { key: Bucket; label: string; short: string; help: string 
 
 export const bucketLabel = (b: Bucket) => BUCKETS.find((x) => x.key === b)?.label ?? b;
 
-export const ENTRY_KINDS: { key: EntryKind; label: string; icon: string }[] = [
-  { key: 'phone_call', label: 'Phone call', icon: '📞' },
-  { key: 'meet_call', label: 'Google Meet call', icon: '🎥' },
-  { key: 'in_person', label: 'In-person', icon: '🤝' },
-  { key: 'message', label: 'Message', icon: '💬' },
-  { key: 'email', label: 'Email', icon: '✉️' },
-  { key: 'note', label: 'Note', icon: '📝' },
+export const ENTRY_KINDS: { key: EntryKind; label: string }[] = [
+  { key: 'phone_call', label: 'Phone call' },
+  { key: 'meet_call', label: 'Google Meet call' },
+  { key: 'in_person', label: 'In-person' },
+  { key: 'message', label: 'Message' },
+  { key: 'email', label: 'Email' },
+  { key: 'note', label: 'Note' },
 ];
 
 export const OUTCOME_LABEL: Record<Outcome, string> = {

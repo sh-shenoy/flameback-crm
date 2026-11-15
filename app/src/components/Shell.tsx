@@ -7,18 +7,30 @@ import type { Lead } from '../lib/types';
 import { BucketPill } from './ui';
 import AddLead from './AddLead';
 
-const NAV: { to: string; label: string; ico: string; soon?: boolean; admin?: boolean; badge?: 'overdue' }[] = [
-  { to: '/', label: 'Dashboard', ico: '🏠' },
-  { to: '/leads', label: 'Leads', ico: '🎯', badge: 'overdue' },
-  { to: '/out', label: 'Out List', ico: '📤' },
-  { to: '/upload', label: 'Upload leads', ico: '⬆️' },
-  { to: '/team', label: 'Team & rotation', ico: '👥', admin: true },
-  { to: '/clients', label: 'Clients', ico: '💼', soon: true },
-  { to: '/onboarding', label: 'Onboarding', ico: '🧾', soon: true },
-  { to: '/reviews', label: 'Reviews', ico: '📋', soon: true },
-  { to: '/tasks', label: 'Tasks', ico: '✅', soon: true },
-  { to: '/calendar', label: 'Calendar', ico: '📅', soon: true },
-  { to: '/notifications', label: 'Notifications', ico: '🔔', soon: true },
+type NavItem = { to: string; label: string; badge?: 'overdue' };
+const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boolean }[] = [
+  {
+    title: 'Pipeline',
+    items: [
+      { to: '/', label: 'Dashboard' },
+      { to: '/leads', label: 'Leads', badge: 'overdue' },
+      { to: '/out', label: 'Out List' },
+      { to: '/upload', label: 'Upload leads' },
+    ],
+  },
+  { title: 'Admin', admin: true, items: [{ to: '/team', label: 'Team & rotation' }] },
+  {
+    title: 'Coming soon',
+    soon: true,
+    items: [
+      { to: '/clients', label: 'Clients' },
+      { to: '/onboarding', label: 'Onboarding' },
+      { to: '/reviews', label: 'Reviews' },
+      { to: '/tasks', label: 'Tasks' },
+      { to: '/calendar', label: 'Calendar' },
+      { to: '/notifications', label: 'Notifications' },
+    ],
+  },
 ];
 
 export default function Shell({ children }: { children: ReactNode }) {
@@ -29,12 +41,12 @@ export default function Shell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    let q = supabase.from('leads').select('id', { count: 'exact', head: true })
+    supabase.from('leads').select('id', { count: 'exact', head: true })
+      .eq('rm_id', me!.id)
       .not('bucket', 'in', '(out,converting)')
-      .lt('next_follow_up', todayIST());
-    if (isAdmin) q = q.eq('rm_id', me!.id);
-    q.then(({ count }) => setOverdue(count ?? 0));
-  }, [pathname, isAdmin, me]);
+      .lt('next_follow_up', todayIST())
+      .then(({ count }) => setOverdue(count ?? 0));
+  }, [pathname, me]);
 
   // open "add lead" from anywhere via a custom event
   useEffect(() => {
@@ -47,31 +59,34 @@ export default function Shell({ children }: { children: ReactNode }) {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <NavLink to="/" className="logo"><span className="flame">F</span><span className="lbl">Flameback CRM</span></NavLink>
-          <div className="sub lbl">RM · Pre-sales</div>
+          <NavLink to="/" className="logo"><span className="flame">F</span><span>Flameback</span></NavLink>
+          <div className="sub">CRM · Relationship Managers</div>
         </div>
         <nav className="nav">
-          {NAV.filter((n) => !n.admin || isAdmin).map((n) =>
-            n.soon ? (
-              <div key={n.to} className="nav-item soon" title="Coming soon">
-                <span className="ico">{n.ico}</span><span className="lbl">{n.label}</span><span className="soon-chip lbl">Soon</span>
-              </div>
-            ) : (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                <span className="ico">{n.ico}</span><span className="lbl">{n.label}</span>
-                {n.badge === 'overdue' && overdue > 0 && <span className="count red-count lbl">{overdue}</span>}
-              </NavLink>
-            ),
-          )}
+          {SECTIONS.filter((s) => !s.admin || isAdmin).map((s) => (
+            <div key={s.title} className="nav-section">
+              <div className="nav-title">{s.title}</div>
+              {s.items.map((n) =>
+                s.soon ? (
+                  <div key={n.to} className="nav-item soon" title="Coming soon">{n.label}</div>
+                ) : (
+                  <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                    {n.label}
+                    {n.badge === 'overdue' && overdue > 0 && <span className="count" title={`${overdue} overdue follow-ups`}>{overdue}</span>}
+                  </NavLink>
+                ),
+              )}
+            </div>
+          ))}
         </nav>
-        <div className="side-foot lbl">India Quantitative Wealth Management</div>
+        <div className="side-foot">India Quantitative Wealth Management</div>
       </aside>
 
       <div className="content">
         <header className="topbar">
           <GlobalSearch />
           <div className="top-right">
-            <button className="btn" onClick={() => setAdding(true)}>＋ Add lead</button>
+            <button className="btn" onClick={() => setAdding(true)}>Add lead</button>
             <div className="me" onClick={() => setMenu((m) => !m)}>
               {me?.avatar_url ? <img src={me.avatar_url} alt="" referrerPolicy="no-referrer" /> : <span className="av">{initials(me?.full_name)}</span>}
               <span className="me-name">{me?.full_name}</span>
@@ -92,6 +107,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 }
 
 function GlobalSearch() {
+  const { me } = useApp();
   const [q, setQ] = useState('');
   const [res, setRes] = useState<Lead[]>([]);
   const [open, setOpen] = useState(false);
@@ -107,7 +123,7 @@ function GlobalSearch() {
       const digits = term.replace(/\D/g, '');
       const ors = [`name.ilike.${like}`, `email.ilike.${like}`];
       if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`);
-      const { data } = await supabase.from('leads').select('*').or(ors.join(',')).limit(8);
+      const { data } = await supabase.from('leads').select('*').eq('rm_id', me!.id).or(ors.join(',')).limit(8);
       setRes((data as Lead[]) ?? []);
     }, 200);
   }, [q]);
@@ -117,7 +133,7 @@ function GlobalSearch() {
   return (
     <div className="gsearch">
       <input
-        placeholder="Search leads by name, phone or email"
+        placeholder="Search your leads by name, phone or email"
         value={q}
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
@@ -134,7 +150,7 @@ function GlobalSearch() {
               <BucketPill bucket={l.bucket} />
             </button>
           ))}
-          <div className="gs-h">Clients <span className="soon-chip">Soon</span></div>
+          <div className="gs-h">Clients <span className="soon-chip">Coming soon</span></div>
         </div>
       )}
     </div>

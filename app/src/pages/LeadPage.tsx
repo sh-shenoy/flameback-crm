@@ -71,8 +71,8 @@ export default function LeadPage() {
           <div>
             <h1>{lead.name} {entries.length === 0 && open && <span className="new-badge">New</span>}</h1>
             <div className="lh-contact">
-              {lead.phone && <a href={`tel:${lead.phone}`}>📞 {fmtPhone(lead.phone)}</a>}
-              {lead.email && <a href={`mailto:${lead.email}`}>✉️ {lead.email}</a>}
+              {lead.phone && <a href={`tel:${lead.phone}`}>{fmtPhone(lead.phone)}</a>}
+              {lead.email && <a href={`mailto:${lead.email}`}>{lead.email}</a>}
               <span className="src">{lead.source}</span>
               {lead.campaign && <span className="muted small">Campaign: {lead.campaign}</span>}
               {lead.referred_by && <span className="muted small">Referred by {lead.referred_by}</span>}
@@ -129,7 +129,7 @@ export default function LeadPage() {
         )}
 
         <div className="actions">
-          {open && <button className="btn" onClick={() => setDialog('entry')}>＋ Add entry</button>}
+          {open && <button className="btn" onClick={() => setDialog('entry')}>Add entry</button>}
           {lead.bucket === 'active_contact' && <button className="btn gold" onClick={() => setDialog('interested')}>Interested → book meeting</button>}
           {lead.bucket === 'awaiting_meeting' && <>
             <button className="btn gold" onClick={() => setDialog('meeting')}>Record meeting</button>
@@ -245,7 +245,7 @@ function Timeline({ entries, events, teamName, onChanged }: {
           {items.map(({ e, ev, at }) => e ? (
             <li key={e.id} className="tl-entry">
               <div className="tl-row">
-                <b>{ENTRY_KINDS.find((k) => k.key === e.kind)?.icon} {ENTRY_KINDS.find((k) => k.key === e.kind)?.label}</b>
+                <b>{ENTRY_KINDS.find((k) => k.key === e.kind)?.label}</b>
                 {e.outcome && <span className={`outcome o-${e.outcome}`}>{OUTCOME_LABEL[e.outcome]}</span>}
                 {e.strike_state === 'counted' && <span className="strike-tag">Strike</span>}
                 {e.strike_state === 'pending' && <>
@@ -339,7 +339,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         <div className="chips">
           {ENTRY_KINDS.map((k) => (
             <button key={k.key} className={`chip ${kind === k.key ? 'on' : ''}`} onClick={() => { setKind(k.key); setOutcome(''); }}>
-              {k.icon} {k.label}
+              {k.label}
             </button>
           ))}
         </div>
@@ -427,7 +427,7 @@ function MeetingDialog({ lead, onClose, act }: { lead: Lead; onClose: () => void
         }, msg))}>Save meeting</button></>}>
       <Field label="How did you meet?" required>
         <div className="chips">
-          {([['meet_call', '🎥 Google Meet'], ['in_person', '🤝 In-person'], ['phone_call', '📞 Phone']] as const).map(([k, l]) => (
+          {([['meet_call', 'Google Meet'], ['in_person', 'In-person'], ['phone_call', 'Phone']] as const).map(([k, l]) => (
             <button key={k} className={`chip ${kind === k ? 'on' : ''}`} onClick={() => setKind(k)}>{l}</button>
           ))}
         </div>
