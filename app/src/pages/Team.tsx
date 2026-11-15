@@ -5,8 +5,10 @@ import { fmtDateTime, initials } from '../lib/format';
 import { TEAMS, type Profile, type Team as TeamName } from '../lib/types';
 import { useToast } from '../components/ui';
 
-export default function Team() {
-  const { team, me, reloadRef, isAdmin } = useApp();
+export default function Team({ embedded }: { embedded?: boolean } = {}) {
+  const { team: everyone, me, reloadRef, isAdmin } = useApp();
+  // approved people only (requests live on the Admin page)
+  const team = everyone.filter((t) => t.is_active || (t.approved_at && !t.rejected_at));
   const toast = useToast();
   const [counts, setCounts] = useState<Record<string, number>>({});
 
@@ -28,15 +30,13 @@ export default function Team() {
     if (error) toast(error.message, 'err'); else { toast(msg); reloadRef(); }
   }
 
-  const inRotation = team.filter((t) => t.is_active && t.in_rotation);
+  const inRotation = team.filter((t) => t.is_active && t.in_rotation && t.team === 'Sales');
   const next = [...inRotation].sort((a, b) => (a.last_assigned_at ?? '').localeCompare(b.last_assigned_at ?? ''))[0];
 
   return (
-    <div className="main-inner">
-      <div className="page-head">
-        <div><h1>Team & rotation</h1>
-          <p>Everyone who signs in with a @flamebackcapital.com Google account appears here. Set each person's team so tasks reach the right people. New leads go round-robin to the people in rotation.</p></div>
-      </div>
+    <div className={embedded ? '' : 'main-inner'}>
+      {!embedded && <div className="page-head"><div><h1>Team &amp; rotation</h1></div></div>}
+      <p className="muted small" style={{ marginBottom: 12 }}>Set each person's team so tasks reach the right people. New leads go round-robin to Sales people in rotation.</p>
       <div className="banner">
         {inRotation.length === 0
           ? <>Nobody is in rotation, so new leads stay with whoever adds them.</>

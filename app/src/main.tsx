@@ -12,9 +12,12 @@ import Leads from './pages/Leads';
 import LeadPage from './pages/LeadPage';
 import OutList from './pages/OutList';
 import Upload from './pages/Upload';
-import Team from './pages/Team';
 import Tasks from './pages/Tasks';
 import Settings from './pages/Settings';
+import Admin from './pages/Admin';
+import Notifications from './pages/Notifications';
+import Reports from './pages/Reports';
+import CalendarPage from './pages/Calendar';
 
 function Routed() {
   const { session } = useApp();
@@ -27,14 +30,16 @@ function Routed() {
         <Route path="/leads/:id" element={<LeadPage />} />
         <Route path="/out" element={<OutList />} />
         <Route path="/upload" element={<Upload />} />
-        <Route path="/team" element={<Team />} />
+        <Route path="/team" element={<Navigate to="/admin?tab=team" replace />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/reports" element={<Reports />} />
         <Route path="/clients" element={<ComingSoon title="Clients" what="Your book of funded clients, households, holdings and returns." />} />
         <Route path="/onboarding" element={<ComingSoon title="Onboarding" what="RIA onboards in the Flameback app, PMS through Silver Bullet. Committed leads will appear here with their onboarding status." />} />
         <Route path="/reviews" element={<ComingSoon title="Reviews" what="Quarterly and annual client reviews with prep views." />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/calendar" element={<ComingSoon title="Calendar" what="Meetings synced with Google Calendar, with Meet links." />} />
-        <Route path="/notifications" element={<ComingSoon title="Notifications" what="Alerts for new leads, follow-ups due and onboarding updates." />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>

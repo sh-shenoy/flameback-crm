@@ -4,23 +4,27 @@ import { bucketLabel } from '../lib/types';
 import { relativeDay, fmtDate } from '../lib/format';
 
 /* ── toasts ── */
-type Toast = { id: number; text: string; tone: 'ok' | 'err' };
-const ToastCtx = createContext<(text: string, tone?: 'ok' | 'err') => void>(() => undefined);
+type Toast = { id: number; text: string; tone: 'ok' | 'err' | 'note'; sub?: string; onClick?: () => void };
+type Push = (text: string, tone?: 'ok' | 'err' | 'note', extra?: { sub?: string; onClick?: () => void }) => void;
+const ToastCtx = createContext<Push>(() => undefined);
 export const useToast = () => useContext(ToastCtx);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
-  const push = useCallback((text: string, tone: 'ok' | 'err' = 'ok') => {
+  const push = useCallback<Push>((text, tone = 'ok', extra) => {
     const id = Date.now() + Math.random();
-    setItems((x) => [...x, { id, text, tone }]);
-    setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), tone === 'err' ? 6000 : 3500);
+    setItems((x) => [...x, { id, text, tone, ...extra }]);
+    setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), tone === 'err' ? 6000 : tone === 'note' ? 5000 : 3500);
   }, []);
   return (
     <ToastCtx.Provider value={push}>
       {children}
       <div className="toasts">
         {items.map((t) => (
-          <div key={t.id} className={`toast ${t.tone}`}>{t.text}</div>
+          <div key={t.id} className={`toast ${t.tone} ${t.onClick ? 'clickable' : ''}`}
+            onClick={() => { if (t.onClick) { t.onClick(); setItems((x) => x.filter((y) => y.id !== t.id)); } }}>
+            <div>{t.text}</div>{t.sub && <div className="toast-sub">{t.sub}</div>}
+          </div>
         ))}
       </div>
     </ToastCtx.Provider>
@@ -33,7 +37,7 @@ export function BucketPill({ bucket }: { bucket: Bucket }) {
 }
 
 export function ProductTag({ product }: { product: string }) {
-  return <span className={`prod p-${product}`}>{product}</span>;
+  return <span className={`prod p-${product.replace(/\s/g, '')}`}>{product}</span>;
 }
 
 export function Strikes({ n, show = true }: { n: number; show?: boolean }) {

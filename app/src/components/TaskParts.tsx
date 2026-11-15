@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
-import { fmtDate, fmtDateTime, relativeDay, todayIST } from '../lib/format';
+import { fmtDate, fmtDateTime, fmtSize, relativeDay, todayIST } from '../lib/format';
 import {
   PRIORITIES, TASK_STATUSES, TASK_TEMPLATES, TEAMS, statusLabel,
   type Lead, type Task, type TaskComment, type TaskEvent, type TaskStatus, type Team,
@@ -245,6 +245,8 @@ export function TaskDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
         <div className="kv"><div><span>Lead</span>{canOpenLead && t.lead_id ? <Link to={`/leads/${t.lead_id}`} onClick={onClose}>{t.lead_name}</Link> : t.lead_name}</div></div>
       )}
 
+      <TaskFiles taskId={t.id} onChanged={onChanged} />
+
       <div className="section-h">Comments</div>
       {comments.length === 0 && <div className="muted small" style={{ marginBottom: 10 }}>No comments yet.</div>}
       {comments.map((c) => (
@@ -289,4 +291,72 @@ function describe(e: TaskEvent, name: (id: string | null) => string): string {
     }
     default: return e.kind;
   }
+}
+
+/* ───────── attachments ───────── */
+interface TaskFile { id: string; task_id: string; path: string; file_name: string; size_bytes: number | null; mime_type: string | null; uploaded_by: string; created_at: string }
+const MAX_BYTES = 20 * 1024 * 1024;
+
+function TaskFiles({ taskId, onChanged }: { taskId: string; onChanged: () => void }) {
+  const { me, isAdmin, teamName } = useApp();
+  const toast = useToast();
+  const [files, setFiles] = useState<TaskFile[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('task_files').select('*').eq('task_id', taskId).order('created_at');
+    setFiles((data as TaskFile[]) ?? []);
+  }, [taskId]);
+  useEffect(() => { load(); }, [load]);
+
+  async function upload(list: FileList | null) {
+    if (!list?.length) return;
+    setBusy(true);
+    try {
+      for (const f of Array.from(list)) {
+        if (f.size > MAX_BYTES) { toast(`${f.name} is over 20 MB`, 'err'); continue; }
+        const safe = f.name.replace(/[^\w.\- ]+/g, '_').slice(-120);
+        const path = `${taskId}/${crypto.randomUUID()}-${safe}`;
+        const up = await supabase.storage.from('task-files').upload(path, f, { contentType: f.type || undefined });
+        if (up.error) { toast(`${f.name}: ${up.error.message}`, 'err'); continue; }
+        try { await rpc('add_task_file', { p_task: taskId, p_path: path, p_name: f.name, p_size: f.size, p_mime: f.type || null }); }
+        catch (e) { await supabase.storage.from('task-files').remove([path]); toast((e as Error).message, 'err'); continue; }
+      }
+      await load(); onChanged();
+    } finally { setBusy(false); }
+  }
+
+  async function open(f: TaskFile) {
+    const { data, error } = await supabase.storage.from('task-files').createSignedUrl(f.path, 60, { download: f.file_name });
+    if (error || !data) { toast(error?.message ?? 'Couldn’t open the file', 'err'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener');
+  }
+
+  async function remove(f: TaskFile) {
+    if (!confirm(`Remove ${f.file_name}?`)) return;
+    try {
+      const path = await rpc<string>('delete_task_file', { p_id: f.id });
+      await supabase.storage.from('task-files').remove([path]);
+      toast('File removed'); load();
+    } catch (e) { toast((e as Error).message, 'err'); }
+  }
+
+  return (
+    <>
+      <div className="section-h">Files</div>
+      {files.length === 0 && <div className="muted small" style={{ marginBottom: 8 }}>No files yet.</div>}
+      {files.map((f) => (
+        <div key={f.id} className="file-row">
+          <button className="linkbtn" onClick={() => open(f)} title="Download">{f.file_name}</button>
+          <span className="muted small">{fmtSize(f.size_bytes)} · {teamName(f.uploaded_by)} · {fmtDate(f.created_at)}</span>
+          {(isAdmin || f.uploaded_by === me!.id) && <button className="linkbtn small danger-text" onClick={() => remove(f)}>Remove</button>}
+        </div>
+      ))}
+      <label className={`btn ghost sm upload-btn ${busy ? 'disabled' : ''}`}>
+        {busy ? 'Uploading…' : 'Attach files'}
+        <input type="file" multiple hidden disabled={busy} onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
+      </label>
+      <span className="muted small" style={{ marginLeft: 8 }}>Up to 20 MB each. Only people who can see this task can open them.</span>
+    </>
+  );
 }

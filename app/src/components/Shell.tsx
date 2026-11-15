@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
-import { initials, fmtPhone, todayIST } from '../lib/format';
-import type { Lead } from '../lib/types';
-import { BucketPill } from './ui';
+import { initials, fmtPhone, todayIST, timeAgo } from '../lib/format';
+import type { AppNotification, Lead } from '../lib/types';
+import { BucketPill, useToast } from './ui';
 import AddLead from './AddLead';
 
-type NavItem = { to: string; label: string; badge?: 'overdue' | 'tasks' };
+type Badge = 'overdue' | 'tasks' | 'notifications' | 'requests';
+type NavItem = { to: string; label: string; badge?: Badge };
 const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boolean }[] = [
   {
     title: 'Workspace',
@@ -15,12 +16,20 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
       { to: '/', label: 'Dashboard' },
       { to: '/leads', label: 'Leads', badge: 'overdue' },
       { to: '/tasks', label: 'Tasks', badge: 'tasks' },
+      { to: '/calendar', label: 'Calendar' },
+      { to: '/reports', label: 'Reports' },
       { to: '/out', label: 'Out List' },
       { to: '/upload', label: 'Upload leads' },
     ],
   },
-  { title: 'Account', items: [{ to: '/settings', label: 'Settings' }] },
-  { title: 'Admin', admin: true, items: [{ to: '/team', label: 'Team & rotation' }] },
+  {
+    title: 'Account',
+    items: [
+      { to: '/notifications', label: 'Notifications', badge: 'notifications' },
+      { to: '/settings', label: 'Settings' },
+    ],
+  },
+  { title: 'Admin', admin: true, items: [{ to: '/admin', label: 'Admin', badge: 'requests' }] },
   {
     title: 'Coming soon',
     soon: true,
@@ -28,32 +37,71 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
       { to: '/clients', label: 'Clients' },
       { to: '/onboarding', label: 'Onboarding' },
       { to: '/reviews', label: 'Reviews' },
-      { to: '/calendar', label: 'Calendar' },
-      { to: '/notifications', label: 'Notifications' },
     ],
   },
 ];
 
 export default function Shell({ children }: { children: ReactNode }) {
-  const { me, isAdmin, signOut } = useApp();
+  const { me, isAdmin, signOut, team } = useApp();
+  const toast = useToast();
+  const nav = useNavigate();
   const [adding, setAdding] = useState(false);
   const [menu, setMenu] = useState(false);
-  const [overdue, setOverdue] = useState(0);
-  const [overdueTasks, setOverdueTasks] = useState(0);
+  const [counts, setCounts] = useState<Record<Badge, number>>({ overdue: 0, tasks: 0, notifications: 0, requests: 0 });
   const { pathname } = useLocation();
 
+  const refreshCounts = useCallback(async () => {
+    const today = todayIST();
+    const [a, b, c] = await Promise.all([
+      supabase.from('leads').select('id', { count: 'exact', head: true }).eq('rm_id', me!.id)
+        .not('bucket', 'in', '(out,converting)').lt('next_follow_up', today),
+      supabase.from('tasks').select('id', { count: 'exact', head: true })
+        .or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`).neq('status', 'done').lt('due_date', today),
+      supabase.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null),
+    ]);
+    setCounts({
+      overdue: a.count ?? 0, tasks: b.count ?? 0, notifications: c.count ?? 0,
+      requests: team.filter((t) => !t.is_active && !t.approved_at && !t.rejected_at).length,
+    });
+  }, [me, team]);
+
+  useEffect(() => { refreshCounts(); }, [pathname, refreshCounts]);
+  useEffect(() => { const t = setInterval(refreshCounts, 60_000); return () => clearInterval(t); }, [refreshCounts]);
   useEffect(() => {
-    supabase.from('leads').select('id', { count: 'exact', head: true })
-      .eq('rm_id', me!.id)
-      .not('bucket', 'in', '(out,converting)')
-      .lt('next_follow_up', todayIST())
-      .then(({ count }) => setOverdue(count ?? 0));
-    supabase.from('tasks').select('id', { count: 'exact', head: true })
-      .or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`)
-      .neq('status', 'done')
-      .lt('due_date', todayIST())
-      .then(({ count }) => setOverdueTasks(count ?? 0));
-  }, [pathname, me]);
+    const h = () => refreshCounts();
+    window.addEventListener('crm:notifications-changed', h);
+    return () => window.removeEventListener('crm:notifications-changed', h);
+  }, [refreshCounts]);
+
+  // live pop-ups for new notifications
+  useEffect(() => {
+    const ch = supabase.channel(`notif-${me!.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${me!.id}` }, (p) => {
+        const n = p.new as AppNotification;
+        toast(n.title, 'note', { sub: n.body ?? undefined, onClick: n.link ? () => openNotification(n) : undefined });
+        refreshCounts();
+        window.dispatchEvent(new Event('crm:notifications-changed'));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [me?.id]);
+
+  // Gmail: pull new emails with leads every 5 minutes while the CRM is open
+  useEffect(() => {
+    if (!me?.gmail_connected_at) return;
+    const run = () => supabase.functions.invoke('gmail', { body: { action: 'sync' } }).then(() => undefined, () => undefined);
+    run();
+    const t = setInterval(run, 5 * 60_000);
+    return () => clearInterval(t);
+  }, [me?.gmail_connected_at]);
+
+  async function openNotification(n: AppNotification) {
+    if (!n.read_at) {
+      await supabase.rpc('mark_notifications_read', { p_ids: [n.id] });
+      window.dispatchEvent(new Event('crm:notifications-changed'));
+    }
+    if (n.link) nav(n.link);
+  }
 
   // open "add lead" from anywhere via a custom event
   useEffect(() => {
@@ -82,8 +130,9 @@ export default function Shell({ children }: { children: ReactNode }) {
                 ) : (
                   <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                     {n.label}
-                    {n.badge === 'overdue' && overdue > 0 && <span className="count" title={`${overdue} overdue follow-ups`}>{overdue}</span>}
-                    {n.badge === 'tasks' && overdueTasks > 0 && <span className="count" title={`${overdueTasks} overdue tasks`}>{overdueTasks}</span>}
+                    {n.badge && counts[n.badge] > 0 && (
+                      <span className={`count ${n.badge === 'notifications' ? 'count-soft' : ''}`}>{counts[n.badge]}</span>
+                    )}
                   </NavLink>
                 ),
               )}
@@ -97,6 +146,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <GlobalSearch />
           <div className="top-right">
             <button className="btn" onClick={() => setAdding(true)}>Add lead</button>
+            <Bell unread={counts.notifications} onOpen={openNotification} />
             <div className="me" onClick={() => setMenu((m) => !m)}>
               {me?.avatar_url ? <img src={me.avatar_url} alt="" referrerPolicy="no-referrer" /> : <span className="av">{initials(me?.full_name)}</span>}
               <span className="me-name">{me?.full_name}</span>
@@ -113,6 +163,56 @@ export default function Shell({ children }: { children: ReactNode }) {
         <main className="main">{children}</main>
       </div>
       {adding && <AddLead onClose={() => setAdding(false)} />}
+    </div>
+  );
+}
+
+function Bell({ unread, onOpen }: { unread: number; onOpen: (n: AppNotification) => void }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<AppNotification[] | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const nav = useNavigate();
+
+  useEffect(() => {
+    if (!open) return;
+    setItems(null);
+    supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(10)
+      .then(({ data }) => setItems((data as AppNotification[]) ?? []));
+    const close = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  return (
+    <div className="bell" ref={ref}>
+      <button className="bell-btn" onClick={() => setOpen(!open)} aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" />
+        </svg>
+        {unread > 0 && <span className="bell-n">{unread > 99 ? '99+' : unread}</span>}
+      </button>
+      {open && (
+        <div className="bell-drop">
+          <div className="bell-head">
+            <b>Notifications</b>
+            {unread > 0 && <button className="linkbtn small" onClick={async () => {
+              await supabase.rpc('mark_notifications_read', { p_ids: null });
+              setItems((x) => x?.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })) ?? null);
+              window.dispatchEvent(new Event('crm:notifications-changed'));
+            }}>Mark all read</button>}
+          </div>
+          {items === null && <div className="gs-empty">Loading…</div>}
+          {items?.length === 0 && <div className="gs-empty">Nothing yet. New leads, meetings and task updates will show here.</div>}
+          {items?.map((n) => (
+            <button key={n.id} className={`notif ${n.read_at ? '' : 'unread'}`} onClick={() => { setOpen(false); onOpen(n); }}>
+              <span className="notif-title">{n.title}</span>
+              {n.body && <span className="notif-body">{n.body}</span>}
+              <span className="notif-when">{timeAgo(n.created_at)}</span>
+            </button>
+          ))}
+          <button className="bell-all" onClick={() => { setOpen(false); nav('/notifications'); }}>See all notifications</button>
+        </div>
+      )}
     </div>
   );
 }
