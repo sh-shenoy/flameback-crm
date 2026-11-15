@@ -8,3 +8,5 @@ grant usage on schema auth to authenticated, anon;
 grant usage on schema public to authenticated, anon;
 alter default privileges in schema public grant select on tables to authenticated;
 alter default privileges in schema public grant execute on functions to authenticated, anon;
+do $$ begin create role service_role nologin; exception when duplicate_object then null; end $$;
+grant usage on schema public to service_role;

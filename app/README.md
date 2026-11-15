@@ -20,12 +20,13 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Access | RMs see only their own leads (enforced in the database). Admins see all. |
 | Duplicates | Same phone or email in the unit can't be added twice; you get a warning with a merge option. |
 | Tasks | Kanban board (Open / In Progress / Blocked / Done) and list view; Assigned to me, my team, Raised by me. Raised to a team and optionally a person, with priority, due date, optional lead, comments and history. Blocked needs a reason. Templates: account opening, address change, strategy switch, withdrawal, top-up, compliance query. Overdue tasks show on the dashboard and in Today's actions. |
+| Calendly | Each RM connects their own Calendly (Settings). Bookings arrive automatically: an existing lead (matched by the link's hidden lead id, then email, then phone) moves to Awaiting meeting with the time and Meet link; someone new becomes that RM's lead with source Calendly. Cancellations clear the meeting and set a follow-up for today. **Send booking link** on the lead page gives a pre-filled link with WhatsApp / email buttons. Setup: `supabase/functions/README.md`. |
 | Teams | Each person has a team (Sales, Operations, Compliance, Investment), set on Team & rotation. Only Sales people in rotation receive round-robin leads; new sign-ups start out of rotation. |
 
 ## One-time setup
 
 ### 1. Database
-In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…`, then `0002_…`). When a new migration file is added later, run just that one.
+In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…`, `0002_…`, `0003_…`). When a new migration file is added later, run just that one.
 
 It creates the tables, rules and access policies, and schedules the timed rules (48h message strikes, deferred returns) every 15 minutes with `pg_cron`. If `pg_cron` isn't enabled, enable it under **Database → Extensions** and re-run the last `do $$ … $$` block. The app also runs these rules whenever someone opens it.
 
