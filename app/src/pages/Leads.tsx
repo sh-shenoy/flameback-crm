@@ -11,14 +11,13 @@ const PAGE = 50;
 const WORKING: Bucket[] = ['active_contact', 'awaiting_meeting', 'holding', 'deferred'];
 
 export default function Leads() {
-  const { isAdmin, me, team, teamName, sources } = useApp();
+  const { me, sources } = useApp();
   const [sp, setSp] = useSearchParams();
   const nav = useNavigate();
   const tab = (sp.get('bucket') as Bucket | 'open' | null) ?? 'open';
   const product = sp.get('product') ?? '';
   const source = sp.get('source') ?? '';
   const due = sp.get('due') ?? '';
-  const rm = sp.get('rm') ?? (isAdmin ? '' : '');
   const q = sp.get('q') ?? '';
   const page = Number(sp.get('page') ?? 0);
 
@@ -41,7 +40,7 @@ export default function Leads() {
     let x = query;
     if (product) x = x.eq('product', product);
     if (source) x = x.eq('source', source);
-    if (rm) x = x.eq('rm_id', rm);
+    x = x.eq('rm_id', me!.id);
     const today = todayIST();
     if (due === 'overdue') x = x.lt('next_follow_up', today);
     if (due === 'today') x = x.eq('next_follow_up', today);
@@ -54,7 +53,7 @@ export default function Leads() {
       x = x.or(ors.join(','));
     }
     return x;
-  }, [product, source, rm, due, q]);
+  }, [product, source, due, q, me]);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,15 +87,15 @@ export default function Leads() {
     ...BUCKETS.filter((b) => b.key !== 'out').map((b) => ({ key: b.key, label: b.label })),
   ];
   const strikeBucket = (b: Bucket) => ['active_contact', 'awaiting_meeting', 'holding'].includes(b);
-  const filtersOn = product || source || due || rm || q;
+  const filtersOn = product || source || due || q;
 
   return (
     <div className="main-inner">
       <div className="page-head">
-        <div><h1>Leads</h1><p>{isAdmin && !rm ? 'Everyone\'s leads' : 'Your leads'}, most urgent follow-up first.</p></div>
+        <div><h1>Leads</h1><p>Your leads, most urgent follow-up first.</p></div>
         <div className="row-gap">
-          <button className="btn ghost" onClick={() => nav('/upload')}>⬆️ Upload</button>
-          <button className="btn" onClick={() => window.dispatchEvent(new Event('crm:add-lead'))}>＋ Add lead</button>
+          <button className="btn ghost" onClick={() => nav('/upload')}>Upload</button>
+          <button className="btn" onClick={() => window.dispatchEvent(new Event('crm:add-lead'))}>Add lead</button>
         </div>
       </div>
 
@@ -124,13 +123,6 @@ export default function Leads() {
               <option value="today">Due today</option>
               <option value="week">Due this week</option>
             </select>
-            {isAdmin && (
-              <select className="filter" value={rm} onChange={(e) => setParam('rm', e.target.value)}>
-                <option value="">All RMs</option>
-                <option value={me!.id}>Mine</option>
-                {team.filter((t) => t.id !== me!.id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-              </select>
-            )}
             {filtersOn && <button className="linkbtn" onClick={() => { setSearch(''); setSp(tab === 'open' ? {} : { bucket: tab }, { replace: true }); }}>Clear filters</button>}
           </div>
           <span className="muted small">{total} lead{total === 1 ? '' : 's'}</span>
@@ -139,7 +131,6 @@ export default function Leads() {
           <table>
             <thead><tr>
               <th>Name</th><th>Source</th><th>Product</th><th>Bucket</th><th>Interactions</th><th>Strikes</th><th>Next follow-up</th>
-              {isAdmin && <th>RM</th>}
             </tr></thead>
             <tbody>
               {rows === null && [0, 1, 2, 3, 4].map((i) => <tr key={i}><td colSpan={8}><Skeleton /></td></tr>)}
@@ -161,7 +152,6 @@ export default function Leads() {
                     <td>{n}</td>
                     <td><Strikes n={l.strikes} show={strikeBucket(l.bucket)} /></td>
                     <td>{l.bucket === 'converting' ? <span className="muted small">Committed {fmtDate(l.converted_at)}</span> : <FollowUp date={l.next_follow_up} />}</td>
-                    {isAdmin && <td>{teamName(l.rm_id)}</td>}
                   </tr>
                 );
               })}

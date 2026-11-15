@@ -10,7 +10,7 @@ import { BringBackDialog } from './LeadPage';
 type Row = Lead & { lead_entries: { count: number; }[] };
 
 export default function OutList() {
-  const { isAdmin, teamName, sources } = useApp();
+  const { me, sources } = useApp();
   const toast = useToast();
   const nav = useNavigate();
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -20,7 +20,7 @@ export default function OutList() {
   const [lastContact, setLastContact] = useState<Record<string, string>>({});
 
   async function load() {
-    let q = supabase.from('leads').select('*, lead_entries(count)').eq('bucket', 'out').order('out_at', { ascending: false }).limit(500);
+    let q = supabase.from('leads').select('*, lead_entries(count)').eq('rm_id', me!.id).eq('bucket', 'out').order('out_at', { ascending: false }).limit(500);
     if (reason) q = q.eq('out_reason', reason);
     if (source) q = q.eq('source', source);
     const { data } = await q;
@@ -60,7 +60,7 @@ export default function OutList() {
         </div>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Name</th><th>Source</th><th>Product</th><th>Interactions</th><th>Reason</th><th>Left from</th><th>Last contact</th><th>Moved</th>{isAdmin && <th>RM</th>}<th /></tr></thead>
+            <thead><tr><th>Name</th><th>Source</th><th>Product</th><th>Interactions</th><th>Reason</th><th>Left from</th><th>Last contact</th><th>Moved</th><th /></tr></thead>
             <tbody>
               {rows === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={10}><Skeleton /></td></tr>)}
               {rows?.map((l) => (
@@ -73,7 +73,6 @@ export default function OutList() {
                   <td className="muted small">{bucketLabel(l.out_from_bucket ?? 'active_contact')}</td>
                   <td>{fmtDate(lastContact[l.id])}</td>
                   <td>{fmtDate(l.out_at)}</td>
-                  {isAdmin && <td>{teamName(l.rm_id)}</td>}
                   <td><button className="btn ghost sm" onClick={(e) => { e.stopPropagation(); setBack(l); }}>Bring back</button></td>
                 </tr>
               ))}
