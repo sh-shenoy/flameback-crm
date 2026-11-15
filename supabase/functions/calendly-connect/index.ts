@@ -171,16 +171,31 @@ async function schedule(action: string, body: any, ctx: Ctx): Promise<Response> 
       event_type: body.event_type,
       start_time: new Date(body.start_time).toISOString().replace(/\.\d{3}Z$/, 'Z'),
       invitee: { name: lead.name, email, timezone: 'Asia/Kolkata' },
-      tracking: { utm_source: 'flameback_crm', utm_content: lead.id },
     };
     if (loc?.kind) payload.location = loc.location ? { kind: loc.kind, location: loc.location } : { kind: loc.kind };
     if (guests.length) payload.event_guests = guests;
 
-    const r = await cal(conn.access_token, '/invitees', { method: 'POST', body: JSON.stringify(payload) });
-    if (!r.ok) return json({ error: calError(r) + (r.body?.details ? ` · ${JSON.stringify(r.body.details)}` : '') }, 400);
+    // Tag the booking with the lead id so the webhook matches it to this lead.
+    // Calendly wants every tracking field present; try the full set, then variants, then no tag
+    // (the webhook still matches on the client's email).
+    const base = { utm_source: 'flameback_crm', utm_medium: 'crm', utm_campaign: 'crm_booking', utm_content: lead.id, utm_term: 'crm' };
+    const attempts: (Record<string, unknown> | null)[] = [
+      { ...base, salesforce_uuid: null },
+      { ...base, salesforce_uuid: '' },
+      null,
+    ];
+    let r: Awaited<ReturnType<typeof cal>> | null = null;
+    for (const tracking of attempts) {
+      const body2 = tracking ? { ...payload, tracking } : payload;
+      r = await cal(conn.access_token, '/invitees', { method: 'POST', body: JSON.stringify(body2) });
+      const aboutTracking = r.status === 400 && JSON.stringify(r.body ?? {}).includes('tracking');
+      if (r.ok || !aboutTracking) break;
+    }
+    if (!r!.ok) return json({ error: calError(r!) + (r!.body?.details ? ` · ${JSON.stringify(r!.body.details)}` : '') }, 400);
+    const res = r!;
     // remember the email we booked with, if the lead didn't have one
     if (!lead.email) await ctx.admin.from('leads').update({ email }).eq('id', lead.id).is('email', null);
-    return json({ ok: true, invitee: r.body?.resource?.uri ?? null });
+    return json({ ok: true, invitee: res.body?.resource?.uri ?? null });
   }
 
   if (action === 'cancel') {
