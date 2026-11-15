@@ -5,7 +5,7 @@ import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
 import { normalizeEmail, normalizePhone } from '../lib/phone';
 import { fmtDateTime, fmtPhone } from '../lib/format';
-import { PRODUCTS, type ImportBatch } from '../lib/types';
+import { PRODUCTS, normalizeProduct, type ImportBatch } from '../lib/types';
 import { Empty, Field, Modal, useToast } from '../components/ui';
 
 const MAX_ROWS = 10000;
@@ -21,7 +21,7 @@ const FIELDS: { key: FieldKey; label: string; syn: string[]; admin?: boolean }[]
   { key: 'last_name', label: 'Last name', syn: ['last name', 'lastname', 'surname', 'last', 'family name'] },
   { key: 'phone', label: 'Phone', syn: ['phone', 'mobile', 'mobile no', 'mobile number', 'phone number', 'contact', 'contact number', 'whatsapp', 'cell', 'phone no', 'mob'] },
   { key: 'email', label: 'Email', syn: ['email', 'e-mail', 'email id', 'email address', 'mail'] },
-  { key: 'product', label: 'Product (RIA / PMS)', syn: ['product', 'interest', 'product interest'] },
+  { key: 'product', label: 'Product (RIA / PMS / US RIA)', syn: ['product', 'interest', 'product interest'] },
   { key: 'source', label: 'Source', syn: ['source', 'lead source', 'channel'] },
   { key: 'campaign', label: 'Campaign', syn: ['campaign', 'campaign name', 'ad name', 'adset', 'ad set name', 'utm campaign'] },
   { key: 'city', label: 'City / region', syn: ['city', 'location', 'region', 'town'] },
@@ -126,7 +126,7 @@ export default function Upload() {
       Object.entries(map).forEach(([i, k]) => { if (k) d[k] = String(r[+i] ?? '').trim(); });
       if (!d.name && (d.first_name || d.last_name)) d.name = [d.first_name, d.last_name].filter(Boolean).join(' ');
       delete d.first_name; delete d.last_name;
-      if (d.product) d.product = d.product.toUpperCase();
+      if (d.product) d.product = normalizeProduct(d.product) ?? d.product;
       if (d.source) d.source = sources.find((s) => s.name.toLowerCase() === d.source!.toLowerCase())?.name ?? d.source;
       const phone = normalizePhone(d.phone);
       const email = normalizeEmail(d.email);
@@ -136,7 +136,7 @@ export default function Upload() {
       else if (phone === 'invalid') { status = 'invalid'; note = `Phone "${d.phone}" is not valid`; }
       else if (email === 'invalid') { status = 'invalid'; note = `Email "${d.email}" is not valid`; }
       else if (!phone && !email) { status = 'invalid'; note = 'No phone or email'; }
-      else if ((d.product || product) && !PRODUCTS.includes((d.product || product) as never)) { status = 'invalid'; note = `Product "${d.product}" must be RIA or PMS`; }
+      else if ((d.product || product) && !PRODUCTS.includes((d.product || product) as never)) { status = 'invalid'; note = `Product "${d.product}" must be RIA, PMS or US RIA`; }
       else if (d.source && !srcNames.has(d.source.toLowerCase())) { status = 'invalid'; note = `Unknown source "${d.source}"`; }
       else if (d.age && !/^\d{2,3}$/.test(d.age)) { status = 'invalid'; note = `Age "${d.age}" is not a number`; }
       else {

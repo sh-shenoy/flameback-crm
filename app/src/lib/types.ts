@@ -6,8 +6,13 @@ export type Bucket =
   | 'converting'
   | 'out';
 
-export type Product = 'RIA' | 'PMS';
-export const PRODUCTS: Product[] = ['RIA', 'PMS'];
+export type Product = 'RIA' | 'PMS' | 'US RIA';
+export const PRODUCTS: Product[] = ['RIA', 'PMS', 'US RIA'];
+/** "us ria", "US-RIA", "usria" → 'US RIA' (mirrors public.normalize_product). */
+export function normalizeProduct(p: unknown): Product | null {
+  const k = String(p ?? '').toUpperCase().replace(/[^A-Z]/g, '');
+  return k === 'RIA' ? 'RIA' : k === 'PMS' ? 'PMS' : k === 'USRIA' ? 'US RIA' : null;
+}
 
 export interface Profile {
   id: string;
@@ -22,6 +27,11 @@ export interface Profile {
   team: Team;
   calendly_url: string | null;
   calendly_connected_at: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  gmail_address: string | null;
+  gmail_connected_at: string | null;
+  created_at: string;
 }
 
 export interface Lead {
@@ -197,4 +207,20 @@ export const TASK_TEMPLATES: { key: string; label: string; title: string; to_tea
   { key: 'withdrawal', label: 'Withdrawal', title: 'Withdrawal request', to_team: 'Operations', details: 'Amount (₹):\nDate needed by:\nBank account:\n' },
   { key: 'top_up', label: 'Top-up', title: 'Top-up', to_team: 'Operations', details: 'Amount (₹):\nDate:\nMode of payment:\n' },
   { key: 'compliance_query', label: 'Compliance query', title: 'Compliance query', to_team: 'Compliance', details: 'Question:\n' },
+];
+
+export interface AppNotification {
+  id: string; user_id: string; kind: string; title: string; body: string | null; link: string | null;
+  read_at: string | null; created_at: string;
+}
+export const NOTIFICATION_KINDS: { key: string; label: string }[] = [
+  { key: 'lead_assigned', label: 'New leads' },
+  { key: 'digest', label: 'Daily digest' },
+  { key: 'meeting_soon', label: 'Meeting reminders' },
+  { key: 'meeting_booked', label: 'Bookings' },
+  { key: 'meeting_canceled', label: 'Cancellations' },
+  { key: 'task', label: 'Tasks' },
+  { key: 'email_reply', label: 'Email replies' },
+  { key: 'access_request', label: 'Access requests' },
+  { key: 'access_approved', label: 'Access' },
 ];

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
 import {
@@ -18,9 +18,10 @@ import { calendly, type CalendlyEventRow, type CalendlyEventType } from '../lib/
 const ONBOARDING_ROUTE: Record<string, string> = {
   RIA: 'the Flameback app',
   PMS: 'Silver Bullet',
+  'US RIA': 'the onboarding module (process to be decided)',
 };
 
-type Dialog = null | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
+type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
 
 export default function LeadPage() {
   const { id } = useParams();
@@ -53,6 +54,19 @@ export default function LeadPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // arriving from the calendar's "Schedule meeting"
+  const [sp, setSp] = useSearchParams();
+  useEffect(() => {
+    if (sp.get('schedule') === '1' && lead) { setDialog('schedule'); sp.delete('schedule'); setSp(sp, { replace: true }); }
+  }, [sp, lead?.id]);
+
+  // pull this lead's emails from Gmail when the page opens
+  useEffect(() => {
+    if (!me?.gmail_connected_at || !lead?.email) return;
+    supabase.functions.invoke('gmail', { body: { action: 'sync', lead_id: lead.id } })
+      .then(({ data }) => { if ((data as { added?: number } | null)?.added) load(); }, () => undefined);
+  }, [lead?.id, lead?.email, me?.gmail_connected_at]);
 
   async function act(fn: string, args: Record<string, unknown>, msg: string) {
     try {
@@ -165,8 +179,9 @@ export default function LeadPage() {
           {(lead.bucket === 'holding' || lead.bucket === 'awaiting_meeting') && <button className="btn ghost" onClick={() => setDialog('defer')}>Defer</button>}
           {open && <button className="btn ghost danger-text" onClick={() => setDialog('not_interested')}>Not interested</button>}
           {lead.bucket === 'out' && <button className="btn" onClick={() => setDialog('bring_back')}>Bring back</button>}
-          {open && <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('booking')}>Send booking link</button>}
-          <button className="btn ghost" style={open ? undefined : { marginLeft: 'auto' }} onClick={() => setDialog('task')}>Raise task</button>
+          <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('email')}>Email</button>
+          {open && <button className="btn ghost" onClick={() => setDialog('booking')}>Send booking link</button>}
+          <button className="btn ghost" onClick={() => setDialog('task')}>Raise task</button>
         </div>
         {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
       </div>
@@ -198,6 +213,7 @@ export default function LeadPage() {
       {dialog === 'cal_cancel' && calEvent && (
         <CancelCalendlyDialog lead={lead} ev={calEvent} onClose={() => setDialog(null)} onDone={() => { setDialog(null); setTimeout(load, 3000); setTimeout(load, 8000); }} />
       )}
+      {dialog === 'email' && <EmailDialog lead={lead} onClose={() => setDialog(null)} onSent={() => { setDialog(null); load(); }} />}
       {dialog === 'booking' && <BookingLinkDialog lead={lead} calendlyUrl={me!.calendly_url} rmName={me!.full_name ?? ''} onClose={() => setDialog(null)} />}
       {dialog === 'task' && <NewTaskModal lead={{ id: lead.id, name: lead.name }} onClose={() => setDialog(null)} onSaved={load} />}
       {openTask && <TaskDrawer id={openTask} onClose={() => setOpenTask(null)} onChanged={load} />}
@@ -730,6 +746,79 @@ function CancelCalendlyDialog({ lead, ev, onClose, onDone }: { lead: Lead; ev: C
         }}>Cancel meeting</button></>}>
       <p style={{ marginBottom: 12 }}>Cancels <b>{ev.event_name ?? 'the meeting'}</b> on <b>{fmtDateTime(ev.start_time)}</b> in Calendly. Everyone invited gets a cancellation email, and the lead gets a follow-up for today.</p>
       <Field label="Reason (shared with the client)"><textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Something came up, I'll send new times shortly" /></Field>
+      {err && <div className="form-err">{err}</div>}
+    </Modal>
+  );
+}
+
+/* ───────── email from the RM's Gmail ───────── */
+function EmailDialog({ lead, onClose, onSent }: { lead: Lead; onClose: () => void; onSent: () => void }) {
+  const { me } = useApp();
+  const toast = useToast();
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState(`Hi ${lead.name.split(' ')[0]},\n\n\n\nRegards,\n${me!.full_name ?? ''}\nFlameback Capital`);
+  const [cc, setCc] = useState('');
+  const [thread, setThread] = useState<{ thread_id: string; subject: string | null } | null>(null);
+  const [reply, setReply] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from('gmail_messages').select('thread_id, subject, sent_at').eq('lead_id', lead.id).order('sent_at', { ascending: false }).limit(1)
+      .then(({ data }) => {
+        const t = (data as { thread_id: string; subject: string | null }[] | null)?.[0];
+        if (t?.thread_id) { setThread(t); setSubject(t.subject?.startsWith('Re:') ? t.subject : `Re: ${t.subject ?? ''}`); }
+      });
+  }, [lead.id]);
+
+  if (!me!.gmail_connected_at) {
+    return (
+      <Modal title="Email" onClose={onClose}
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/settings" onClick={onClose}>Connect Gmail</Link></>}>
+        <p>Connect your Gmail first (Settings → Gmail). Emails then go from your own address, and replies appear on the lead's timeline.</p>
+      </Modal>
+    );
+  }
+  if (!lead.email) {
+    return (
+      <Modal title="Email" onClose={onClose} footer={<button className="btn ghost" onClick={onClose}>Close</button>}>
+        <p>{lead.name} has no email address. Add it in the Profile section first.</p>
+      </Modal>
+    );
+  }
+  async function send() {
+    setBusy(true); setErr(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('gmail', { body: {
+        action: 'send', lead_id: lead.id, subject, body,
+        cc: cc.split(/[,;\s]+/).filter(Boolean), thread_id: thread && reply ? thread.thread_id : null,
+      } });
+      let msg = (data as { error?: string } | null)?.error;
+      if (!msg && error) { try { msg = (await (error as { context?: Response }).context?.clone().json())?.error; } catch { /* ignore */ } msg = msg || error.message; }
+      if (msg) { setErr(msg); return; }
+      toast(`Email sent to ${lead.email}`);
+      onSent();
+    } finally { setBusy(false); }
+  }
+  return (
+    <Modal title={`Email ${lead.name}`} onClose={onClose} wide
+      footer={<>
+        <span className="muted small" style={{ marginRight: 'auto' }}>From {me!.gmail_address}</span>
+        <button className="btn ghost" onClick={onClose}>Cancel</button>
+        <button className="btn" disabled={busy || !subject.trim() || !body.trim()} onClick={send}>{busy ? 'Sending…' : 'Send'}</button>
+      </>}>
+      <div className="grid2">
+        <Field label="To"><input value={`${lead.name} <${lead.email}>`} readOnly /></Field>
+        <Field label="Cc" hint="Optional, separate with commas"><input value={cc} onChange={(e) => setCc(e.target.value)} /></Field>
+      </div>
+      {thread && (
+        <label className="check" style={{ marginBottom: 12 }}>
+          <input type="checkbox" checked={reply} onChange={(e) => { setReply(e.target.checked); if (!e.target.checked) setSubject(''); else setSubject(thread.subject?.startsWith('Re:') ? thread.subject : `Re: ${thread.subject ?? ''}`); }} />
+          Reply in your last conversation ("{thread.subject ?? 'no subject'}")
+        </label>
+      )}
+      <Field label="Subject" required><input value={subject} onChange={(e) => setSubject(e.target.value)} /></Field>
+      <Field label="Message" required><textarea rows={10} value={body} onChange={(e) => setBody(e.target.value)} /></Field>
       {err && <div className="form-err">{err}</div>}
     </Modal>
   );

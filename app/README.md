@@ -21,12 +21,19 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Duplicates | Same phone or email in the unit can't be added twice; you get a warning with a merge option. |
 | Tasks | Kanban board (Open / In Progress / Blocked / Done) and list view; Assigned to me, my team, Raised by me. Raised to a team and optionally a person, with priority, due date, optional lead, comments and history. Blocked needs a reason. Templates: account opening, address change, strategy switch, withdrawal, top-up, compliance query. Overdue tasks show on the dashboard and in Today's actions. |
 | Calendly | Each RM connects their own Calendly (Settings). Bookings arrive automatically: an existing lead (matched by the link's hidden lead id, then email, then phone) moves to Awaiting meeting with the time and Meet link; someone new becomes that RM's lead with source Calendly. Cancellations clear the meeting and set a follow-up for today. **Send booking link** on the lead page gives a pre-filled link with WhatsApp / email buttons. Setup: `supabase/functions/README.md`. |
+| Access | New sign-ups wait on **Admin → Access requests**; an admin approves them as RM or Admin (or rejects). Admins are notified of each request. |
+| Notifications | Bell with unread count, live pop-ups and a Notifications page: new leads (one per upload), Calendly bookings and cancellations, 9 am digest, meeting in 30 min, task created / assigned / moved / commented / file added, email replies, access requests. |
+| Calendar | Day, week and month views of your meetings (Calendly and manual) and tasks due, in IST; schedule from the calendar. |
+| Reports | Conversion by source, campaign, referrer, product or RM (admins): leads, contacted, met, committed, Out List; CSV download. |
+| Gmail | Connect in Settings; send from the lead page (optionally replying in the last thread); emails with leads appear on the timeline and a reply clears strikes. |
+| Task files | Attach files to tasks (20 MB each), stored privately; visible to whoever can see the task. |
+| Products | RIA, PMS, US RIA. |
 | Teams | Each person has a team (Sales, Operations, Compliance, Investment), set on Team & rotation. Only Sales people in rotation receive round-robin leads; new sign-ups start out of rotation. |
 
 ## One-time setup
 
 ### 1. Database
-In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…`, `0002_…`, `0003_…`). When a new migration file is added later, run just that one.
+In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…` to `0004_…`). When a new migration file is added later, run just that one.
 
 It creates the tables, rules and access policies, and schedules the timed rules (48h message strikes, deferred returns) every 15 minutes with `pg_cron`. If `pg_cron` isn't enabled, enable it under **Database → Extensions** and re-run the last `do $$ … $$` block. The app also runs these rules whenever someone opens it.
 

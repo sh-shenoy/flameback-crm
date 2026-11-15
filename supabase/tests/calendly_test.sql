@@ -3,6 +3,8 @@
 insert into auth.users (id,email,raw_user_meta_data) values
  ('00000000-0000-0000-0000-00000000000a','shashank@flamebackcapital.com','{"full_name":"Shashank"}'),
  ('00000000-0000-0000-0000-00000000000b','priya@flamebackcapital.com','{"full_name":"Priya"}');
+-- (0004+) sign-ups wait for approval; approve everyone for these tests
+update profiles set is_active = true, approved_at = coalesce(approved_at, now());
 update profiles set in_rotation = true;
 
 -- an existing lead owned by Shashank, in Active contact with 2 strikes

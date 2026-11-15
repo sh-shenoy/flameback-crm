@@ -5,6 +5,8 @@ insert into auth.users (id,email,raw_user_meta_data) values
  ('00000000-0000-0000-0000-00000000000b','priya@flamebackcapital.com','{"full_name":"Priya"}'),
  ('00000000-0000-0000-0000-00000000000c','ravi@flamebackcapital.com','{"full_name":"Ravi"}'),
  ('00000000-0000-0000-0000-00000000000d','neha@flamebackcapital.com','{"full_name":"Neha"}');
+-- (0004+) sign-ups wait for approval; approve everyone for these tests
+update profiles set is_active = true, approved_at = coalesce(approved_at, now());
 update profiles set team='Operations' where email='ravi@flamebackcapital.com';
 update profiles set team='Compliance' where email='neha@flamebackcapital.com';
 update profiles set in_rotation = (email='priya@flamebackcapital.com');

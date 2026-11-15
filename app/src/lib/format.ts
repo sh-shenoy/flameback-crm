@@ -75,3 +75,21 @@ export function initials(name: string | null | undefined): string {
     .map((w) => w[0]!.toUpperCase())
     .join('');
 }
+
+/** "just now", "5 min ago", "3 h ago", "yesterday", else the date. */
+export function timeAgo(ts: string): string {
+  const s = Math.max(0, (Date.now() - new Date(ts).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 172800) return 'yesterday';
+  return fmtDate(ts);
+}
+
+/** Bytes → "1.2 MB". */
+export function fmtSize(n: number | null | undefined): string {
+  if (!n && n !== 0) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}

@@ -15,6 +15,8 @@ interface AppCtx {
 }
 
 const Ctx = createContext<AppCtx | null>(null);
+export const GMAIL_FLAG = 'crm.gmail.connecting';
+export const GMAIL_RESULT = 'crm.gmail.result';
 
 export function useApp(): AppCtx {
   const v = useContext(Ctx);
@@ -28,15 +30,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [team, setTeam] = useState<Profile[]>([]);
   const [sources, setSources] = useState<LeadSource[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setReady(true);
+      captureGmail(data.session);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => { setSession(s); captureGmail(s); });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // After "Connect Gmail", Google returns a long-lived token once, on this sign-in only: hand it to the server.
+  function captureGmail(s: Session | null) {
+    let pending = false;
+    try { pending = localStorage.getItem(GMAIL_FLAG) === '1'; } catch { /* ignore */ }
+    if (!pending || !s) return;
+    try { localStorage.removeItem(GMAIL_FLAG); } catch { /* ignore */ }
+    const token = s.provider_refresh_token;
+    supabase.functions.invoke('gmail', { body: { action: 'save', refresh_token: token ?? '' } }).then(async ({ data, error }) => {
+      let msg = (data as { error?: string } | null)?.error ?? null;
+      if (!msg && error) {
+        try { msg = (await (error as { context?: Response }).context?.clone().json())?.error ?? error.message; } catch { msg = error.message; }
+      }
+      try { sessionStorage.setItem(GMAIL_RESULT, JSON.stringify(msg ? { ok: false, msg } : { ok: true })); } catch { /* ignore */ }
+      await reloadRef();
+      window.location.hash = '#/settings';
+    });
+  }
 
   async function reloadRef() {
     const [p, s] = await Promise.all([
@@ -47,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else setLoadErr(null);
     setTeam((p.data as Profile[]) ?? []);
     setSources((s.data as LeadSource[]) ?? []);
+    setLoaded(true);
   }
 
   useEffect(() => {
@@ -54,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else {
       setTeam([]);
       setSources([]);
+      setLoaded(false);
     }
   }, [session?.user.id]);
 
@@ -66,7 +90,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const me = session ? team.find((t) => t.id === session.user.id) ?? null : null;
 
-  if (session && team.length && !me) {
+  if (session && me && !me.is_active) {
+    const title = me.rejected_at ? 'Access not approved' : me.approved_at ? 'Access removed' : 'Waiting for approval';
+    const text = me.rejected_at || me.approved_at
+      ? 'An admin has turned off your access to Flameback CRM. Speak to them if you think this is a mistake.'
+      : 'Thanks for signing in. An admin has been asked to approve your access; this page will open the CRM once they do.';
+    return (
+      <div className="login">
+        <div className="login-card">
+          <img className="login-logo" src={`${import.meta.env.BASE_URL}logo-full.png`} alt="Flameback Capital" />
+          <h2 style={{ fontSize: 18 }}>{title}</h2>
+          <p className="muted">{text}</p>
+          <p className="muted small">Signed in as {session.user.email}</p>
+          <div className="row-gap">
+            {!me.rejected_at && !me.approved_at && <button className="btn" onClick={() => reloadRef()}>Check again</button>}
+            <button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (session && loaded && !me) {
     return (
       <div className="boot">
         <div className="panel pad" style={{ maxWidth: 420 }}>

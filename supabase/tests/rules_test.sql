@@ -11,6 +11,8 @@ do $$ begin
   assert (select role from profiles where email='shashank@flamebackcapital.com')='admin', 'first user admin';
   assert (select role from profiles where email='priya@flamebackcapital.com')='rm', 'second user rm';
 end $$;
+-- (0004+) sign-ups wait for approval; approve everyone for these tests
+update profiles set is_active = true, approved_at = coalesce(approved_at, now());
 update profiles set in_rotation = (email <> 'shashank@flamebackcapital.com');
 
 set role authenticated;
