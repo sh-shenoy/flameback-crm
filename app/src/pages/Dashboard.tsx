@@ -3,16 +3,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
 import { addDays, fmtTime, relativeDay, todayIST } from '../lib/format';
-import { BUCKETS, type Bucket, type Lead } from '../lib/types';
+import { BUCKETS, type Bucket, type Lead, type Task } from '../lib/types';
 import { Empty, ProductTag, Skeleton } from '../components/ui';
+import { PriorityTag, TaskDrawer } from '../components/TaskParts';
 
 const WORKING: Bucket[] = ['active_contact', 'awaiting_meeting', 'holding', 'deferred'];
 
 interface Stats {
   active: number; newToday: number; dueToday: number; overdue: number;
   meetingsWeek: number; meetingsToday: number; committedMonth: number; committedLastMonth: number;
+  tasksOverdue: number; tasksToday: number;
 }
-interface Action { kind: 'follow' | 'meeting'; lead: Lead; when: string; sort: string }
+type Action =
+  | { kind: 'follow' | 'meeting'; lead: Lead; when: string; sort: string }
+  | { kind: 'task'; task: Task; when: string; sort: string };
+type Kind = Action['kind'];
 
 function monthStart(offset = 0): string {
   const t = todayIST();
@@ -25,7 +30,9 @@ export default function Dashboard() {
   const nav = useNavigate();
   const [stats, setStats] = useState<Stats | null>(null);
   const [actions, setActions] = useState<Action[] | null>(null);
-  const [actFilter, setActFilter] = useState<'all' | 'follow' | 'meeting'>('all');
+  const [actFilter, setActFilter] = useState<'all' | Kind>('all');
+  const [openTask, setOpenTask] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
   const [pipeline, setPipeline] = useState<Record<string, number> | null>(null);
   const [funnel, setFunnel] = useState<{ n: number; follow: number; conv: number; out: number } | null>(null);
   const [period, setPeriod] = useState<0 | -1>(0);
@@ -45,6 +52,10 @@ export default function Dashboard() {
     const weekEnd = new Date(addDays(today, 7) + 'T00:00:00+05:30').toISOString();
     setStats(null); setActions(null); setPipeline(null); setErr(null);
 
+    const myTasks = () => supabase.from('tasks').select('*', { count: 'exact' })
+      .or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team}),created_by.eq.${me!.id}`)
+      .neq('status', 'done');
+    const taskCount = async (b: (q: any) => any) => { const { count: c, error } = await b(myTasks()).limit(1); if (error) throw error; return c ?? 0; };
     Promise.all([
       count((q) => q.in('bucket', WORKING)),
       count((q) => q.in('bucket', WORKING).gte('created_at', todayStart)),
@@ -54,8 +65,10 @@ export default function Dashboard() {
       count((q) => q.eq('bucket', 'awaiting_meeting').gte('meeting_at', todayStart).lt('meeting_at', tomorrowStart)),
       count((q) => q.gte('converted_at', monthStart(0)).eq('bucket', 'converting')),
       count((q) => q.gte('converted_at', monthStart(-1)).lt('converted_at', monthStart(0)).eq('bucket', 'converting')),
-    ]).then(([active, newToday, dueToday, overdue, meetingsWeek, meetingsToday, committedMonth, committedLastMonth]) =>
-      setStats({ active, newToday, dueToday, overdue, meetingsWeek, meetingsToday, committedMonth, committedLastMonth }),
+      taskCount((q) => q.lt('due_date', today)),
+      taskCount((q) => q.eq('due_date', today)),
+    ]).then(([active, newToday, dueToday, overdue, meetingsWeek, meetingsToday, committedMonth, committedLastMonth, tasksOverdue, tasksToday]) =>
+      setStats({ active, newToday, dueToday, overdue, meetingsWeek, meetingsToday, committedMonth, committedLastMonth, tasksOverdue, tasksToday }),
     ).catch((e) => setErr(e.message));
 
     // today's actions: follow-ups due/overdue + meetings today
@@ -64,12 +77,16 @@ export default function Dashboard() {
         .order('next_follow_up', { ascending: true }).limit(100)),
       scoped(supabase.from('leads').select('*').eq('bucket', 'awaiting_meeting')
         .gte('meeting_at', todayStart).lt('meeting_at', tomorrowStart)),
-    ]).then(([f, m]: any[]) => {
+      // tasks I own (assigned to me, or to my team with nobody assigned) due today or overdue
+      supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`)
+        .neq('status', 'done').lte('due_date', today).limit(100),
+    ]).then(([f, m, tk]: any[]) => {
       const out: Action[] = [];
+      for (const t of (tk.data ?? []) as Task[]) out.push({ kind: 'task', task: t, when: t.due_date!, sort: (t.due_date! < today ? '0' : '3') + t.due_date });
       for (const l of (m.data ?? []) as Lead[]) out.push({ kind: 'meeting', lead: l, when: l.meeting_at!, sort: `1${l.meeting_at}` });
       for (const l of (f.data ?? []) as Lead[]) {
         // a lead with a meeting today shows once, as the meeting
-        if (out.some((a) => a.lead.id === l.id)) continue;
+        if (out.some((a) => a.kind === 'meeting' && a.lead.id === l.id)) continue;
         out.push({ kind: 'follow', lead: l, when: l.next_follow_up!, sort: (l.next_follow_up! < today ? '0' : '2') + l.next_follow_up });
       }
       out.sort((a, b) => a.sort.localeCompare(b.sort));
@@ -79,7 +96,7 @@ export default function Dashboard() {
     Promise.all(BUCKETS.map(async (b) => [b.key, await count((q) => q.eq('bucket', b.key))] as const))
       .then((pairs) => setPipeline(Object.fromEntries(pairs)))
       .catch(() => undefined);
-  }, [me]);
+  }, [me, reload]);
 
   useEffect(() => {
     setFunnel(null);
@@ -113,6 +130,7 @@ export default function Dashboard() {
           dot={!!stats?.overdue} onClick={() => document.getElementById('todays-actions')?.scrollIntoView({ behavior: 'smooth' })} />
         <Card label="Meetings this week" v={stats?.meetingsWeek} sub={stats && `${stats.meetingsToday} today`} onClick={() => nav(leadsLink('?bucket=awaiting_meeting'))} />
         <Card label="Committed this month" v={stats?.committedMonth} sub={stats && `${stats.committedLastMonth} last month`} onClick={() => nav(leadsLink('?bucket=converting'))} />
+        <Card label="Overdue tasks" v={stats?.tasksOverdue} sub={stats && `${stats.tasksToday} due today`} dot={!!stats?.tasksOverdue} onClick={() => nav('/tasks?due=overdue')} />
         <Card label="AUM" soon />
         <Card label="Reviews this week" soon />
         <Card label="Touch-base due" soon />
@@ -123,12 +141,12 @@ export default function Dashboard() {
           <div className="panel-head">
             <h2>Today's actions {actions && <span className="muted">· {actions.length}</span>}</h2>
             <div className="chips">
-              {(['all', 'follow', 'meeting'] as const).map((k) => (
+              {(['all', 'follow', 'meeting', 'task'] as const).map((k) => (
                 <button key={k} className={`chip ${actFilter === k ? 'on' : ''}`} onClick={() => setActFilter(k)}>
-                  {k === 'all' ? 'All' : k === 'follow' ? 'Follow-ups' : 'Meetings'}
+                  {k === 'all' ? 'All' : k === 'follow' ? 'Follow-ups' : k === 'meeting' ? 'Meetings' : 'Tasks'}
                 </button>
               ))}
-              {['Reviews', 'Tasks'].map((k) => <span key={k} className="chip disabled" title="Coming soon">{k}</span>)}
+              <span className="chip disabled" title="Coming soon">Reviews</span>
             </div>
           </div>
           {actions === null && <div className="pad"><Skeleton /><br /><Skeleton /><br /><Skeleton /></div>}
@@ -141,6 +159,20 @@ export default function Dashboard() {
           {shown.length > 0 && (
             <div className="actions-list">
               {shown.slice(0, 15).map((a) => {
+                if (a.kind === 'task') {
+                  const r = relativeDay(a.when);
+                  return (
+                    <div key={'t' + a.task.id} className="action-row" onClick={() => setOpenTask(a.task.id)}>
+                      <span className="a-type">Task</span>
+                      <div className="a-what">
+                        <b>{a.task.title}</b>
+                        <span className="muted small"> · <PriorityTag p={a.task.priority} /> · from {a.task.from_team}{a.task.lead_name ? ` · ${a.task.lead_name}` : ''}</span>
+                      </div>
+                      <span className={`a-when ${r.tone === 'overdue' ? 'red' : ''}`}>{r.text}</span>
+                      <button className="btn ghost sm" onClick={(e) => { e.stopPropagation(); setOpenTask(a.task.id); }}>Open</button>
+                    </div>
+                  );
+                }
                 const r = a.kind === 'follow' ? relativeDay(a.when) : null;
                 return (
                   <div key={a.kind + a.lead.id} className="action-row" onClick={() => nav(`/leads/${a.lead.id}`)}>
@@ -200,6 +232,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      {openTask && <TaskDrawer id={openTask} onClose={() => setOpenTask(null)} onChanged={() => setReload((n) => n + 1)} />}
     </div>
   );
 }

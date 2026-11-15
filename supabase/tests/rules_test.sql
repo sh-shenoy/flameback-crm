@@ -11,7 +11,7 @@ do $$ begin
   assert (select role from profiles where email='shashank@flamebackcapital.com')='admin', 'first user admin';
   assert (select role from profiles where email='priya@flamebackcapital.com')='rm', 'second user rm';
 end $$;
-update profiles set in_rotation=false where email='shashank@flamebackcapital.com';
+update profiles set in_rotation = (email <> 'shashank@flamebackcapital.com');
 
 set role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false); -- Priya

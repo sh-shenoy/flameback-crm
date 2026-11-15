@@ -7,13 +7,14 @@ import type { Lead } from '../lib/types';
 import { BucketPill } from './ui';
 import AddLead from './AddLead';
 
-type NavItem = { to: string; label: string; badge?: 'overdue' };
+type NavItem = { to: string; label: string; badge?: 'overdue' | 'tasks' };
 const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boolean }[] = [
   {
-    title: 'Pipeline',
+    title: 'Workspace',
     items: [
       { to: '/', label: 'Dashboard' },
       { to: '/leads', label: 'Leads', badge: 'overdue' },
+      { to: '/tasks', label: 'Tasks', badge: 'tasks' },
       { to: '/out', label: 'Out List' },
       { to: '/upload', label: 'Upload leads' },
     ],
@@ -26,7 +27,6 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
       { to: '/clients', label: 'Clients' },
       { to: '/onboarding', label: 'Onboarding' },
       { to: '/reviews', label: 'Reviews' },
-      { to: '/tasks', label: 'Tasks' },
       { to: '/calendar', label: 'Calendar' },
       { to: '/notifications', label: 'Notifications' },
     ],
@@ -38,6 +38,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   const [adding, setAdding] = useState(false);
   const [menu, setMenu] = useState(false);
   const [overdue, setOverdue] = useState(0);
+  const [overdueTasks, setOverdueTasks] = useState(0);
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -46,6 +47,11 @@ export default function Shell({ children }: { children: ReactNode }) {
       .not('bucket', 'in', '(out,converting)')
       .lt('next_follow_up', todayIST())
       .then(({ count }) => setOverdue(count ?? 0));
+    supabase.from('tasks').select('id', { count: 'exact', head: true })
+      .or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`)
+      .neq('status', 'done')
+      .lt('due_date', todayIST())
+      .then(({ count }) => setOverdueTasks(count ?? 0));
   }, [pathname, me]);
 
   // open "add lead" from anywhere via a custom event
@@ -73,6 +79,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                   <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                     {n.label}
                     {n.badge === 'overdue' && overdue > 0 && <span className="count" title={`${overdue} overdue follow-ups`}>{overdue}</span>}
+                    {n.badge === 'tasks' && overdueTasks > 0 && <span className="count" title={`${overdueTasks} overdue tasks`}>{overdueTasks}</span>}
                   </NavLink>
                 ),
               )}

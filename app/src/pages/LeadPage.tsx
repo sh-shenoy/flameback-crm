@@ -11,13 +11,15 @@ import {
 } from '../lib/types';
 import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
 import { Select } from '../components/AddLead';
+import { DueTag, NewTaskModal, PriorityTag, StatusTag, TaskDrawer } from '../components/TaskParts';
+import type { Task } from '../lib/types';
 
 const ONBOARDING_ROUTE: Record<string, string> = {
   RIA: 'the Flameback app',
   PMS: 'Silver Bullet',
 };
 
-type Dialog = null | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
+type Dialog = null | 'task' | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
 
 export default function LeadPage() {
   const { id } = useParams();
@@ -28,13 +30,17 @@ export default function LeadPage() {
   const [events, setEvents] = useState<LeadEvent[]>([]);
   const [missing, setMissing] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [openTask, setOpenTask] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [l, e, ev] = await Promise.all([
+    const [l, e, ev, tk] = await Promise.all([
       supabase.from('leads').select('*').eq('id', id!).maybeSingle(),
       supabase.from('lead_entries').select('*').eq('lead_id', id!).order('occurred_at', { ascending: false }),
       supabase.from('lead_events').select('*').eq('lead_id', id!).order('at', { ascending: false }),
+      supabase.from('tasks').select('*').eq('lead_id', id!).order('created_at', { ascending: false }),
     ]);
+    setTasks((tk.data as Task[]) ?? []);
     if (!l.data) { setMissing(true); return; }
     setLead(l.data as Lead);
     setEntries((e.data as LeadEntry[]) ?? []);
@@ -143,15 +149,33 @@ export default function LeadPage() {
           {(lead.bucket === 'holding' || lead.bucket === 'awaiting_meeting') && <button className="btn ghost" onClick={() => setDialog('defer')}>Defer</button>}
           {open && <button className="btn ghost danger-text" onClick={() => setDialog('not_interested')}>Not interested</button>}
           {lead.bucket === 'out' && <button className="btn" onClick={() => setDialog('bring_back')}>Bring back</button>}
+          <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('task')}>Raise task</button>
         </div>
         {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
       </div>
 
       <div className="lead-cols">
         <ProfileCard lead={lead} onSaved={load} />
-        <Timeline entries={entries} events={events} teamName={teamName} onChanged={load} />
+        <div className="stack">
+          {tasks.length > 0 && (
+            <div className="panel">
+              <div className="panel-head"><h2>Tasks</h2><span className="muted small">{tasks.filter((t) => t.status !== 'done').length} open</span></div>
+              {tasks.map((t) => (
+                <div key={t.id} className="task-row" onClick={() => setOpenTask(t.id)}>
+                  <PriorityTag p={t.priority} />
+                  <span className="tr-title">{t.title}<span className="muted small"> · {t.to_team}</span></span>
+                  <DueTag task={t} />
+                  <StatusTag s={t.status} />
+                </div>
+              ))}
+            </div>
+          )}
+          <Timeline entries={entries} events={events} teamName={teamName} onChanged={load} />
+        </div>
       </div>
 
+      {dialog === 'task' && <NewTaskModal lead={{ id: lead.id, name: lead.name }} onClose={() => setDialog(null)} onSaved={load} />}
+      {openTask && <TaskDrawer id={openTask} onClose={() => setOpenTask(null)} onChanged={load} />}
       {dialog === 'entry' && <AddEntry lead={lead} onClose={() => setDialog(null)} onSaved={load} />}
       {dialog === 'interested' && <InterestedDialog onClose={() => setDialog(null)} act={act} />}
       {dialog === 'reschedule' && <RescheduleDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
