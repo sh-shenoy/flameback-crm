@@ -65,8 +65,11 @@ export default function Shell({ children }: { children: ReactNode }) {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <NavLink to="/" className="logo"><span className="flame">F</span><span>Flameback</span></NavLink>
-          <div className="sub">CRM · Relationship Managers</div>
+          <NavLink to="/" className="logo">
+            <img className="logo-mark" src={`${import.meta.env.BASE_URL}logo-mark.png`} alt="" />
+            <span className="wordmark"><b>FLAMEBACK</b><span>CAPITAL</span></span>
+          </NavLink>
+          <div className="sub">CRM</div>
         </div>
         <nav className="nav">
           {SECTIONS.filter((s) => !s.admin || isAdmin).map((s) => (
