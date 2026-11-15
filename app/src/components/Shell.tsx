@@ -89,7 +89,6 @@ export default function Shell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="side-foot">India Quantitative Wealth Management</div>
       </aside>
 
       <div className="content">
