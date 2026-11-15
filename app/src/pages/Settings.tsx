@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../auth';
-import { supabase } from '../lib/supabase';
+import { calendly } from '../lib/calendly';
 import { fmtDateTime } from '../lib/format';
 import { Field, useToast } from '../components/ui';
 
@@ -15,23 +15,12 @@ export default function Settings() {
   async function call(body: Record<string, unknown>) {
     setBusy(true); setErr(null);
     try {
-      const { data, error } = await supabase.functions.invoke('calendly-connect', { body });
-      // the function returns { error } with a helpful message on failure
-      let message = (data as { error?: string } | null)?.error;
-      if (!message && error) {
-        // Read the real reason: our function returns { error }, Supabase's gateway returns { code, message } or { msg }.
-        const ctx = (error as { context?: Response }).context;
-        let body: { error?: string; message?: string; msg?: string; code?: string } | null = null;
-        try { body = ctx ? await ctx.clone().json() : null; } catch { /* not JSON */ }
-        if (body?.error) message = body.error;
-        else if (ctx?.status === 404 || body?.code === 'NOT_FOUND') message = 'The calendly-connect function was not found in Supabase. Check it is deployed with exactly that name.';
-        else if (body?.message || body?.msg) message = `Supabase: ${body.message ?? body.msg}${ctx ? ` (${ctx.status})` : ''}`;
-        else if (error.name === 'FunctionsFetchError') message = 'Couldn’t reach the calendly-connect function (network or CORS). Check it is deployed and try again.';
-        else message = `${error.name}: ${error.message}${ctx ? ` (${ctx.status})` : ''}`;
-      }
-      if (message) { setErr(message); return false; }
+      await calendly(body);
       await reloadRef();
       return true;
+    } catch (e) {
+      setErr((e as Error).message);
+      return false;
     } finally { setBusy(false); }
   }
 

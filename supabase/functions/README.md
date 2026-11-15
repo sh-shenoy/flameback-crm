@@ -4,7 +4,7 @@ Two small functions run inside Supabase. They are pasted in once through the Sup
 
 | Function | What it does | JWT verification |
 |---|---|---|
-| `calendly-connect` | Called from **Settings → Connect my Calendly**. Checks the RM's Calendly token and asks Calendly to notify the CRM of that RM's bookings. | **On** (only signed-in CRM users) |
+| `calendly-connect` | Called from **Settings → Connect my Calendly**, and from the lead page to schedule, reschedule or cancel meetings. Checks the RM's Calendly token, asks Calendly to notify the CRM of that RM's bookings, lists free slots and books meetings with extra invitees. | **On** (only signed-in CRM users) |
 | `calendly-webhook` | Calendly calls it when someone books or cancels. Every request is checked against that RM's secret signing key, then the lead is created or moved to Awaiting meeting. | **Off** (Calendly can't sign in; the signature check protects it) |
 
 ## Deploy (one time)
@@ -17,6 +17,10 @@ Two small functions run inside Supabase. They are pasted in once through the Sup
 4. Open `calendly-webhook` → its settings → turn **JWT verification off** → save.
 
 Nothing else to configure: the functions use the project's own URL and service key, which Supabase provides to them automatically.
+
+## Updating a function
+
+When a change touches `calendly-connect/index.ts` or `calendly-webhook/index.ts`: Supabase → Edge Functions → open that function → **Code** → replace the whole `index.ts` with the new version → **Deploy**.
 
 ## Each RM (one time)
 
