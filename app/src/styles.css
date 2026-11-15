@@ -371,3 +371,4 @@ tr.inactive { opacity: .5; }
 .steps-list { margin: 0 0 16px 18px; display: grid; gap: 6px; font-size: 13.5px; }
 .menu-link { display: block; padding: 10px 14px; color: var(--ink); text-decoration: none !important; }
 .menu-link:hover { background: #f4f6f9; }
+.chip-x { background: none; border: none; color: inherit; margin-left: 4px; font-size: 14px; line-height: 1; padding: 0; }

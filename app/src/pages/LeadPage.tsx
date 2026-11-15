@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
 import {
-  addDays, fmtDate, fmtDateTime, fmtPhone, fromISTInput, toISTInput, todayIST,
+  addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, fromISTInput, toISTInput, todayIST,
 } from '../lib/format';
 import {
   BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, INCOME_BANDS, LANGUAGES, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
@@ -13,13 +13,14 @@ import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } 
 import { Select } from '../components/AddLead';
 import { DueTag, NewTaskModal, PriorityTag, StatusTag, TaskDrawer } from '../components/TaskParts';
 import type { Task } from '../lib/types';
+import { calendly, type CalendlyEventRow, type CalendlyEventType } from '../lib/calendly';
 
 const ONBOARDING_ROUTE: Record<string, string> = {
   RIA: 'the Flameback app',
   PMS: 'Silver Bullet',
 };
 
-type Dialog = null | 'booking' | 'task' | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
+type Dialog = null | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'meeting' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
 
 export default function LeadPage() {
   const { id } = useParams();
@@ -32,6 +33,7 @@ export default function LeadPage() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [openTask, setOpenTask] = useState<string | null>(null);
+  const [calEvent, setCalEvent] = useState<CalendlyEventRow | null>(null);
 
   const load = useCallback(async () => {
     const [l, e, ev, tk] = await Promise.all([
@@ -41,6 +43,9 @@ export default function LeadPage() {
       supabase.from('tasks').select('*').eq('lead_id', id!).order('created_at', { ascending: false }),
     ]);
     setTasks((tk.data as Task[]) ?? []);
+    const { data: ce } = await supabase.from('calendly_events').select('*').eq('lead_id', id!).eq('status', 'active')
+      .gt('start_time', new Date().toISOString()).order('start_time').limit(1);
+    setCalEvent(((ce as CalendlyEventRow[] | null) ?? [])[0] ?? null);
     if (!l.data) { setMissing(true); return; }
     setLead(l.data as Lead);
     setEntries((e.data as LeadEntry[]) ?? []);
@@ -137,14 +142,24 @@ export default function LeadPage() {
 
         <div className="actions">
           {open && <button className="btn" onClick={() => setDialog('entry')}>Add entry</button>}
-          {lead.bucket === 'active_contact' && <button className="btn gold" onClick={() => setDialog('interested')}>Interested → book meeting</button>}
+          {lead.bucket === 'active_contact' && <>
+            <button className="btn gold" onClick={() => setDialog('schedule')}>Schedule meeting</button>
+            <button className="btn ghost" onClick={() => setDialog('interested')}>Interested (no time yet)</button>
+          </>}
           {lead.bucket === 'awaiting_meeting' && <>
             <button className="btn gold" onClick={() => setDialog('meeting')}>Record meeting</button>
-            <button className="btn ghost" onClick={() => setDialog('reschedule')}>{lead.meeting_at ? 'Reschedule' : 'Set meeting time'}</button>
+            {calEvent ? <>
+              <button className="btn ghost" onClick={() => setDialog('cal_reschedule')}>Reschedule</button>
+              <button className="btn ghost" onClick={() => setDialog('cal_cancel')}>Cancel meeting</button>
+            </> : <>
+              <button className="btn ghost" onClick={() => setDialog('schedule')}>Schedule on Calendly</button>
+              <button className="btn ghost" onClick={() => setDialog('reschedule')}>{lead.meeting_at ? 'Change time manually' : 'Set time manually'}</button>
+            </>}
           </>}
           {lead.bucket === 'holding' && <>
             <button className="btn gold" onClick={() => setDialog('commit')}>Commits</button>
             <button className="btn ghost" onClick={() => setDialog('meeting')}>Record another meeting</button>
+            <button className="btn ghost" onClick={() => setDialog('schedule')}>Schedule follow-up meeting</button>
           </>}
           {lead.bucket === 'deferred' && <button className="btn gold" onClick={() => setDialog('commit')}>Commits now</button>}
           {(lead.bucket === 'holding' || lead.bucket === 'awaiting_meeting') && <button className="btn ghost" onClick={() => setDialog('defer')}>Defer</button>}
@@ -176,6 +191,13 @@ export default function LeadPage() {
         </div>
       </div>
 
+      {(dialog === 'schedule' || dialog === 'cal_reschedule') && (
+        <ScheduleMeetingDialog lead={lead} connected={!!me!.calendly_url} replaces={dialog === 'cal_reschedule' ? calEvent : null}
+          onClose={() => setDialog(null)} onBooked={() => { setDialog(null); load(); setTimeout(load, 4000); setTimeout(load, 10000); }} />
+      )}
+      {dialog === 'cal_cancel' && calEvent && (
+        <CancelCalendlyDialog lead={lead} ev={calEvent} onClose={() => setDialog(null)} onDone={() => { setDialog(null); setTimeout(load, 3000); setTimeout(load, 8000); }} />
+      )}
       {dialog === 'booking' && <BookingLinkDialog lead={lead} calendlyUrl={me!.calendly_url} rmName={me!.full_name ?? ''} onClose={() => setDialog(null)} />}
       {dialog === 'task' && <NewTaskModal lead={{ id: lead.id, name: lead.name }} onClose={() => setDialog(null)} onSaved={load} />}
       {openTask && <TaskDrawer id={openTask} onClose={() => setOpenTask(null)} onChanged={load} />}
@@ -573,6 +595,142 @@ function BookingLinkDialog({ lead, calendlyUrl, rmName, onClose }: { lead: Lead;
         {waNumber && <a className="btn ghost" href={`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">Open in WhatsApp</a>}
         {lead.email && <a className="btn ghost" href={`mailto:${lead.email}?subject=${encodeURIComponent('Scheduling a call with Flameback Capital')}&body=${encodeURIComponent(message)}`}>Open in email</a>}
       </div>
+    </Modal>
+  );
+}
+
+/* ───────── schedule a Calendly meeting from the CRM ───────── */
+function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }: {
+  lead: Lead; connected: boolean; replaces: CalendlyEventRow | null; onClose: () => void; onBooked: () => void;
+}) {
+  const { team, me } = useApp();
+  const toast = useToast();
+  const [types, setTypes] = useState<CalendlyEventType[] | null>(null);
+  const [type, setType] = useState('');
+  const [day, setDay] = useState(addDays(todayIST(), 1));
+  const [slots, setSlots] = useState<string[] | null>(null);
+  const [slot, setSlot] = useState('');
+  const [email, setEmail] = useState(lead.email ?? '');
+  const [guests, setGuests] = useState<string[]>([]);
+  const [guestInput, setGuestInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!connected) return;
+    calendly<{ event_types: CalendlyEventType[] }>({ action: 'event_types' })
+      .then((r) => { setTypes(r.event_types); if (r.event_types.length === 1) setType(r.event_types[0]!.uri); })
+      .catch((e) => setErr((e as Error).message));
+  }, [connected]);
+
+  useEffect(() => {
+    if (!type || !day) return;
+    setSlots(null); setSlot(''); setErr(null);
+    const dayStart = new Date(day + 'T00:00:00+05:30').getTime();
+    const start = new Date(Math.max(dayStart, Date.now() + 60_000)).toISOString();
+    const end = new Date(dayStart + 86_400_000).toISOString();
+    if (start >= end) { setSlots([]); return; }
+    calendly<{ slots: string[] }>({ action: 'available_times', event_type: type, start_time: start, end_time: end })
+      .then((r) => setSlots(r.slots))
+      .catch((e) => { setSlots([]); setErr((e as Error).message); });
+  }, [type, day]);
+
+  function addGuest(v: string) {
+    const g = v.trim().toLowerCase();
+    if (!g) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g)) { setErr(`"${v}" isn't a valid email`); return; }
+    if (!guests.includes(g)) setGuests([...guests, g]);
+    setGuestInput(''); setErr(null);
+  }
+
+  async function book() {
+    setBusy(true); setErr(null);
+    try {
+      await calendly({ action: 'book', lead_id: lead.id, event_type: type, start_time: slot, email, guests });
+      if (replaces) {
+        try { await calendly({ action: 'cancel', lead_id: lead.id, event_uri: replaces.event_uri, reason: 'Rescheduled' }); }
+        catch (e) { toast(`New time booked, but the old meeting couldn't be cancelled: ${(e as Error).message}`, 'err'); }
+      }
+      toast(replaces ? 'Meeting rescheduled · Calendly is sending the new invite' : 'Meeting booked · Calendly is sending the invites');
+      onBooked();
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+
+  if (!connected) {
+    return (
+      <Modal title="Schedule meeting" onClose={onClose}
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/settings" onClick={onClose}>Connect Calendly</Link></>}>
+        <p>Connect your Calendly first (Settings → Calendly) to book meetings from here.</p>
+      </Modal>
+    );
+  }
+  const colleagues = team.filter((t) => t.is_active && t.id !== me!.id && !guests.includes(t.email));
+  const selectedType = types?.find((t) => t.uri === type);
+  return (
+    <Modal title={replaces ? `Reschedule meeting with ${lead.name}` : `Schedule a meeting with ${lead.name}`} onClose={onClose} wide
+      footer={<>
+        <span className="muted small" style={{ marginRight: 'auto' }}>Calendly emails the invite{guests.length ? 's' : ''} with the meeting link.</span>
+        <button className="btn ghost" onClick={onClose}>Cancel</button>
+        <button className="btn" disabled={busy || !slot || !email} onClick={book}>{busy ? 'Booking…' : replaces ? 'Book new time' : 'Book meeting'}</button>
+      </>}>
+      {replaces && <div className="banner">Currently booked for <b>{fmtDateTime(replaces.start_time)}</b>. Booking a new time cancels this one.</div>}
+      <div className="grid2">
+        <Field label="Meeting type" required>
+          <select value={type} onChange={(e) => setType(e.target.value)} disabled={!types}>
+            <option value="">{types ? 'Select…' : 'Loading…'}</option>
+            {types?.map((t) => <option key={t.uri} value={t.uri}>{t.name} · {t.duration} min</option>)}
+          </select>
+        </Field>
+        <Field label="Date" required><input type="date" min={todayIST()} value={day} onChange={(e) => setDay(e.target.value)} /></Field>
+      </div>
+      {types && types.length === 0 && <div className="banner warn">You have no active event types in Calendly. Create one (e.g. "Intro call" with Google Meet) and reopen this.</div>}
+      {type && (
+        <Field label={`Available times (IST)${selectedType ? ` · ${selectedType.duration} min` : ''}`} required>
+          {slots === null ? <div className="muted small">Loading your free slots…</div>
+            : slots.length === 0 ? <div className="muted small">No free slots on {fmtDate(day)}. Try another date.</div>
+            : <div className="chips">{slots.map((s2) => <button key={s2} className={`chip ${slot === s2 ? 'on' : ''}`} onClick={() => setSlot(s2)}>{fmtTime(s2)}</button>)}</div>}
+        </Field>
+      )}
+      <div className="grid2">
+        <Field label="Client" hint="Calendly sends the invite to this email."><input value={lead.name} readOnly /></Field>
+        <Field label="Client email" required><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Needed for the invite" /></Field>
+      </div>
+      <Field label="Other invitees" hint="Colleagues or anyone else, e.g. the client's spouse. Up to 10.">
+        <div className="row-gap">
+          <input placeholder="Type an email and press Enter" value={guestInput} onChange={(e) => setGuestInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addGuest(guestInput); } }} onBlur={() => guestInput && addGuest(guestInput)} />
+          {colleagues.length > 0 && (
+            <select className="filter" value="" onChange={(e) => e.target.value && addGuest(e.target.value)}>
+              <option value="">Add a colleague…</option>
+              {colleagues.map((t) => <option key={t.id} value={t.email}>{t.full_name}</option>)}
+            </select>
+          )}
+        </div>
+        {guests.length > 0 && <div className="chips" style={{ marginTop: 8 }}>{guests.map((g) => (
+          <span key={g} className="chip on">{g} <button className="chip-x" onClick={() => setGuests(guests.filter((x) => x !== g))} aria-label={`Remove ${g}`}>×</button></span>
+        ))}</div>}
+      </Field>
+      {err && <div className="form-err">{err}</div>}
+    </Modal>
+  );
+}
+
+function CancelCalendlyDialog({ lead, ev, onClose, onDone }: { lead: Lead; ev: CalendlyEventRow; onClose: () => void; onDone: () => void }) {
+  const toast = useToast();
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <Modal title="Cancel meeting" onClose={onClose}
+      footer={<><button className="btn ghost" onClick={onClose}>Keep it</button>
+        <button className="btn danger" disabled={busy} onClick={async () => {
+          setBusy(true); setErr(null);
+          try { await calendly({ action: 'cancel', lead_id: lead.id, event_uri: ev.event_uri, reason }); toast('Meeting cancelled · Calendly is notifying everyone'); onDone(); }
+          catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+        }}>Cancel meeting</button></>}>
+      <p style={{ marginBottom: 12 }}>Cancels <b>{ev.event_name ?? 'the meeting'}</b> on <b>{fmtDateTime(ev.start_time)}</b> in Calendly. Everyone invited gets a cancellation email, and the lead gets a follow-up for today.</p>
+      <Field label="Reason (shared with the client)"><textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Something came up, I'll send new times shortly" /></Field>
+      {err && <div className="form-err">{err}</div>}
     </Modal>
   );
 }
