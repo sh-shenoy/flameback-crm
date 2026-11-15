@@ -19,6 +19,7 @@ export interface Profile {
   is_active: boolean;
   in_rotation: boolean;
   last_assigned_at: string | null;
+  team: Team;
 }
 
 export interface Lead {
@@ -141,3 +142,56 @@ export const MESSAGE_OUTCOMES: Outcome[] = ['sent', 'replied', 'not_interested']
 export const INCOME_BANDS = ['< ₹10L', '₹10–25L', '₹25–50L', '₹50L–1Cr', '> ₹1Cr'];
 export const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
 export const LANGUAGES = ['English', 'Hindi', 'Marathi', 'Gujarati', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Malayalam', 'Other'];
+
+/* ───────── tasks ───────── */
+export type Team = 'Sales' | 'Operations' | 'Compliance' | 'Investment';
+export const TEAMS: Team[] = ['Sales', 'Operations', 'Compliance', 'Investment'];
+
+export type TaskStatus = 'open' | 'in_progress' | 'blocked' | 'done';
+export type TaskPriority = 'high' | 'medium' | 'low';
+
+export const TASK_STATUSES: { key: TaskStatus; label: string }[] = [
+  { key: 'open', label: 'Open' },
+  { key: 'in_progress', label: 'In Progress' },
+  { key: 'blocked', label: 'Blocked' },
+  { key: 'done', label: 'Done' },
+];
+export const statusLabel = (s: TaskStatus) => TASK_STATUSES.find((x) => x.key === s)?.label ?? s;
+export const PRIORITIES: { key: TaskPriority; label: string }[] = [
+  { key: 'high', label: 'High' },
+  { key: 'medium', label: 'Medium' },
+  { key: 'low', label: 'Low' },
+];
+
+export interface Task {
+  id: string;
+  title: string;
+  details: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  blocked_reason: string | null;
+  template: string | null;
+  from_team: Team;
+  to_team: Team;
+  assignee_id: string | null;
+  lead_id: string | null;
+  lead_name: string | null;
+  due_date: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  done_at: string | null;
+}
+
+export interface TaskComment { id: string; task_id: string; author: string; body: string; created_at: string }
+export interface TaskEvent { id: number; task_id: string; kind: string; from_value: string | null; to_value: string | null; detail: Record<string, unknown> | null; actor: string | null; at: string }
+
+/** Templates fill the title, owning team and a details outline. */
+export const TASK_TEMPLATES: { key: string; label: string; title: string; to_team: Team; details: string }[] = [
+  { key: 'account_opening', label: 'Account opening', title: 'Open account', to_team: 'Operations', details: 'Product:\nDemat / broker:\nDocuments shared:\n' },
+  { key: 'address_change', label: 'Address change', title: 'Address change', to_team: 'Operations', details: 'Old address:\nNew address:\nProof attached / sent by:\n' },
+  { key: 'strategy_switch', label: 'Strategy switch', title: 'Strategy switch', to_team: 'Investment', details: 'Current strategy:\nRequested strategy:\nReason:\n' },
+  { key: 'withdrawal', label: 'Withdrawal', title: 'Withdrawal request', to_team: 'Operations', details: 'Amount (₹):\nDate needed by:\nBank account:\n' },
+  { key: 'top_up', label: 'Top-up', title: 'Top-up', to_team: 'Operations', details: 'Amount (₹):\nDate:\nMode of payment:\n' },
+  { key: 'compliance_query', label: 'Compliance query', title: 'Compliance query', to_team: 'Compliance', details: 'Question:\n' },
+];

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
 import { fmtDateTime, initials } from '../lib/format';
-import type { Profile } from '../lib/types';
+import { TEAMS, type Profile, type Team as TeamName } from '../lib/types';
 import { useToast } from '../components/ui';
 
 export default function Team() {
@@ -35,7 +35,7 @@ export default function Team() {
     <div className="main-inner">
       <div className="page-head">
         <div><h1>Team & rotation</h1>
-          <p>Everyone who signs in with a @flamebackcapital.com Google account appears here as an RM. New leads go round-robin to the people in rotation.</p></div>
+          <p>Everyone who signs in with a @flamebackcapital.com Google account appears here. Set each person's team so tasks reach the right people. New leads go round-robin to the people in rotation.</p></div>
       </div>
       <div className="banner">
         {inRotation.length === 0
@@ -45,7 +45,7 @@ export default function Team() {
       <div className="panel">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Person</th><th>Role</th><th>Open leads</th><th>In rotation</th><th>Last lead assigned</th><th>Access</th></tr></thead>
+            <thead><tr><th>Person</th><th>Team</th><th>Role</th><th>Open leads</th><th>In rotation</th><th>Last lead assigned</th><th>Access</th></tr></thead>
             <tbody>
               {team.map((t) => (
                 <tr key={t.id} className={t.is_active ? '' : 'inactive'}>
@@ -53,6 +53,11 @@ export default function Team() {
                     {t.avatar_url ? <img src={t.avatar_url} alt="" referrerPolicy="no-referrer" /> : <span className="av">{initials(t.full_name)}</span>}
                     <div><b>{t.full_name}</b>{t.id === me!.id && <span className="muted small"> (you)</span>}<div className="lead-sub">{t.email}</div></div>
                   </div></td>
+                  <td>
+                    <select className="filter" value={t.team} onChange={(e) => update(t, { team: e.target.value as TeamName }, `${t.full_name} moved to ${e.target.value}`)}>
+                      {TEAMS.map((x) => <option key={x}>{x}</option>)}
+                    </select>
+                  </td>
                   <td>
                     <select className="filter" value={t.role} onChange={(e) => update(t, { role: e.target.value as Profile['role'] }, 'Role updated')}>
                       <option value="rm">RM</option><option value="admin">Admin</option>

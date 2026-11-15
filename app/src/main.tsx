@@ -13,6 +13,7 @@ import LeadPage from './pages/LeadPage';
 import OutList from './pages/OutList';
 import Upload from './pages/Upload';
 import Team from './pages/Team';
+import Tasks from './pages/Tasks';
 
 function Routed() {
   const { session } = useApp();
@@ -29,7 +30,7 @@ function Routed() {
         <Route path="/clients" element={<ComingSoon title="Clients" what="Your book of funded clients, households, holdings and returns." />} />
         <Route path="/onboarding" element={<ComingSoon title="Onboarding" what="RIA onboards in the Flameback app, PMS through Silver Bullet. Committed leads will appear here with their onboarding status." />} />
         <Route path="/reviews" element={<ComingSoon title="Reviews" what="Quarterly and annual client reviews with prep views." />} />
-        <Route path="/tasks" element={<ComingSoon title="Tasks" what="Requests between RMs and the Compliance, Operations and Investment teams." />} />
+        <Route path="/tasks" element={<Tasks />} />
         <Route path="/calendar" element={<ComingSoon title="Calendar" what="Meetings synced with Google Calendar, with Meet links." />} />
         <Route path="/notifications" element={<ComingSoon title="Notifications" what="Alerts for new leads, follow-ups due and onboarding updates." />} />
         <Route path="*" element={<Navigate to="/" replace />} />
