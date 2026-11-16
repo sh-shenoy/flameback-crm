@@ -1,0 +1,22 @@
+{
+  "name": "argus-db",
+  "description": "Argus database: Drizzle migrations runner and typed schema",
+  "scripts": {
+    "db:migrate": "tsx src/migrate.ts",
+    "db:pull": "node scripts/pull.mjs",
+    "db:new": "node scripts/new-migration.mjs",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "postgres": "^4.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "5.9"
+  },
+  "private": true,
+  "type": "module"
+}
