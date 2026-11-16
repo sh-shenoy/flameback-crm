@@ -33,10 +33,6 @@ code { background: #eef2f7; padding: 1px 5px; border-radius: 4px; font-size: 12p
 .brand { padding: 20px 20px 18px; border-bottom: 1px solid rgba(255,255,255,.07); }
 .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #fff; font-size: 16px; letter-spacing: .2px; text-decoration: none !important; }
 .brand .sub { font-size: 10.5px; color: #7f93ab; margin-top: 10px; letter-spacing: 1.6px; text-transform: uppercase; padding-left: 46px; }
-.logo-mark { width: 36px; height: 36px; flex: none; }
-.wordmark { display: flex; flex-direction: column; line-height: 1.05; }
-.wordmark b { font-size: 15px; font-weight: 700; letter-spacing: 1.2px; color: #fff; }
-.wordmark span { font-size: 9.5px; font-weight: 500; letter-spacing: 4.2px; color: #b9c6d6; margin-top: 3px; }
 .nav { padding: 10px 12px; flex: 1; overflow-y: auto; }
 .nav-section { margin-bottom: 14px; }
 .nav-title { font-size: 10.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: #6f849c; padding: 10px 10px 6px; }
@@ -336,7 +332,7 @@ tr.inactive { opacity: .5; }
 
 /* ── login ── */
 .login { min-height: 100vh; display: grid; place-items: center; background: var(--navy); padding: 16px; }
-.login-card { border-top: 3px solid var(--brand); }
+.login-card { border-top: 3px solid var(--brand); overflow: hidden; }
 .login-card { background: #fff; border-radius: 16px; padding: 40px 36px; width: 380px; max-width: 100%; text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; }
 .login-logo { width: 240px; max-width: 80%; height: auto; margin-bottom: 4px; }
 
@@ -498,12 +494,8 @@ td input:not([type=checkbox]), td select { width: 100%; padding: 6px 8px; border
 .result-list button.on { border-color: var(--teal); background: #f0f8f8; box-shadow: inset 3px 0 0 var(--teal); }
 
 /* ── Argus brand ── */
-.argus-lockup { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 6px; }
-.argus-word { font-size: 34px; font-weight: 700; letter-spacing: 9px; color: var(--navy); padding-left: 9px; display: flex; align-items: flex-start; line-height: 1; }
-.argus-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); margin-left: 3px; margin-top: 2px; }
-.argus-tagline { font-size: 14px; color: var(--muted); font-style: italic; }
-.argus-by { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
-.argus-by img { height: 30px; width: auto; }
-.wordmark.argus b { font-size: 17px; letter-spacing: 4px; }
-.wordmark.argus span { letter-spacing: 1.4px; text-transform: none; font-size: 11px; }
+.argus-hero { align-self: stretch; margin: -40px -36px 6px; padding: 30px 28px 22px; background: #121a26; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.argus-hero img { width: 250px; max-width: 100%; height: auto; }
+.argus-tagline { font-size: 13.5px; color: #b9c6d6; font-style: italic; letter-spacing: .2px; }
+.argus-side { width: 168px; max-width: 100%; height: auto; display: block; }
 .brand .sub { padding-left: 0; text-transform: none; letter-spacing: 0; font-style: italic; font-size: 11.5px; color: #8fa3ba; margin-top: 12px; }
