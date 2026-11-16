@@ -4,7 +4,7 @@
 -- asks the AI model for a short structured summary and saves it here. An RM can edit it;
 -- an edited summary is not overwritten automatically, only when someone clicks Refresh.
 
-create table public.lead_summaries (
+create table if not exists public.lead_summaries (
   lead_id      uuid primary key references public.leads(id) on delete cascade,
   summary      jsonb not null,              -- { headline, who, wants, status, concerns[], next_steps[] }
   covers_until timestamptz not null,        -- newest activity included
@@ -14,6 +14,7 @@ create table public.lead_summaries (
   edited_at    timestamptz
 );
 alter table public.lead_summaries enable row level security;
+drop policy if exists lead_summaries_read on public.lead_summaries;
 create policy lead_summaries_read on public.lead_summaries for select to authenticated
   using (public.can_access_lead(lead_id));
 revoke insert, update, delete on public.lead_summaries from anon, authenticated;
