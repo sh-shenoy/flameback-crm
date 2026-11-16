@@ -1,9 +1,12 @@
 // Supabase Edge Function: summarize
 // Builds the AI conversation summary shown at the top of a lead. Deploy with "Verify JWT" ON.
 //   { lead_id, force? }  → reads everything on the lead (with the caller's own permissions),
-//                          strips phone numbers / emails / PAN / Aadhaar, asks OpenAI for a short
-//                          structured summary, saves it and returns it.
-// Secrets (Edge Functions → Secrets): OPENAI_API_KEY (required), OPENAI_MODEL (optional, default gpt-5-mini).
+//                          strips phone numbers / emails / PAN / Aadhaar, asks our hosted model (through
+//                          its OpenAI-compatible API) for a short structured summary, saves it and returns it.
+// Secrets (Edge Functions → Secrets), all three required, no defaults:
+//   OPENAI_BASE_URL  base URL of the hosted, OpenAI-compatible endpoint (e.g. https://…/v1)
+//   OPENAI_API_KEY   key for that endpoint
+//   OPENAI_MODEL     model name served there
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import OpenAI from 'npm:openai@4';
@@ -42,12 +45,25 @@ Return a JSON object with exactly these keys:
 - "concerns": array of short strings, their objections or worries (empty array if none)
 - "next_steps": array of short strings, agreed or sensible next actions with dates if known (max 4)`;
 
+// JSON from the model: tolerate ```json fences or text around the object
+function parseJson(text: string): any {
+  const t = text.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+  try { return JSON.parse(t); } catch { /* fall through */ }
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch { /* unreadable */ } }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
-    const key = Deno.env.get('OPENAI_API_KEY');
-    if (!key) return json({ error: 'AI summaries aren’t set up yet: add OPENAI_API_KEY under Supabase → Edge Functions → Secrets.', code: 'not_configured' }, 400);
-    const model = Deno.env.get('OPENAI_MODEL') || 'gpt-5-mini';
+    const baseURL = Deno.env.get('OPENAI_BASE_URL')?.trim();
+    const key = Deno.env.get('OPENAI_API_KEY')?.trim();
+    const model = Deno.env.get('OPENAI_MODEL')?.trim();
+    const missing = [!baseURL && 'OPENAI_BASE_URL', !key && 'OPENAI_API_KEY', !model && 'OPENAI_MODEL'].filter(Boolean);
+    if (missing.length) {
+      return json({ error: `AI summaries aren’t set up yet: add ${missing.join(', ')} under Supabase → Edge Functions → Secrets.`, code: 'not_configured' }, 400);
+    }
 
     const url = Deno.env.get('SUPABASE_URL')!;
     const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
@@ -103,18 +119,22 @@ Deno.serve(async (req) => {
 
     const { data: coversUntil } = await admin.rpc('lead_last_activity', { p_lead: lead.id });
 
-    const openai = new OpenAI({ apiKey: key });
-    const completion = await openai.chat.completions.create({
-      model,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: INSTRUCTIONS },
-        { role: 'user', content: lines.join('\n') },
-      ],
-    });
+    const ai = new OpenAI({ baseURL, apiKey: key });
+    const messages = [
+      { role: 'system' as const, content: INSTRUCTIONS },
+      { role: 'user' as const, content: lines.join('\n') },
+    ];
+    let completion;
+    try {
+      completion = await ai.chat.completions.create({ model: model!, response_format: { type: 'json_object' }, messages });
+    } catch (e) {
+      // some hosted servers don't support JSON mode; the instructions already ask for JSON only
+      if ((e as { status?: number }).status !== 400) throw e;
+      completion = await ai.chat.completions.create({ model: model!, messages });
+    }
     const text = completion.choices[0]?.message?.content ?? '';
-    let parsed: any;
-    try { parsed = JSON.parse(text); } catch { return json({ error: 'The AI returned something unreadable. Try Refresh again.' }, 502); }
+    const parsed = parseJson(text);
+    if (!parsed) return json({ error: 'The AI returned something unreadable. Try Refresh again.' }, 502);
     const summary = {
       headline: String(parsed.headline ?? '').trim(),
       who: String(parsed.who ?? '').trim(),
@@ -131,9 +151,10 @@ Deno.serve(async (req) => {
     return json({ ok: true, saved, summary });
   } catch (e) {
     const err = e as { status?: number; message?: string };
-    if (err?.status === 401) return json({ error: 'OpenAI rejected the API key. Check OPENAI_API_KEY in Supabase secrets.' }, 400);
-    if (err?.status === 404) return json({ error: `OpenAI doesn’t recognise the model. Set OPENAI_MODEL in Supabase secrets to a model your account can use.` }, 400);
-    if (err?.status === 429) return json({ error: 'OpenAI rate limit or quota reached. Try again shortly, or check billing on your OpenAI account.' }, 429);
-    return json({ error: err?.message ?? String(e) }, 500);
+    if (err?.status === 401 || err?.status === 403) return json({ error: 'The AI endpoint rejected the API key. Check OPENAI_API_KEY in Supabase secrets.' }, 400);
+    if (err?.status === 404) return json({ error: 'The AI endpoint returned “not found”. Check OPENAI_BASE_URL (usually ends in /v1) and OPENAI_MODEL in Supabase secrets.' }, 400);
+    if (err?.status === 429) return json({ error: 'The AI endpoint is busy or over its limit. Try again shortly.' }, 429);
+    if ((err as { name?: string })?.name === 'APIConnectionError') return json({ error: 'Couldn’t reach the AI endpoint. Check OPENAI_BASE_URL in Supabase secrets.' }, 502);
+    return json({ error: `AI endpoint error: ${err?.message ?? String(e)}` }, 500);
   }
 });

@@ -72,7 +72,7 @@ export default function SummaryBox({ leadId, version }: { leadId: string; versio
   const stale = !!row && !!lastActivity && new Date(lastActivity).getTime() > new Date(row.covers_until).getTime() + 1000;
 
   if (err?.code === 'not_configured' && !row) {
-    return <div className="ai-box off"><b>AI summary</b><span className="muted small"> · not switched on yet. Ask your admin to add the OpenAI key in Supabase.</span></div>;
+    return <div className="ai-box off"><b>AI summary</b><span className="muted small"> · not switched on yet. Ask your admin to add the AI endpoint settings in Supabase.</span></div>;
   }
 
   async function saveEdit() {
