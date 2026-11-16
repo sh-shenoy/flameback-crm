@@ -21,7 +21,7 @@ const ONBOARDING_ROUTE: Record<string, string> = {
   'US RIA': 'the onboarding module (process to be decided)',
 };
 
-type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'reschedule' | 'defer' | 'commit' | 'not_interested' | 'bring_back';
+type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'reschedule' | 'not_interested' | 'bring_back';
 
 export default function LeadPage() {
   const { id } = useParams();
@@ -170,11 +170,8 @@ export default function LeadPage() {
             </>}
           </>}
           {lead.bucket === 'holding' && <>
-            <button className="btn gold" onClick={() => setDialog('commit')}>Commits</button>
             <button className="btn ghost" onClick={() => setDialog('schedule')}>Schedule follow-up meeting</button>
           </>}
-          {lead.bucket === 'deferred' && <button className="btn gold" onClick={() => setDialog('commit')}>Commits now</button>}
-          {(lead.bucket === 'holding' || lead.bucket === 'awaiting_meeting') && <button className="btn ghost" onClick={() => setDialog('defer')}>Defer</button>}
           {open && <button className="btn ghost danger-text" onClick={() => setDialog('not_interested')}>Not interested</button>}
           {lead.bucket === 'out' && <button className="btn" onClick={() => setDialog('bring_back')}>Bring back</button>}
           <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('email')}>Email</button>
@@ -218,8 +215,6 @@ export default function LeadPage() {
       {dialog === 'entry' && <AddEntry lead={lead} onClose={() => setDialog(null)} onSaved={load} />}
       {dialog === 'interested' && <InterestedDialog onClose={() => setDialog(null)} act={act} />}
       {dialog === 'reschedule' && <RescheduleDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
-      {dialog === 'defer' && <DeferDialog onClose={() => setDialog(null)} act={act} />}
-      {dialog === 'commit' && <CommitDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
       {dialog === 'not_interested' && <NotInterestedDialog onClose={() => setDialog(null)} act={act} />}
       {dialog === 'bring_back' && <BringBackDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
     </div>
@@ -366,10 +361,17 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const outcomes = isCall ? CALL_OUTCOMES : isMsg ? MESSAGE_OUTCOMES : [];
   // did they actually talk / reply? then ask where it left things (Awaiting meeting & Holding only)
   const reached = kind === 'in_person' || (isCall && outcome === 'connected') || (isMsg && outcome === 'replied');
-  const asksResult = reached && (lead.bucket === 'awaiting_meeting' || lead.bucket === 'holding');
+  const asksResult = reached && (lead.bucket === 'awaiting_meeting' || lead.bucket === 'holding' || lead.bucket === 'deferred');
   const notesRequired = outcome === 'connected' || kind === 'in_person' || kind === 'note' || !!result;
 
-  const resultOptions: { key: Result; label: string; sub: string }[] = lead.bucket === 'awaiting_meeting'
+  const resultOptions: { key: Result; label: string; sub: string }[] = lead.bucket === 'deferred'
+    ? [
+        { key: '', label: 'Just a check-in', sub: `Stays deferred until ${fmtDate(lead.deferred_until)}` },
+        { key: 'met', label: 'Ready to discuss again', sub: 'Moves to Holding period' },
+        { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
+        { key: 'later', label: 'Pushed to a new date', sub: 'Stays deferred, new return date' },
+      ]
+    : lead.bucket === 'awaiting_meeting'
     ? [
         { key: '', label: 'Just confirming the meeting', sub: 'Counts as a reminder' },
         { key: 'met', label: 'Met, still deciding', sub: 'Moves to Holding period' },
@@ -386,7 +388,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
     if (outcome === 'not_interested') return { tone: 'red', text: 'Moves the lead to the Out List.' };
     if (asksResult && result === 'met') return { tone: 'green', text: 'Moves to Holding period; strikes reset.' };
     if (asksResult && result === 'commits') return { tone: 'green', text: `Committed: moves to Converting (${product}).` };
-    if (asksResult && result === 'later') return { tone: 'green', text: 'Moves to Deferred; comes back to Holding on the date.' };
+    if (asksResult && result === 'later') return { tone: 'green', text: lead.bucket === 'deferred' ? 'Stays deferred with the new date; comes back to Holding then.' : 'Moves to Deferred; comes back to Holding on the date.' };
     if (lead.bucket === 'active_contact') {
       if (outcome === 'no_answer') return lead.strikes + 1 >= 5
         ? { tone: 'red', text: 'Fifth strike: the lead moves to the Out List.' }
@@ -418,7 +420,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
       });
       toast(asksResult && result === 'commits' ? 'Committed · moved to Converting'
         : asksResult && result === 'met' ? 'Moved to Holding period'
-        : asksResult && result === 'later' ? 'Moved to Deferred' : 'Activity logged');
+        : asksResult && result === 'later' ? (lead.bucket === 'deferred' ? 'New return date saved' : 'Moved to Deferred') : 'Activity logged');
       onClose();
       onSaved();
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
@@ -465,7 +467,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         </Field>
       )}
       {asksResult && result === 'later' && (
-        <Field label="Comes back on" required><input type="date" min={addDays(todayIST(), 1)} value={later} onChange={(e) => setLater(e.target.value)} /></Field>
+        <Field label={lead.bucket === 'deferred' ? 'New return date' : 'Comes back on'} required><input type="date" min={addDays(todayIST(), 1)} value={later} onChange={(e) => setLater(e.target.value)} /></Field>
       )}
       {effect && <div className={`effect ${effect.tone}`}>{effect.text}</div>}
       <Field label="Notes" required={notesRequired}
@@ -515,34 +517,6 @@ function RescheduleDialog({ lead, onClose, act }: { lead: Lead; onClose: () => v
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
         <button className="btn" disabled={busy || !when} onClick={() => run(() => act('set_meeting', { p_meeting_at: fromISTInput(when) }, 'Meeting time saved'))}>Save</button></>}>
       <Field label="Meeting date and time (IST)" required><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></Field>
-    </Modal>
-  );
-}
-
-function DeferDialog({ onClose, act }: { onClose: () => void; act: Act }) {
-  const [d, setD] = useState('');
-  const { busy, run } = useBusy();
-  return (
-    <Modal title="Defer" onClose={onClose}
-      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
-        <button className="btn" disabled={busy || !d} onClick={() => run(() => act('defer_lead', { p_until: d }, 'Moved to Deferred'))}>Defer</button></>}>
-      <p className="muted" style={{ marginBottom: 12 }}>They'll commit later. The lead leaves the working queue and returns to <b>Holding period</b> on this date, with a follow-up due that day.</p>
-      <Field label="Comes back on" required><input type="date" min={addDays(todayIST(), 1)} value={d} onChange={(e) => setD(e.target.value)} /></Field>
-    </Modal>
-  );
-}
-
-function CommitDialog({ lead, onClose, act }: { lead: Lead; onClose: () => void; act: Act }) {
-  const [product, setProduct] = useState(lead.product);
-  const { busy, run } = useBusy();
-  return (
-    <Modal title="Mark as committed" onClose={onClose}
-      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
-        <button className="btn" disabled={busy} onClick={() => run(() => act('mark_committed', { p_product: product }, 'Committed · moved to Converting'))}>Confirm</button></>}>
-      <p className="muted" style={{ marginBottom: 12 }}>The lead moves to <b>Converting</b> and leaves the working pipeline, ready for onboarding.</p>
-      <Field label="Product" hint={`Onboarding happens in ${ONBOARDING_ROUTE[product]}.`}>
-        <select value={product} onChange={(e) => setProduct(e.target.value as Lead['product'])}>{PRODUCTS.map((p) => <option key={p}>{p}</option>)}</select>
-      </Field>
     </Modal>
   );
 }

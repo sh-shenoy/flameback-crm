@@ -82,7 +82,7 @@ function CalcomPanel() {
             <p style={{ marginBottom: 12 }}>Connect your own Cal.com (signed up with your @flamebackcapital.com Google account, with Google Calendar connected) so meetings book and update by themselves.</p>
             <ol className="steps-list">
               <li>In Cal.com, connect <b>Google Calendar</b> and <b>Google Meet</b> (Apps). The CRM adds the standard Flameback meeting types for you when you connect.</li>
-              <li>Go to <b>Settings → Developer → API keys</b>, click <b>Add</b>, name it "Flameback CRM", choose <b>Never expires</b>, and copy the key.</li>
+              <li>Go to <b>Settings → Developer → API keys</b>, click <b>Add</b>, name it "Argus", choose <b>Never expires</b>, and copy the key.</li>
               <li>Paste it below and click <b>Connect</b>. It's stored securely and only used to talk to Cal.com.</li>
             </ol>
             <Field label="Cal.com API key">

@@ -39,3 +39,20 @@ do $$ declare c uuid := (select id from k where n=3); begin
   assert (select strikes from leads where id=c)=1, 'client reply does not count';
 end $$;
 select 'LOG ACTIVITY TESTS PASSED' as result;
+
+-- 0009: decisions from Deferred
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
+do $$ declare b uuid := (select id from k where n=2); begin
+  assert (select bucket from leads where id=b)='deferred', 'b deferred';
+  perform log_activity(b, 'phone_call', 'connected', 'Checked in, still March');
+  assert (select bucket from leads where id=b)='deferred' and (select strikes from leads where id=b)=0, 'check-in stays deferred, no strike';
+  perform log_activity(b, 'phone_call', 'connected', 'Pushed to April', null, null, 'later', ist_today()+60);
+  assert (select bucket from leads where id=b)='deferred' and (select deferred_until from leads where id=b)=ist_today()+60, 'new date';
+  perform log_activity(b, 'message', 'replied', 'Free to talk now', null, null, 'met');
+  assert (select bucket from leads where id=b)='holding', 'back to holding';
+  perform log_activity(b, 'phone_call', 'connected', 'Moving ahead', null, null, 'commits');
+  assert (select bucket from leads where id=b)='converting', 'committed';
+end $$;
+reset role;
+select 'LOG ACTIVITY 0009 TESTS PASSED' as result;

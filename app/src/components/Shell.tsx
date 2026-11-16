@@ -6,6 +6,8 @@ import { initials, fmtPhone, todayIST, timeAgo } from '../lib/format';
 import type { AppNotification, Lead } from '../lib/types';
 import { BucketPill, useToast } from './ui';
 import AddLead from './AddLead';
+import { ArgusSidebar } from './Brand';
+import { TAGLINE } from '../lib/brand';
 import { playChime, setSoundEnabled, soundEnabled, unlockSound } from '../lib/sound';
 
 type Badge = 'overdue' | 'tasks' | 'notifications' | 'requests';
@@ -119,10 +121,9 @@ export default function Shell({ children }: { children: ReactNode }) {
       <aside className="sidebar">
         <div className="brand">
           <NavLink to="/" className="logo">
-            <img className="logo-mark" src={`${import.meta.env.BASE_URL}logo-mark.png`} alt="" />
-            <span className="wordmark"><b>FLAMEBACK</b><span>CAPITAL</span></span>
+            <ArgusSidebar />
           </NavLink>
-          <div className="sub">CRM</div>
+          <div className="sub" title={TAGLINE}>{TAGLINE}</div>
         </div>
         <nav className="nav">
           {SECTIONS.filter((s) => !s.admin || isAdmin).map((s) => (
