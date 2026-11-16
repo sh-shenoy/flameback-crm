@@ -109,11 +109,23 @@ do $$ declare l uuid := (select id from ids where n=1); begin
   -- not interested via outcome
   perform log_entry((select id from ids where n=2),'phone_call','not_interested');
   assert (select out_reason from leads where id=(select id from ids where n=2))='Not interested', 'NI out';
-  -- holding: 5 follow-ups → out, then bring back returns to holding
+  -- holding (still thinking): no strikes; follow-ups spaced 7, 14, 28, 56 … days (max 90)
   perform mark_interested((select id from ids where n=3));
   perform record_meeting((select id from ids where n=3),'undecided','in_person','met at office');
-  for i in 1..5 loop perform log_entry((select id from ids where n=3),'phone_call','connected','still thinking'); end loop;
-  assert (select bucket from leads where id=(select id from ids where n=3))='out', 'holding five follow-ups out';
+  assert (select next_follow_up from leads where id=(select id from ids where n=3))=ist_today()+7, 'first follow-up in 7d';
+  perform log_entry((select id from ids where n=3),'phone_call','no_answer');
+  assert (select next_follow_up from leads where id=(select id from ids where n=3))=ist_today()+14, 'then 14d';
+  perform log_entry((select id from ids where n=3),'message','sent');
+  assert (select next_follow_up from leads where id=(select id from ids where n=3))=ist_today()+28, 'then 28d';
+  perform log_entry((select id from ids where n=3),'note',null,'just a note');
+  assert (select next_follow_up from leads where id=(select id from ids where n=3))=ist_today()+28, 'note does not move cadence';
+  perform log_entry((select id from ids where n=3),'phone_call','connected','still thinking', null, ist_today()+3);
+  assert (select next_follow_up from leads where id=(select id from ids where n=3))=ist_today()+3, 'manual date wins';
+  for i in 1..4 loop perform log_entry((select id from ids where n=3),'phone_call','connected','still thinking'); end loop;
+  assert (select bucket from leads where id=(select id from ids where n=3))='holding', 'holding never strikes out';
+  assert (select strikes from leads where id=(select id from ids where n=3))=0, 'no strikes in holding';
+  assert (select next_follow_up from leads where id=(select id from ids where n=3))=ist_today()+90, 'capped at 90d';
+  perform mark_not_interested((select id from ids where n=3), 'not now');
   perform bring_back((select id from ids where n=3), ist_today()+1);
   assert (select bucket from leads where id=(select id from ids where n=3))='holding', 'returns to holding';
 end $$;

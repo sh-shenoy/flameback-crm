@@ -55,6 +55,7 @@ export interface Lead {
   referred_by: string | null;
   bucket: Bucket;
   strikes: number;
+  holding_step?: number;
   next_follow_up: string | null;
   meeting_at: string | null;
   meeting_url: string | null;
@@ -125,7 +126,7 @@ export interface ImportBatch {
 export const BUCKETS: { key: Bucket; label: string; short: string; help: string }[] = [
   { key: 'active_contact', label: 'Active contact', short: 'Contact', help: 'Being worked. Five unanswered attempts sends it to the Out List.' },
   { key: 'awaiting_meeting', label: 'Awaiting meeting', short: 'Meeting', help: 'Agreed to meet. Five reminders with no meeting sends it to the Out List.' },
-  { key: 'holding', label: 'Holding period', short: 'Holding', help: 'Met but not yet committed. Each follow-up you log counts; five with no decision sends it to the Out List. Record a decision with Log activity.' },
+  { key: 'holding', label: 'Holding period', short: 'Holding', help: 'Met, still thinking. No strikes: follow-ups are spaced out automatically (7, 14, 28, 56 days…, at most 90). Record a decision with Log activity.' },
   { key: 'deferred', label: 'Deferred', short: 'Deferred', help: 'Will commit later. Returns to Holding on the agreed date. If they get in touch early, use Log activity.' },
   { key: 'converting', label: 'Converting', short: 'Converting', help: 'Committed. Hands off to onboarding.' },
   { key: 'out', label: 'Out List', short: 'Out', help: 'Five strikes or not interested. Can be brought back.' },
@@ -227,3 +228,6 @@ export const NOTIFICATION_KINDS: { key: string; label: string }[] = [
   { key: 'access_request', label: 'Access requests' },
   { key: 'access_approved', label: 'Access' },
 ];
+
+/** Days until the next follow-up for a Holding lead after `step` follow-ups (7, 14, 28 … max 90). */
+export const holdingGap = (step: number) => Math.min(7 * 2 ** Math.max(step, 0), 90);

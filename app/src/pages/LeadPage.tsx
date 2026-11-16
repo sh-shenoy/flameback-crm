@@ -7,7 +7,7 @@ import {
 } from '../lib/format';
 import {
   BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, INCOME_BANDS, LANGUAGES, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
-  bucketLabel, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
+  bucketLabel, holdingGap, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
 import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
 import { Select } from '../components/AddLead';
@@ -84,7 +84,7 @@ export default function LeadPage() {
   if (!lead) return <div className="main-inner"><Skeleton h={90} /><br /><Skeleton h={300} /></div>;
 
   const open = lead.bucket !== 'out' && lead.bucket !== 'converting';
-  const countsStrikes = ['active_contact', 'awaiting_meeting', 'holding'].includes(lead.bucket);
+  const countsStrikes = ['active_contact', 'awaiting_meeting'].includes(lead.bucket);
   const bucketHelp = BUCKETS.find((b) => b.key === lead.bucket)?.help;
 
   return (
@@ -107,6 +107,7 @@ export default function LeadPage() {
           <div className="lh-right">
             <BucketPill bucket={lead.bucket} />
             {countsStrikes && <div className="small muted" style={{ marginTop: 6 }}><Strikes n={lead.strikes} /> {lead.strikes}/5</div>}
+            {lead.bucket === 'holding' && <div className="small muted" style={{ marginTop: 6 }}>{(lead.holding_step ?? 0) === 0 ? 'No follow-ups yet' : `${lead.holding_step} follow-up${lead.holding_step === 1 ? '' : 's'} so far`} · next gap {holdingGap((lead.holding_step ?? 0) + 1)} days</div>}
           </div>
         </div>
         <div className="lh-grid">
@@ -382,14 +383,14 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         { key: 'later', label: 'Will commit later', sub: 'Deferred until a date' },
       ]
     : [
-        { key: '', label: 'Still deciding', sub: 'Counts as a follow-up' },
+        { key: '', label: 'Still thinking', sub: `Next follow-up in ${holdingGap((lead.holding_step ?? 0) + 1)} days` },
         { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
         { key: 'later', label: 'Will commit later', sub: 'Deferred until a date' },
       ];
 
   const effect = (() => {
     if (outcome === 'not_interested') return { tone: 'red', text: 'Moves the lead to the Out List.' };
-    if (asksResult && result === 'met') return { tone: 'green', text: 'Moves to Holding period; strikes reset.' };
+    if (asksResult && result === 'met') return { tone: 'green', text: `Moves to Holding period. No strikes there: first follow-up in 7 days, then 14, 28…` };
     if (asksResult && result === 'commits') return { tone: 'green', text: `Committed: moves to Converting (${product}).` };
     if (asksResult && result === 'later') return { tone: 'green', text: lead.bucket === 'deferred' ? 'Stays deferred with the new date; comes back to Holding then.' : 'Moves to Deferred; comes back to Holding on the date.' };
     if (lead.bucket === 'active_contact') {
@@ -399,11 +400,16 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
       if (outcome === 'sent') return { tone: 'amber', text: 'Becomes a strike if there is no reply within 48 hours.' };
       if ((outcome === 'connected' || outcome === 'replied' || kind === 'in_person') && lead.strikes > 0) return { tone: 'green', text: 'Resets strikes to 0.' };
     }
-    if ((lead.bucket === 'awaiting_meeting' || lead.bucket === 'holding') && (isCall || isMsg) && outcome) {
-      const word = lead.bucket === 'awaiting_meeting' ? 'reminder' : 'follow-up';
+    if (lead.bucket === 'holding' && ((isCall || isMsg) && outcome || kind === 'in_person')) {
+      const gap = holdingGap((lead.holding_step ?? 0) + 1);
+      return { tone: 'green', text: next
+        ? `Not a strike. Next follow-up on ${fmtDate(next)} (your date).`
+        : `Not a strike. Next follow-up set to ${fmtDate(addDays(todayIST(), gap))}, in ${gap} days.` };
+    }
+    if (lead.bucket === 'awaiting_meeting' && (isCall || isMsg) && outcome) {
       return lead.strikes + 1 >= 5
-        ? { tone: 'red', text: `Fifth ${word} without progress: the lead moves to the Out List.` }
-        : { tone: 'amber', text: `Counts as ${word} ${lead.strikes + 1} of 5.` };
+        ? { tone: 'red', text: 'Fifth reminder without progress: the lead moves to the Out List.' }
+        : { tone: 'amber', text: `Counts as reminder ${lead.strikes + 1} of 5.` };
     }
     return null;
   })();
@@ -478,7 +484,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         <textarea rows={7} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What was discussed, concerns, decisions, next steps" />
       </Field>
       {outcome !== 'not_interested' && result !== 'commits' && result !== 'later' && (
-        <Field label="Next follow-up" hint={lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}` : undefined}>
+        <Field label="Next follow-up" hint={lead.bucket === 'holding' || result === 'met' ? 'Leave blank to space it out automatically' : lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}` : undefined}>
           <div className="row-gap">
             <input type="date" value={next} onChange={(e) => setNext(e.target.value)} />
             {[1, 2, 7].map((d) => <button key={d} className="chip" onClick={() => setNext(addDays(todayIST(), d))}>+{d}d</button>)}
