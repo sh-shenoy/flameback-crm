@@ -15,7 +15,7 @@ do $$ declare a uuid := (select id from k where n=1); b uuid := (select id from 
   assert (select bucket from leads where id=a)='holding' and (select strikes from leads where id=a)=0, 'met -> holding';
   -- holding: still deciding (met again) = follow-up
   perform log_activity(a, 'phone_call', 'connected', 'Thinking', null, null, 'met');
-  assert (select bucket from leads where id=a)='holding' and (select strikes from leads where id=a)=1, 'holding follow-up counted';
+  assert (select bucket from leads where id=a)='holding' and (select strikes from leads where id=a)=0 and (select next_follow_up from leads where id=a)=ist_today()+14, 'holding follow-up: no strike, next in 14d';
   -- holding: commits over WhatsApp, product switched
   perform log_activity(a, 'message', 'replied', 'Yes, let us go ahead with US RIA', null, null, 'commits', null, 'us ria');
   assert (select bucket from leads where id=a)='converting' and (select product from leads where id=a)='US RIA', 'commits via message';

@@ -386,7 +386,7 @@ export default function Upload() {
                   <td>{b.total_rows}</td><td>{b.inserted}</td><td>{b.merged}</td><td>{b.skipped}</td><td>{b.failed}</td>
                   <td>
                     {b.undone_count ? <div className="muted small">{b.undone_count} removed</div> : null}
-                    {b.inserted > (b.undone_count ?? 0) && <button className="btn ghost sm" onClick={() => setUndo(b)}>Remove leads</button>}
+                    {isAdmin && b.inserted > (b.undone_count ?? 0) && <button className="btn ghost sm" onClick={() => setUndo(b)}>Remove leads</button>}
                   </td>
                 </tr>
               ))}

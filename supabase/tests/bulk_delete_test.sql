@@ -9,18 +9,17 @@ insert into b select start_import('list.csv','Meta',null,'RIA','skip',4);
 select import_rows((select id from b), '[{"row":2,"name":"A","phone":"9811100001"},{"row":3,"name":"B","phone":"9811100002"},{"row":4,"name":"C","phone":"9811100003"},{"row":5,"name":"D","phone":"9811100004"}]');
 select log_entry((select id from leads where phone='9811100001'),'phone_call','no_answer');
 do $$ begin
-  begin perform remove_import_leads((select id from b), true); raise exception 'FAIL rm removed worked';
+  -- RMs can't delete anything
+  begin perform remove_import_leads((select id from b), false); raise exception 'FAIL rm removed from upload';
   exception when others then if sqlerrm like 'FAIL%' then raise; end if; end;
-  assert remove_import_leads((select id from b), false) = 3, 'rm removes 3 untouched';
-  assert (select count(*) from leads) = 1, 'worked one stays';
-  -- RM bulk delete: own untouched only
-  perform create_lead('{"name":"E","phone":"9811100005","product":"RIA","source":"Meta"}');
-  begin perform delete_leads(array(select id from leads)); raise exception 'FAIL rm deleted worked';
+  begin perform delete_leads(array(select id from leads where phone='9811100002')); raise exception 'FAIL rm deleted';
   exception when others then if sqlerrm like 'FAIL%' then raise; end if; end;
-  assert delete_leads(array(select id from leads where phone='9811100005')) = 1, 'rm deletes own untouched';
+  assert (select count(*) from leads) = 4, 'nothing removed by rm';
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false); -- admin
 do $$ begin
+  assert remove_import_leads((select id from b), false) = 3, 'admin removes 3 untouched';
+  assert (select count(*) from leads) = 1, 'worked one stays';
   assert remove_import_leads((select id from b), true) = 1, 'admin removes the worked one';
   assert (select count(*) from leads) = 0, 'all gone';
   assert (select undone_count from import_batches) = 4, 'batch count';

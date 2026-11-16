@@ -13,11 +13,12 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Assignment | Round-robin across RMs who are "in rotation" (Team & rotation page). Admins can assign by hand. |
 | Product | RIA or PMS on every lead; set when added (per lead, per upload, or per row), changeable any time. |
 | Pipeline | Active contact → Awaiting meeting → Holding period / Deferred → Converting. |
-| Five strikes | Active contact: unanswered attempts (call "No answer", or a message "Sent" with no reply in 48h; Connected/Replied resets). Awaiting meeting: every reminder. Holding: every follow-up. Fifth strike → Out List. Counter resets on every bucket change. |
+| Five strikes | Active contact: unanswered attempts (call "No answer", or a message "Sent" with no reply in 48h; Connected/Replied resets). Awaiting meeting: every reminder. Fifth strike → Out List. Counter resets on every bucket change. |
+| Holding ("still thinking") | No strikes. Follow-ups are spaced out automatically: 7 days after entering Holding, then 14, 28, 56 … days after each follow-up (at most 90 days apart). A date picked by hand wins. Leaves Holding only by a decision: Committed, Deferred or Not interested. |
 | Out List | Five strikes or Not interested. Bring back needs a follow-up date, resets strikes, returns to the bucket it left. |
 | Deferred | Returns to Holding on its date. |
 | Converting | Committed. RIA onboards in the Flameback app, PMS via Silver Bullet (onboarding module is separate, coming later). |
-| Access | RMs see only their own leads (enforced in the database). Admins see all. |
+| Access | RMs see only their own leads (enforced in the database). Admins see all. Only admins can delete leads (selected, or from an upload). |
 | Duplicates | Same phone or email in the unit can't be added twice; you get a warning with a merge option. |
 | Tasks | Kanban board (Open / In Progress / Blocked / Done) and list view; Assigned to me, my team, Raised by me. Raised to a team and optionally a person, with priority, due date, optional lead, comments and history. Blocked needs a reason. Templates: account opening, address change, strategy switch, withdrawal, top-up, compliance query. Overdue tasks show on the dashboard and in Today's actions. |
 | AI summary | Box at the top of each lead: headline, who they are, what they want, where things stand, concerns, next steps. Built by OpenAI from all activity, notes, meetings, tasks and stage changes (contact details and ID numbers stripped first). Refreshes after new activity; RMs can refresh or edit (edits aren't overwritten automatically). |
@@ -35,7 +36,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 ## One-time setup
 
 ### 1. Database
-In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…` to `0011_…`). When a new migration file is added later, run just that one.
+In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…` to `0012_…`). When a new migration file is added later, run just that one.
 
 It creates the tables, rules and access policies, and schedules the timed rules (48h message strikes, deferred returns) every 15 minutes with `pg_cron`. If `pg_cron` isn't enabled, enable it under **Database → Extensions** and re-run the last `do $$ … $$` block. The app also runs these rules whenever someone opens it.
 

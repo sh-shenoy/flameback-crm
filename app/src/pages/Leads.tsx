@@ -92,7 +92,7 @@ export default function Leads() {
     { key: 'open', label: 'All open' },
     ...BUCKETS.filter((b) => b.key !== 'out').map((b) => ({ key: b.key, label: b.label })),
   ];
-  const strikeBucket = (b: Bucket) => ['active_contact', 'awaiting_meeting', 'holding'].includes(b);
+  const strikeBucket = (b: Bucket) => ['active_contact', 'awaiting_meeting'].includes(b);
   const filtersOn = product || source || due || q;
 
   return (
@@ -133,7 +133,7 @@ export default function Leads() {
           </div>
           <span className="muted small">{total} lead{total === 1 ? '' : 's'}</span>
         </div>
-        {sel.size > 0 && (
+        {isAdmin && sel.size > 0 && (
           <div className="bulk-bar">
             <b>{sel.size} selected</b>
             <button className="linkbtn small" onClick={() => setSel(new Set())}>Clear</button>
@@ -155,9 +155,9 @@ export default function Leads() {
         <div className="table-wrap">
           <table>
             <thead><tr>
-              <th className="chk"><input type="checkbox" aria-label="Select all on this page"
+              {isAdmin && <th className="chk"><input type="checkbox" aria-label="Select all on this page"
                 checked={!!rows?.length && sel.size === rows.length}
-                onChange={() => setSel(rows && sel.size !== rows.length ? new Set(rows.map((r) => r.id)) : new Set())} /></th>
+                onChange={() => setSel(rows && sel.size !== rows.length ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
               <th>Name</th><th>Source</th><th>Product</th><th>Bucket</th><th>Interactions</th><th>Strikes</th><th>Next follow-up</th>
             </tr></thead>
             <tbody>
@@ -166,10 +166,10 @@ export default function Leads() {
                 const n = l.lead_entries?.[0]?.count ?? 0;
                 return (
                   <tr key={l.id} className={`lead-row ${sel.has(l.id) ? 'selected' : ''}`} onClick={() => nav(`/leads/${l.id}`)}>
-                    <td className="chk" onClick={(e) => e.stopPropagation()}>
+                    {isAdmin && <td className="chk" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" aria-label={`Select ${l.name}`} checked={sel.has(l.id)}
                         onChange={() => { const n = new Set(sel); n.has(l.id) ? n.delete(l.id) : n.add(l.id); setSel(n); }} />
-                    </td>
+                    </td>}
                     <td>
                       <div className="lead-name">{l.name} {n === 0 && <span className="new-badge">New</span>}</div>
                       <div className="lead-sub">{fmtPhone(l.phone) || l.email}</div>
@@ -208,7 +208,6 @@ export default function Leads() {
 }
 
 function DeleteLeads({ ids, onClose, onDone }: { ids: string[]; onClose: () => void; onDone: (n: number) => void }) {
-  const { isAdmin } = useApp();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -222,7 +221,6 @@ function DeleteLeads({ ids, onClose, onDone }: { ids: string[]; onClose: () => v
           catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
         }}>{busy ? 'Deleting…' : 'Delete permanently'}</button></>}>
       <p style={{ marginBottom: 10 }}>This permanently removes the selected leads with their activity, notes, emails and summaries. It can't be undone.</p>
-      {!isAdmin && <p className="hint" style={{ marginBottom: 10 }}>You can delete your own leads that nobody has worked yet. For anything else, ask an admin, or mark the lead Not interested instead.</p>}
       {needType && <Field label={`Type ${ids.length} to confirm`}><input value={text} onChange={(e) => setText(e.target.value)} inputMode="numeric" /></Field>}
       {err && <div className="form-err">{err}</div>}
     </Modal>
