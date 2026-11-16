@@ -6,6 +6,8 @@
 //   { action: "slots", event_type_id, date }  → free start times on that date (IST)
 //   { action: "book", lead_id, event_type_id, start_time, email?, guests?[] } → books the lead; Cal.com emails invites
 //   { action: "cancel", lead_id, booking_uid?, reason? } → cancels that meeting (or the lead's next one)
+//   { action: "sync_event_types" }   → creates any Flameback standard meeting types (Admin → Meeting types)
+//                                      missing from the RM's Cal.com; never changes or removes existing ones
 // Bookings come back through calcom-webhook, which updates the lead.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -42,6 +44,30 @@ function calError(r: { status: number; body: any }): string {
   const details = e?.details ? ` · ${typeof e.details === 'string' ? e.details : JSON.stringify(e.details)}` : '';
   if (r.status === 401) return 'Cal.com rejected that API key. Create a new one (Cal.com → Settings → Developer → API keys) and paste it again.';
   return `Cal.com: ${msg}${details}`;
+}
+
+/** Create the Flameback standard meeting types that this RM's Cal.com doesn't have yet. */
+async function syncEventTypes(admin: any, key: string, username: string | null) {
+  const { data: templates } = await admin.from('meeting_templates').select('*').eq('is_active', true).order('sort_order');
+  let r = await cal(key, '/event-types', { version: V_EVENT_TYPES });
+  if (r.ok && !list(r.body?.data).length && username) r = await cal(key, `/event-types?username=${encodeURIComponent(username)}`, { version: V_EVENT_TYPES });
+  if (!r.ok) return { created: [], existing: [], failed: [{ title: 'all', error: calError(r) }] };
+  const have = new Set(list(r.body?.data).map((e: any) => String(e.slug)));
+  const created: string[] = [], existing: string[] = [], failed: { title: string; error: string }[] = [];
+  let meetFallback = false;
+  for (const t of templates ?? []) {
+    if (have.has(t.slug)) { existing.push(t.title); continue; }
+    const base = { title: t.title, slug: t.slug, lengthInMinutes: t.length_minutes, description: t.description ?? undefined };
+    // prefer Google Meet; if Cal.com won't accept it (e.g. Google not connected), create with Cal.com's default video
+    let c = await cal(key, '/event-types', { method: 'POST', version: V_EVENT_TYPES,
+      body: JSON.stringify({ ...base, locations: [{ type: 'integration', integration: 'google-meet' }] }) });
+    if (!c.ok && c.status === 400) {
+      c = await cal(key, '/event-types', { method: 'POST', version: V_EVENT_TYPES, body: JSON.stringify(base) });
+      if (c.ok) meetFallback = true;
+    }
+    if (c.ok) created.push(t.title); else failed.push({ title: t.title, error: calError(c) });
+  }
+  return { created, existing, failed, meet_fallback: meetFallback };
 }
 
 const list = (d: any): any[] => Array.isArray(d) ? d : Array.isArray(d?.eventTypes) ? d.eventTypes
@@ -93,9 +119,10 @@ Deno.serve(async (req) => {
       if (saveErr) return json({ error: saveErr.message }, 500);
       await admin.from('profiles').update({ cal_url: bookingUrl, cal_connected_at: new Date().toISOString() }).eq('id', userId);
 
+      const types = await syncEventTypes(admin, key, username).catch((e) => ({ created: [], existing: [], failed: [{ title: 'all', error: String(e) }] }));
       // If Cal.com wouldn't create the webhook, hand back what the RM needs to add it by hand.
       return json({
-        ok: true, booking_url: bookingUrl,
+        ok: true, booking_url: bookingUrl, event_types: types,
         webhook_ok: !!webhookId,
         ...(webhookId ? {} : { webhook_error: calError(hook), webhook_url: hookUrl, webhook_secret: secret }),
       });
@@ -103,6 +130,10 @@ Deno.serve(async (req) => {
 
     if (!conn) return json({ error: 'Connect your Cal.com first (Connections → Cal.com).' }, 400);
     const key = conn.api_key;
+
+    if (body.action === 'sync_event_types') {
+      return json({ ok: true, ...(await syncEventTypes(admin, key, conn.username)) });
+    }
 
     if (body.action === 'event_types') {
       let r = await cal(key, '/event-types', { version: V_EVENT_TYPES });

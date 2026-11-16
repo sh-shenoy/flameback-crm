@@ -22,7 +22,7 @@ When a change touches one of these files: Supabase → Edge Functions → open t
 ## Cal.com: each RM (one time)
 
 1. Sign up at cal.com with their `@flamebackcapital.com` Google account and connect **Google Calendar** (so busy times are respected and Google Meet links are created).
-2. Create an event type, e.g. **Intro call · 30 min**, location **Google Meet**. Optional booking questions: "Phone number" and "Interested in: RIA / PMS / US RIA"; the CRM picks these up.
+2. In Cal.com → Apps, install **Google Meet**. The CRM creates the standard Flameback meeting types (Admin → Meeting types) in their account when they connect. Optional booking questions: "Phone number" and "Interested in: RIA / PMS / US RIA"; the CRM picks these up.
 3. Cal.com → **Settings → Developer → API keys → Add** → name "Flameback CRM", **never expires** → copy.
 4. CRM → **Connections → Cal.com** → paste → **Connect**. If the CRM can't add the webhook itself, it shows the URL and secret to add under Cal.com → Settings → Developer → Webhooks (events: booking created, rescheduled, cancelled).
 

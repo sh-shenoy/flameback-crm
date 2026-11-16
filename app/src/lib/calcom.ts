@@ -27,7 +27,18 @@ export interface MeetingRow {
   start_time: string; end_time: string | null; join_url: string | null; status: 'active' | 'canceled';
 }
 
+export interface SyncResult { created: string[]; existing: string[]; failed: { title: string; error: string }[]; meet_fallback?: boolean }
+
+export function describeSync(r: SyncResult | undefined): string {
+  if (!r) return '';
+  const parts: string[] = [];
+  if (r.created.length) parts.push(`${r.created.length} meeting type${r.created.length === 1 ? '' : 's'} added`);
+  if (!r.created.length && !r.failed.length) parts.push('All Flameback meeting types are already in your Cal.com');
+  if (r.failed.length) parts.push(`${r.failed.length} couldn't be added`);
+  return parts.join(' · ');
+}
+
 export interface ConnectResult {
-  ok: boolean; booking_url: string | null; webhook_ok: boolean;
+  ok: boolean; booking_url: string | null; webhook_ok: boolean; event_types?: SyncResult;
   webhook_error?: string; webhook_url?: string; webhook_secret?: string;
 }

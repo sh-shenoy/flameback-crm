@@ -7,6 +7,7 @@ import type { Profile } from '../lib/types';
 import { Empty, useToast } from '../components/ui';
 import Team from './Team';
 import { TeamOverview } from './AdminOverview';
+import MeetingTypes from './MeetingTypes';
 
 export default function Admin() {
   const { team, isAdmin } = useApp();
@@ -22,8 +23,9 @@ export default function Admin() {
         <button className={`tab ${tab === 'overview' ? 'on' : ''}`} onClick={() => setSp({})}>Team overview</button>
         <button className={`tab ${tab === 'requests' ? 'on' : ''}`} onClick={() => setSp({ tab: 'requests' })}>Access requests <span className="tab-n">{pending.length}</span></button>
         <button className={`tab ${tab === 'team' ? 'on' : ''}`} onClick={() => setSp({ tab: 'team' })}>Team &amp; rotation</button>
+        <button className={`tab ${tab === 'meetings' ? 'on' : ''}`} onClick={() => setSp({ tab: 'meetings' })}>Meeting types</button>
       </div>
-      {tab === 'overview' ? <TeamOverview /> : tab === 'team' ? <Team embedded /> : (
+      {tab === 'overview' ? <TeamOverview /> : tab === 'team' ? <Team embedded /> : tab === 'meetings' ? <MeetingTypes /> : (
         <>
           <div className="panel">
             <div className="panel-head"><h2>Waiting for approval</h2><span className="muted small">Anyone with a @flamebackcapital.com Google account can ask; nobody gets in until approved.</span></div>

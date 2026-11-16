@@ -487,3 +487,8 @@ td.red, td.amber { font-weight: 600; }
 .bell-head b { margin-right: auto; }
 .sound-toggle { color: var(--muted) !important; font-weight: 500 !important; }
 .sel { user-select: all; word-break: break-all; }
+
+/* ── meeting types / sync ── */
+.sync-box { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #f9fafb; display: grid; gap: 4px; }
+.add-row td { background: #fbfcfe; }
+td input:not([type=checkbox]), td select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 13px; }
