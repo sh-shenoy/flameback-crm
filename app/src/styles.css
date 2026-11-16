@@ -464,3 +464,12 @@ th.sorted::after { content: " ↓"; }
 .file-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #eef1f5; flex-wrap: wrap; }
 .upload-btn { margin-top: 10px; cursor: pointer; }
 .upload-btn.disabled { opacity: .6; pointer-events: none; }
+
+/* ── admin overview ── */
+.sugs { display: grid; gap: 6px; }
+.sug { text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+.sug:hover { border-color: #b9c2cf; }
+.sug.on { border-color: var(--teal); background: #f0f8f8; }
+.person.big img, .person.big .av { width: 44px; height: 44px; font-size: 15px; }
+td.red, td.amber { font-weight: 600; }
+.nowrap { white-space: nowrap; }
