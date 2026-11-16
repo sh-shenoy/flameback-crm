@@ -1,0 +1,90 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794749563000,
+      "tag": "0001_rm_presales",
+      "breakpoints": false
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794753845000,
+      "tag": "0002_tasks",
+      "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794759098000,
+      "tag": "0003_calendly",
+      "breakpoints": false
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794766871000,
+      "tag": "0004_notifications_access_reports",
+      "breakpoints": false
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794813127000,
+      "tag": "0005_admin_overview",
+      "breakpoints": false
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794817890000,
+      "tag": "0006_calcom",
+      "breakpoints": false
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794818462000,
+      "tag": "0007_meeting_templates",
+      "breakpoints": false
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794823166000,
+      "tag": "0008_log_activity",
+      "breakpoints": false
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794823673000,
+      "tag": "0009_log_activity_deferred",
+      "breakpoints": false
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794824921000,
+      "tag": "0010_lead_summaries",
+      "breakpoints": false
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794828873000,
+      "tag": "0011_bulk_delete",
+      "breakpoints": false
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794830427000,
+      "tag": "0012_holding_cadence",
+      "breakpoints": false
+    }
+  ]
+}

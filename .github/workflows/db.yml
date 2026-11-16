@@ -1,0 +1,67 @@
+# Database migrations with Drizzle.
+#  · Pull requests: apply every migration to a throwaway Postgres and run the SQL tests.
+#  · Merge to master: apply new migrations to Supabase (needs the DATABASE_URL repository secret).
+name: Database
+
+on:
+  pull_request:
+    paths: ['supabase/migrations/**', 'supabase/tests/**', 'db/**', '.github/workflows/db.yml']
+  push:
+    branches: [master]
+    paths: ['supabase/migrations/**', 'db/**', '.github/workflows/db.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: database-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: test }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:test@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: db/package-lock.json }
+      - run: npm ci && npm run typecheck
+        working-directory: db
+      - name: Supabase stand-in (auth schema, roles)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f supabase/tests/supabase_stub.sql
+      - name: Apply migrations with Drizzle
+        run: npm run db:migrate
+        working-directory: db
+      - name: SQL tests
+        run: |
+          for t in supabase/tests/*_test.sql; do
+            echo "== $t"
+            (echo 'begin;'; cat "$t"; echo 'rollback;') | psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q | grep -E 'PASSED' || exit 1
+          done
+
+  migrate:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Check the secret is set
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Add the DATABASE_URL secret (Supabase → Connect → Session pooler URI) under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: db/package-lock.json }
+      - run: npm ci
+        working-directory: db
+      - name: Apply new migrations to Supabase
+        run: npm run db:migrate
+        working-directory: db
