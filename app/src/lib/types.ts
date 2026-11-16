@@ -27,6 +27,8 @@ export interface Profile {
   team: Team;
   calendly_url: string | null;
   calendly_connected_at: string | null;
+  cal_url: string | null;
+  cal_connected_at: string | null;
   approved_at: string | null;
   rejected_at: string | null;
   gmail_address: string | null;

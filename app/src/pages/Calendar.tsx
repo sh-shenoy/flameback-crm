@@ -46,7 +46,7 @@ export default function CalendarPage() {
     const from = dayStartUTC(days[0]!).toISOString();
     const to = dayStartUTC(shift(days[days.length - 1]!, 1)).toISOString();
     Promise.all([
-      supabase.from('calendly_events').select('*').eq('rm_id', me!.id).eq('status', 'active').gte('start_time', from).lt('start_time', to),
+      supabase.from('meetings').select('*').eq('rm_id', me!.id).eq('status', 'active').gte('start_time', from).lt('start_time', to),
       supabase.from('leads').select('id, name, phone, product, meeting_at, meeting_url').eq('rm_id', me!.id).eq('bucket', 'awaiting_meeting')
         .gte('meeting_at', from).lt('meeting_at', to),
       showTasks
@@ -64,7 +64,7 @@ export default function CalendarPage() {
       const seen = new Set<string>();
       for (const e of ce.data ?? []) {
         const end = e.end_time ?? new Date(new Date(e.start_time).getTime() + 30 * 60_000).toISOString();
-        out.push({ id: 'c' + e.invitee_uri, title: (e.lead_id && names[e.lead_id]) || e.name || 'Calendly booking', sub: e.event_name ?? 'Calendly',
+        out.push({ id: 'c' + e.booking_uid, title: (e.lead_id && names[e.lead_id]) || e.name || 'Booking', sub: e.event_name ?? (e.provider === 'calcom' ? 'Cal.com' : 'Calendly'),
           start: e.start_time, end, kind: 'meeting', link: e.lead_id ? `/leads/${e.lead_id}` : '/calendar', join: e.join_url, day: istDate(e.start_time) });
         if (e.lead_id) seen.add(e.lead_id + new Date(e.start_time).getTime());
       }
@@ -101,7 +101,7 @@ export default function CalendarPage() {
   return (
     <div className="main-inner wide">
       <div className="page-head">
-        <div><h1>Calendar</h1><p>Your meetings with leads (Calendly and booked by hand){showTasks ? ' and tasks due' : ''}. Times in IST.</p></div>
+        <div><h1>Calendar</h1><p>Your meetings with leads (Cal.com and booked by hand){showTasks ? ' and tasks due' : ''}. Times in IST.</p></div>
         <button className="btn" onClick={() => setPicking(true)}>Schedule meeting</button>
       </div>
       <div className="cal-bar">

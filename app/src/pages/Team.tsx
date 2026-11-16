@@ -45,7 +45,7 @@ export default function Team({ embedded }: { embedded?: boolean } = {}) {
       <div className="panel">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Person</th><th>Team</th><th>Role</th><th>Open leads</th><th>Calendly</th><th>In rotation</th><th>Last lead assigned</th><th>Access</th></tr></thead>
+            <thead><tr><th>Person</th><th>Team</th><th>Role</th><th>Open leads</th><th>Cal.com</th><th>In rotation</th><th>Last lead assigned</th><th>Access</th></tr></thead>
             <tbody>
               {team.map((t) => (
                 <tr key={t.id} className={t.is_active ? '' : 'inactive'}>
@@ -64,7 +64,7 @@ export default function Team({ embedded }: { embedded?: boolean } = {}) {
                     </select>
                   </td>
                   <td>{counts[t.id] ?? '·'}</td>
-                  <td>{t.calendly_url ? <a href={t.calendly_url} target="_blank" rel="noreferrer" className="small">Connected</a> : <span className="muted small">Not connected</span>}</td>
+                  <td>{t.cal_connected_at ? (t.cal_url ? <a href={t.cal_url} target="_blank" rel="noreferrer" className="small">Connected</a> : <span className="small">Connected</span>) : <span className="muted small">Not connected</span>}</td>
                   <td>
                     <label className="toggle">
                       <input type="checkbox" checked={t.in_rotation} disabled={!t.is_active}

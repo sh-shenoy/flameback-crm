@@ -20,7 +20,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Access | RMs see only their own leads (enforced in the database). Admins see all. |
 | Duplicates | Same phone or email in the unit can't be added twice; you get a warning with a merge option. |
 | Tasks | Kanban board (Open / In Progress / Blocked / Done) and list view; Assigned to me, my team, Raised by me. Raised to a team and optionally a person, with priority, due date, optional lead, comments and history. Blocked needs a reason. Templates: account opening, address change, strategy switch, withdrawal, top-up, compliance query. Overdue tasks show on the dashboard and in Today's actions. |
-| Calendly | Each RM connects their own Calendly (Connections). Bookings arrive automatically: an existing lead (matched by the link's hidden lead id, then email, then phone) moves to Awaiting meeting with the time and Meet link; someone new becomes that RM's lead with source Calendly. Cancellations clear the meeting and set a follow-up for today. **Send booking link** on the lead page gives a pre-filled link with WhatsApp / email buttons. Setup: `supabase/functions/README.md`. |
+| Cal.com | Each RM connects their own Cal.com (Connections, API key). Bookings arrive automatically: an existing lead (matched by hidden lead id, then email, then phone) moves to Awaiting meeting with the time and meeting link; someone new becomes that RM's lead with source Cal.com. Reschedules and cancellations update the lead. Lead page: **Schedule meeting** (free slots, extra invitees), Reschedule, Cancel, **Send booking link**. Setup: `supabase/functions/README.md`. |
 | Admin overview | Admin → Team overview: per person open leads, follow-ups due / overdue, meetings, meetings without outcome, untouched leads, activity, new → committed, overdue tasks. Suggested **nudges** sent as notifications (with history). Person page: their pipeline, recent activity, bulk reassign. |
 | Access | New sign-ups wait on **Admin → Access requests**; an admin approves them as RM or Admin (or rejects). Admins are notified of each request. |
 | Notifications | Bell with unread count, live pop-ups and a Notifications page: new leads (one per upload), Calendly bookings and cancellations, 9 am digest, meeting in 30 min, task created / assigned / moved / commented / file added, email replies, access requests. |
@@ -34,7 +34,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 ## One-time setup
 
 ### 1. Database
-In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…` to `0005_…`). When a new migration file is added later, run just that one.
+In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…` to `0006_…`). When a new migration file is added later, run just that one.
 
 It creates the tables, rules and access policies, and schedules the timed rules (48h message strikes, deferred returns) every 15 minutes with `pg_cron`. If `pg_cron` isn't enabled, enable it under **Database → Extensions** and re-run the last `do $$ … $$` block. The app also runs these rules whenever someone opens it.
 
