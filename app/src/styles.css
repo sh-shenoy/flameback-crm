@@ -473,3 +473,16 @@ th.sorted::after { content: " ↓"; }
 .person.big img, .person.big .av { width: 44px; height: 44px; font-size: 15px; }
 td.red, td.amber { font-weight: 600; }
 .nowrap { white-space: nowrap; }
+
+/* ── persistent notification pop-ups ── */
+.toasts { max-height: calc(100vh - 90px); overflow-y: auto; align-items: flex-end; }
+.toast { display: flex; align-items: flex-start; gap: 10px; }
+.toast-text { flex: 1; min-width: 0; }
+.toast.note { width: 340px; max-width: calc(100vw - 40px); }
+.toast-x { background: none; border: none; color: var(--muted); font-size: 18px; line-height: 1; padding: 0 2px; margin-top: -2px; }
+.toast-x:hover { color: var(--ink); }
+.toast-clear { align-self: flex-end; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 500; color: var(--ink); box-shadow: var(--shadow); }
+.toast-more { font-size: 12px; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+.bell-head { gap: 10px; }
+.bell-head b { margin-right: auto; }
+.sound-toggle { color: var(--muted) !important; font-weight: 500 !important; }
