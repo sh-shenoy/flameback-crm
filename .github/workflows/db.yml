@@ -11,7 +11,9 @@ on:
     paths: ['supabase/migrations/**', 'db/**', '.github/workflows/db.yml']
   workflow_dispatch:
 
-concurrency: { group: database-${{ github.ref }}, cancel-in-progress: false }
+concurrency:
+  group: database-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   test:
