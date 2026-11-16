@@ -17,3 +17,4 @@ create table if not exists storage.objects (id uuid primary key default gen_rand
 alter table storage.objects enable row level security;
 grant usage on schema storage to authenticated;
 grant select, insert, delete on storage.objects to authenticated;
+create or replace function auth.role() returns text language sql stable as $$ select nullif(current_setting('request.jwt.claim.role', true),'')::text $$;

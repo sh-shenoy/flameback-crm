@@ -533,3 +533,23 @@ td input:not([type=checkbox]), td select { width: 100%; padding: 6px 8px; border
   .auth-panel { gap: 18px; }
   .auth-logo-mobile { display: block; width: 200px; height: auto; justify-self: center; }
 }
+
+/* ── AI summary ── */
+.ai-box { background: linear-gradient(180deg, #fbfcfe, #fff); border: 1px solid #dfe6ef; border-left: 3px solid var(--brand); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 22px; box-shadow: var(--shadow); }
+.ai-box.off { padding: 10px 16px; background: #f9fafb; border-left-color: #cfd7e1; }
+.ai-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ai-badge { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #9a4a12; background: #fff1e8; border-radius: 4px; padding: 2px 8px; }
+.ai-actions { margin-left: auto; display: flex; gap: 14px; }
+.ai-headline { font-size: 15.5px; font-weight: 500; color: var(--ink); margin-bottom: 12px; line-height: 1.45; }
+.ai-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.ai-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e4e7ec; }
+.ai-grid span { display: block; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 4px; }
+.ai-grid p { font-size: 13.5px; line-height: 1.5; color: #344054; }
+.ai-grid ul { margin: 0 0 0 16px; display: grid; gap: 3px; font-size: 13.5px; color: #344054; }
+.ai-stale { font-size: 12.5px; background: #fdf3e6; color: #8a5414; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
+.ai-err { font-size: 12.5px; background: #fdeae6; color: #8a2f1f; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
+.ai-skel { display: grid; gap: 8px; }
+.ai-edit { display: grid; gap: 10px; }
+.ai-edit label { display: grid; gap: 4px; font-size: 12px; font-weight: 500; color: #344054; }
+.ai-edit input, .ai-edit textarea { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 13.5px; resize: vertical; }
+@media (max-width: 1000px) { .ai-grid, .ai-grid.two { grid-template-columns: 1fr; } }

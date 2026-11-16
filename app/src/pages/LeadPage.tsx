@@ -11,6 +11,7 @@ import {
 } from '../lib/types';
 import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
 import { Select } from '../components/AddLead';
+import SummaryBox from '../components/SummaryBox';
 import { DueTag, NewTaskModal, PriorityTag, StatusTag, TaskDrawer } from '../components/TaskParts';
 import type { Task } from '../lib/types';
 import { calcom, type CalEventType, type MeetingRow } from '../lib/calcom';
@@ -180,6 +181,8 @@ export default function LeadPage() {
         </div>
         {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
       </div>
+
+      <SummaryBox leadId={lead.id} version={`${lead.updated_at}:${entries.length}:${tasks.length}`} />
 
       <div className="lead-cols">
         <ProfileCard lead={lead} onSaved={load} />

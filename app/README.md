@@ -20,6 +20,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Access | RMs see only their own leads (enforced in the database). Admins see all. |
 | Duplicates | Same phone or email in the unit can't be added twice; you get a warning with a merge option. |
 | Tasks | Kanban board (Open / In Progress / Blocked / Done) and list view; Assigned to me, my team, Raised by me. Raised to a team and optionally a person, with priority, due date, optional lead, comments and history. Blocked needs a reason. Templates: account opening, address change, strategy switch, withdrawal, top-up, compliance query. Overdue tasks show on the dashboard and in Today's actions. |
+| AI summary | Box at the top of each lead: headline, who they are, what they want, where things stand, concerns, next steps. Built by OpenAI from all activity, notes, meetings, tasks and stage changes (contact details and ID numbers stripped first). Refreshes after new activity; RMs can refresh or edit (edits aren't overwritten automatically). |
 | Cal.com | Each RM connects their own Cal.com (Connections, API key). Bookings arrive automatically: an existing lead (matched by hidden lead id, then email, then phone) moves to Awaiting meeting with the time and meeting link; someone new becomes that RM's lead with source Cal.com. Reschedules and cancellations update the lead. Lead page: **Schedule meeting** (free slots, extra invitees), Reschedule, Cancel, **Send booking link**. Setup: `supabase/functions/README.md`. |
 | Admin overview | Admin → Team overview: per person open leads, follow-ups due / overdue, meetings, meetings without outcome, untouched leads, activity, new → committed, overdue tasks. Suggested **nudges** sent as notifications (with history). Person page: their pipeline, recent activity, bulk reassign. |
 | Access | New sign-ups wait on **Admin → Access requests**; an admin approves them as RM or Admin (or rejects). Admins are notified of each request. |
@@ -34,7 +35,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 ## One-time setup
 
 ### 1. Database
-In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…` to `0009_…`). When a new migration file is added later, run just that one.
+In the Supabase dashboard → **SQL Editor**, run each file in `../supabase/migrations/` once, in order (`0001_…` to `0010_…`). When a new migration file is added later, run just that one.
 
 It creates the tables, rules and access policies, and schedules the timed rules (48h message strikes, deferred returns) every 15 minutes with `pg_cron`. If `pg_cron` isn't enabled, enable it under **Database → Extensions** and re-run the last `do $$ … $$` block. The app also runs these rules whenever someone opens it.
 
