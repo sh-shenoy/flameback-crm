@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../auth';
-import { supabase } from '../lib/supabase';
+import { rpc, supabase } from '../lib/supabase';
 import { addDays, fmtDate, fmtPhone, todayIST } from '../lib/format';
 import { BUCKETS, PRODUCTS, type Bucket, type Lead } from '../lib/types';
-import { BucketPill, Empty, FollowUp, ProductTag, Skeleton, Strikes } from '../components/ui';
+import { BucketPill, Empty, Field, FollowUp, Modal, ProductTag, Skeleton, Strikes, useToast } from '../components/ui';
 
 type Row = Lead & { lead_entries: { count: number }[] };
 const PAGE = 50;
 const WORKING: Bucket[] = ['active_contact', 'awaiting_meeting', 'holding', 'deferred'];
 
 export default function Leads() {
-  const { me, sources } = useApp();
+  const { me, sources, isAdmin, team } = useApp();
   const [sp, setSp] = useSearchParams();
   const nav = useNavigate();
   const tab = (sp.get('bucket') as Bucket | 'open' | null) ?? 'open';
@@ -23,6 +23,11 @@ export default function Leads() {
 
   const [rows, setRows] = useState<Row[] | null>(null);
   const [total, setTotal] = useState(0);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [moveTo, setMoveTo] = useState('');
+  const toast = useToast();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState(q);
 
@@ -68,6 +73,7 @@ export default function Leads() {
       if (cancelled) return;
       setRows(data ?? []);
       setTotal(count ?? 0);
+      setSel(new Set());
     });
     // tab counts
     Promise.all([...WORKING, 'converting' as Bucket].map(async (b) => {
@@ -80,7 +86,7 @@ export default function Leads() {
       setCounts(c);
     });
     return () => { cancelled = true; };
-  }, [tab, page, applyFilters]);
+  }, [tab, page, applyFilters, reload]);
 
   const tabs: { key: string; label: string }[] = [
     { key: 'open', label: 'All open' },
@@ -127,17 +133,43 @@ export default function Leads() {
           </div>
           <span className="muted small">{total} lead{total === 1 ? '' : 's'}</span>
         </div>
+        {sel.size > 0 && (
+          <div className="bulk-bar">
+            <b>{sel.size} selected</b>
+            <button className="linkbtn small" onClick={() => setSel(new Set())}>Clear</button>
+            <div className="row-gap" style={{ marginLeft: 'auto' }}>
+              {isAdmin && <>
+                <select className="filter" value={moveTo} onChange={(e) => setMoveTo(e.target.value)}>
+                  <option value="">Reassign to…</option>
+                  {team.filter((t) => t.is_active && t.id !== me!.id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                </select>
+                <button className="btn ghost sm" disabled={!moveTo} onClick={async () => {
+                  try { const n = await rpc<number>('reassign_leads', { p_leads: [...sel], p_rm: moveTo }); toast(`${n} lead${n === 1 ? '' : 's'} reassigned`); setMoveTo(''); setReload((x) => x + 1); }
+                  catch (e) { toast((e as Error).message, 'err'); }
+                }}>Reassign</button>
+              </>}
+              <button className="btn danger sm" onClick={() => setDeleting(true)}>Delete</button>
+            </div>
+          </div>
+        )}
         <div className="table-wrap">
           <table>
             <thead><tr>
+              <th className="chk"><input type="checkbox" aria-label="Select all on this page"
+                checked={!!rows?.length && sel.size === rows.length}
+                onChange={() => setSel(rows && sel.size !== rows.length ? new Set(rows.map((r) => r.id)) : new Set())} /></th>
               <th>Name</th><th>Source</th><th>Product</th><th>Bucket</th><th>Interactions</th><th>Strikes</th><th>Next follow-up</th>
             </tr></thead>
             <tbody>
-              {rows === null && [0, 1, 2, 3, 4].map((i) => <tr key={i}><td colSpan={8}><Skeleton /></td></tr>)}
+              {rows === null && [0, 1, 2, 3, 4].map((i) => <tr key={i}><td colSpan={9}><Skeleton /></td></tr>)}
               {rows?.map((l) => {
                 const n = l.lead_entries?.[0]?.count ?? 0;
                 return (
-                  <tr key={l.id} className="lead-row" onClick={() => nav(`/leads/${l.id}`)}>
+                  <tr key={l.id} className={`lead-row ${sel.has(l.id) ? 'selected' : ''}`} onClick={() => nav(`/leads/${l.id}`)}>
+                    <td className="chk" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" aria-label={`Select ${l.name}`} checked={sel.has(l.id)}
+                        onChange={() => { const n = new Set(sel); n.has(l.id) ? n.delete(l.id) : n.add(l.id); setSel(n); }} />
+                    </td>
                     <td>
                       <div className="lead-name">{l.name} {n === 0 && <span className="new-badge">New</span>}</div>
                       <div className="lead-sub">{fmtPhone(l.phone) || l.email}</div>
@@ -167,6 +199,32 @@ export default function Leads() {
           </div>
         )}
       </div>
+      {deleting && (
+        <DeleteLeads ids={[...sel]} onClose={() => setDeleting(false)}
+          onDone={(n) => { setDeleting(false); toast(`${n} lead${n === 1 ? '' : 's'} deleted`); setReload((x) => x + 1); }} />
+      )}
     </div>
+  );
+}
+
+function DeleteLeads({ ids, onClose, onDone }: { ids: string[]; onClose: () => void; onDone: (n: number) => void }) {
+  const { isAdmin } = useApp();
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const needType = ids.length >= 10;
+  return (
+    <Modal title={`Delete ${ids.length} lead${ids.length === 1 ? '' : 's'}?`} onClose={onClose}
+      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
+        <button className="btn danger" disabled={busy || (needType && text.trim() !== String(ids.length))} onClick={async () => {
+          setBusy(true); setErr(null);
+          try { onDone(await rpc<number>('delete_leads', { p_leads: ids })); }
+          catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+        }}>{busy ? 'Deleting…' : 'Delete permanently'}</button></>}>
+      <p style={{ marginBottom: 10 }}>This permanently removes the selected leads with their activity, notes, emails and summaries. It can't be undone.</p>
+      {!isAdmin && <p className="hint" style={{ marginBottom: 10 }}>You can delete your own leads that nobody has worked yet. For anything else, ask an admin, or mark the lead Not interested instead.</p>}
+      {needType && <Field label={`Type ${ids.length} to confirm`}><input value={text} onChange={(e) => setText(e.target.value)} inputMode="numeric" /></Field>}
+      {err && <div className="form-err">{err}</div>}
+    </Modal>
   );
 }

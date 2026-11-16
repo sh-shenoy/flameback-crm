@@ -43,7 +43,6 @@ interface Result { row: number; status: 'inserted' | 'merged' | 'skipped' | 'fai
 
 export default function Upload() {
   const { sources, isAdmin } = useApp();
-  const toast = useToast();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [fileName, setFileName] = useState('');
   const [header, setHeader] = useState<string[]>([]);
@@ -385,9 +384,9 @@ export default function Upload() {
                   <td><span className="src">{b.source}</span>{b.campaign && <div className="lead-sub">{b.campaign}</div>}</td>
                   <td>{b.product ?? 'From file'}</td>
                   <td>{b.total_rows}</td><td>{b.inserted}</td><td>{b.merged}</td><td>{b.skipped}</td><td>{b.failed}</td>
-                  <td>{b.undone_at
-                    ? <span className="muted small">Undone · {b.undone_count} removed</span>
-                    : b.inserted > 0 && <button className="btn ghost sm" onClick={() => setUndo(b)}>Undo</button>}
+                  <td>
+                    {b.undone_count ? <div className="muted small">{b.undone_count} removed</div> : null}
+                    {b.inserted > (b.undone_count ?? 0) && <button className="btn ghost sm" onClick={() => setUndo(b)}>Remove leads</button>}
                   </td>
                 </tr>
               ))}
@@ -397,16 +396,7 @@ export default function Upload() {
         </div>
       </div>
 
-      {undo && (
-        <Modal title={`Undo upload · ${undo.file_name}`} onClose={() => setUndo(null)}
-          footer={<><button className="btn ghost" onClick={() => setUndo(null)}>Cancel</button>
-            <button className="btn danger" onClick={async () => {
-              try { const n = await rpc<number>('undo_import', { p_batch: undo.id }); toast(`${n} lead${n === 1 ? '' : 's'} removed`); setUndo(null); loadBatches(); }
-              catch (e) { toast((e as Error).message, 'err'); }
-            }}>Undo upload</button></>}>
-          <p>This removes the {undo.inserted} lead{undo.inserted === 1 ? '' : 's'} this upload added, <b>except any that someone has already worked</b> (logged an entry or moved on). Merged details stay.</p>
-        </Modal>
-      )}
+      {undo && <RemoveUploadLeads batch={undo} onClose={() => setUndo(null)} onDone={() => { setUndo(null); loadBatches(); }} />}
     </div>
   );
 }
@@ -424,4 +414,65 @@ function downloadTemplate() {
     ['Full name', 'Phone', 'Email', 'Product', 'Campaign', 'City', 'Age', 'Notes'],
     ['Priya Shah', '98200 12345', 'priya@example.com', 'RIA', 'Nov RIA push', 'Mumbai', '38', 'Asked about retirement planning'],
   ]));
+}
+
+/* ───────── remove the leads an upload created ───────── */
+function RemoveUploadLeads({ batch, onClose, onDone }: { batch: ImportBatch; onClose: () => void; onDone: () => void }) {
+  const { isAdmin } = useApp();
+  const toast = useToast();
+  const [counts, setCounts] = useState<{ untouched: number; worked: number } | null>(null);
+  const [mode, setMode] = useState<'untouched' | 'all'>('untouched');
+  const [confirmText, setConfirmText] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    supabase.from('leads').select('id, bucket, strikes, lead_entries(count)').eq('import_batch_id', batch.id).limit(10000)
+      .then(({ data }) => {
+        let untouched = 0, worked = 0;
+        for (const l of (data ?? []) as { bucket: string; strikes: number; lead_entries: { count: number }[] }[]) {
+          if (l.bucket === 'active_contact' && l.strikes === 0 && !(l.lead_entries?.[0]?.count)) untouched++; else worked++;
+        }
+        setCounts({ untouched, worked });
+      });
+  }, [batch.id]);
+
+  const total = counts ? counts.untouched + counts.worked : 0;
+  const n = mode === 'all' ? total : counts?.untouched ?? 0;
+  const ok = n > 0 && (mode === 'untouched' || confirmText.trim() === String(total));
+
+  async function go() {
+    setBusy(true);
+    try {
+      const removed = await rpc<number>('remove_import_leads', { p_batch: batch.id, p_include_worked: mode === 'all' });
+      toast(`${removed} lead${removed === 1 ? '' : 's'} removed`);
+      onDone();
+    } catch (e) { toast((e as Error).message, 'err'); } finally { setBusy(false); }
+  }
+
+  return (
+    <Modal title={`Remove leads · ${batch.file_name}`} onClose={onClose}
+      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
+        <button className="btn danger" disabled={busy || !ok} onClick={go}>{busy ? 'Removing…' : `Remove ${n} lead${n === 1 ? '' : 's'}`}</button></>}>
+      {!counts ? <p className="muted">Counting leads from this upload…</p> : total === 0 ? <p>All leads from this upload have already been removed.</p> : (
+        <>
+          <p style={{ marginBottom: 12 }}>This upload still has <b>{total}</b> lead{total === 1 ? '' : 's'} in Argus: <b>{counts.untouched}</b> nobody has worked yet and <b>{counts.worked}</b> with activity logged or moved on.</p>
+          <div className="result-list">
+            <button className={mode === 'untouched' ? 'on' : ''} onClick={() => setMode('untouched')}>
+              <b>Only untouched leads ({counts.untouched})</b><span>Leads someone has worked stay</span>
+            </button>
+            <button className={mode === 'all' ? 'on' : ''} disabled={!isAdmin} onClick={() => setMode('all')}
+              title={isAdmin ? undefined : 'Only an admin can remove leads that have been worked'}>
+              <b>All leads from this upload ({total})</b><span>{isAdmin ? 'Including worked ones and their history' : 'Admins only'}</span>
+            </button>
+          </div>
+          {mode === 'all' && (
+            <Field label={`Type ${total} to confirm`} hint="Their activity, notes, emails and summaries are deleted too. This can't be undone.">
+              <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} inputMode="numeric" />
+            </Field>
+          )}
+          <p className="hint" style={{ marginTop: 10 }}>Details merged into existing leads during this upload are not affected.</p>
+        </>
+      )}
+    </Modal>
+  );
 }
