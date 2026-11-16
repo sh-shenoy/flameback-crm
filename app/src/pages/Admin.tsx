@@ -6,22 +6,24 @@ import { fmtDateTime, initials, timeAgo } from '../lib/format';
 import type { Profile } from '../lib/types';
 import { Empty, useToast } from '../components/ui';
 import Team from './Team';
+import { TeamOverview } from './AdminOverview';
 
 export default function Admin() {
   const { team, isAdmin } = useApp();
   const [sp, setSp] = useSearchParams();
-  const tab = sp.get('tab') ?? 'requests';
+  const tab = sp.get('tab') ?? 'overview';
   if (!isAdmin) return <div className="main-inner"><p>Admins only.</p></div>;
   const pending = team.filter((t) => !t.is_active && !t.approved_at && !t.rejected_at);
   const rejected = team.filter((t) => !t.is_active && t.rejected_at);
   return (
     <div className="main-inner">
-      <div className="page-head"><div><h1>Admin</h1><p>Approve new people and manage the team.</p></div></div>
+      <div className="page-head"><div><h1>Admin</h1><p>See how the team is doing, nudge people, approve new sign-ins and manage rotation.</p></div></div>
       <div className="tabs">
-        <button className={`tab ${tab === 'requests' ? 'on' : ''}`} onClick={() => setSp({})}>Access requests <span className="tab-n">{pending.length}</span></button>
+        <button className={`tab ${tab === 'overview' ? 'on' : ''}`} onClick={() => setSp({})}>Team overview</button>
+        <button className={`tab ${tab === 'requests' ? 'on' : ''}`} onClick={() => setSp({ tab: 'requests' })}>Access requests <span className="tab-n">{pending.length}</span></button>
         <button className={`tab ${tab === 'team' ? 'on' : ''}`} onClick={() => setSp({ tab: 'team' })}>Team &amp; rotation</button>
       </div>
-      {tab === 'team' ? <Team embedded /> : (
+      {tab === 'overview' ? <TeamOverview /> : tab === 'team' ? <Team embedded /> : (
         <>
           <div className="panel">
             <div className="panel-head"><h2>Waiting for approval</h2><span className="muted small">Anyone with a @flamebackcapital.com Google account can ask; nobody gets in until approved.</span></div>

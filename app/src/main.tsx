@@ -15,6 +15,7 @@ import Upload from './pages/Upload';
 import Tasks from './pages/Tasks';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
+import { PersonPage } from './pages/AdminOverview';
 import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
 import CalendarPage from './pages/Calendar';
@@ -32,6 +33,7 @@ function Routed() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/team" element={<Navigate to="/admin?tab=team" replace />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/people/:id" element={<PersonPage />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/clients" element={<ComingSoon title="Clients" what="Your book of funded clients, households, holdings and returns." />} />
