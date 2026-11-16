@@ -5,7 +5,7 @@ import { calendly } from '../lib/calendly';
 import { fmtDateTime } from '../lib/format';
 import { Field, useToast } from '../components/ui';
 
-export default function Settings() {
+export default function Connections() {
   const { me, reloadRef } = useApp();
   const toast = useToast();
   const [token, setToken] = useState('');
@@ -27,7 +27,7 @@ export default function Settings() {
 
   return (
     <div className="main-inner">
-      <div className="page-head"><div><h1>Settings</h1><p>{me?.full_name} · {me?.email}</p></div></div>
+      <div className="page-head"><div><h1>Connections</h1><p>Connect your Calendly and Gmail so meetings and emails flow into the CRM by themselves.</p></div></div>
 
       <div className="panel">
         <div className="panel-head"><h2>Calendly</h2>{connected ? <span className="tstatus ts-done">Connected</span> : <span className="tstatus ts-open">Not connected</span>}</div>

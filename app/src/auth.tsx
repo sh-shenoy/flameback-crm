@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       try { sessionStorage.setItem(GMAIL_RESULT, JSON.stringify(msg ? { ok: false, msg } : { ok: true })); } catch { /* ignore */ }
       await reloadRef();
-      window.location.hash = '#/settings';
+      window.location.hash = '#/connections';
     });
   }
 

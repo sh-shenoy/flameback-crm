@@ -580,8 +580,8 @@ function BookingLinkDialog({ lead, calendlyUrl, rmName, onClose }: { lead: Lead;
   if (!calendlyUrl) {
     return (
       <Modal title="Send booking link" onClose={onClose}
-        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/settings" onClick={onClose}>Connect Calendly</Link></>}>
-        <p>Connect your Calendly first (Settings → Calendly). After that, this button gives you a link with {lead.name}'s details already filled in.</p>
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/connections" onClick={onClose}>Connect Calendly</Link></>}>
+        <p>Connect your Calendly first (Connections → Calendly). After that, this button gives you a link with {lead.name}'s details already filled in.</p>
       </Modal>
     );
   }
@@ -675,8 +675,8 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   if (!connected) {
     return (
       <Modal title="Schedule meeting" onClose={onClose}
-        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/settings" onClick={onClose}>Connect Calendly</Link></>}>
-        <p>Connect your Calendly first (Settings → Calendly) to book meetings from here.</p>
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/connections" onClick={onClose}>Connect Calendly</Link></>}>
+        <p>Connect your Calendly first (Connections → Calendly) to book meetings from here.</p>
       </Modal>
     );
   }
@@ -774,8 +774,8 @@ function EmailDialog({ lead, onClose, onSent }: { lead: Lead; onClose: () => voi
   if (!me!.gmail_connected_at) {
     return (
       <Modal title="Email" onClose={onClose}
-        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/settings" onClick={onClose}>Connect Gmail</Link></>}>
-        <p>Connect your Gmail first (Settings → Gmail). Emails then go from your own address, and replies appear on the lead's timeline.</p>
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/connections" onClick={onClose}>Connect Gmail</Link></>}>
+        <p>Connect your Gmail first (Connections → Gmail). Emails then go from your own address, and replies appear on the lead's timeline.</p>
       </Modal>
     );
   }

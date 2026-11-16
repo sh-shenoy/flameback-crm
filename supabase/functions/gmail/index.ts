@@ -29,7 +29,7 @@ async function accessToken(refresh: string): Promise<string> {
     body: new URLSearchParams({ client_id: id, client_secret: secret, refresh_token: refresh, grant_type: 'refresh_token' }),
   });
   const b = await res.json();
-  if (!res.ok) throw new Error(b.error === 'invalid_grant' ? 'Google access has expired. Reconnect Gmail in Settings.' : `Google: ${b.error_description || b.error}`);
+  if (!res.ok) throw new Error(b.error === 'invalid_grant' ? 'Google access has expired. Reconnect Gmail under Connections.' : `Google: ${b.error_description || b.error}`);
   return b.access_token;
 }
 
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
-    if (!conn) return json({ error: 'Connect your Gmail first (Settings → Gmail).' }, 400);
+    if (!conn) return json({ error: 'Connect your Gmail first (Connections → Gmail).' }, 400);
     const at = await accessToken(conn.refresh_token);
 
     if (body.action === 'send') {
