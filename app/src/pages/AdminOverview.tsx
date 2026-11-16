@@ -244,6 +244,11 @@ export function PersonPage() {
                 {team.filter((t) => t.is_active && t.id !== id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
               </select>
               <button className="btn sm" disabled={!to} onClick={reassign}>Reassign</button>
+              <button className="btn danger sm" onClick={async () => {
+                if (!confirm(`Permanently delete ${sel.size} lead${sel.size === 1 ? '' : 's'} with their activity and notes? This can't be undone.`)) return;
+                try { const n = await rpc<number>('delete_leads', { p_leads: [...sel] }); toast(`${n} lead${n === 1 ? '' : 's'} deleted`); load(); }
+                catch (e) { toast((e as Error).message, 'err'); }
+              }}>Delete</button>
             </>}
           </div>
         </div>
