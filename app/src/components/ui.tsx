@@ -14,18 +14,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback<Push>((text, tone = 'ok', extra) => {
     const id = Date.now() + Math.random();
     setItems((x) => [...x, { id, text, tone, ...extra }]);
-    setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), tone === 'err' ? 6000 : tone === 'note' ? 5000 : 3500);
+    // notifications stay until dismissed; confirmations and errors fade by themselves
+    if (tone !== 'note') setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), tone === 'err' ? 6000 : 3500);
   }, []);
+  const dismiss = (id: number) => setItems((x) => x.filter((t) => t.id !== id));
+  const notes = items.filter((t) => t.tone === 'note');
   return (
     <ToastCtx.Provider value={push}>
       {children}
-      <div className="toasts">
-        {items.map((t) => (
+      <div className="toasts" role="region" aria-label="Notifications" aria-live="polite">
+        {notes.length > 1 && (
+          <button className="toast-clear" onClick={() => setItems((x) => x.filter((t) => t.tone !== 'note'))}>Dismiss all ({notes.length})</button>
+        )}
+        {items.filter((t) => t.tone !== 'note' || notes.indexOf(t) >= notes.length - 5).map((t) => (
           <div key={t.id} className={`toast ${t.tone} ${t.onClick ? 'clickable' : ''}`}
-            onClick={() => { if (t.onClick) { t.onClick(); setItems((x) => x.filter((y) => y.id !== t.id)); } }}>
-            <div>{t.text}</div>{t.sub && <div className="toast-sub">{t.sub}</div>}
+            onClick={() => { if (t.onClick) { t.onClick(); dismiss(t.id); } }}>
+            <div className="toast-text"><div>{t.text}</div>{t.sub && <div className="toast-sub">{t.sub}</div>}</div>
+            {t.tone === 'note' && (
+              <button className="toast-x" aria-label="Dismiss" onClick={(e) => { e.stopPropagation(); dismiss(t.id); }}>×</button>
+            )}
           </div>
         ))}
+        {notes.length > 5 && <div className="toast-more">+{notes.length - 5} more · see the bell</div>}
       </div>
     </ToastCtx.Provider>
   );

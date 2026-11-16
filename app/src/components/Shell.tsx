@@ -6,6 +6,7 @@ import { initials, fmtPhone, todayIST, timeAgo } from '../lib/format';
 import type { AppNotification, Lead } from '../lib/types';
 import { BucketPill, useToast } from './ui';
 import AddLead from './AddLead';
+import { playChime, setSoundEnabled, soundEnabled, unlockSound } from '../lib/sound';
 
 type Badge = 'overdue' | 'tasks' | 'notifications' | 'requests';
 type NavItem = { to: string; label: string; badge?: Badge };
@@ -73,12 +74,15 @@ export default function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('crm:notifications-changed', h);
   }, [refreshCounts]);
 
-  // live pop-ups for new notifications
+  useEffect(() => { unlockSound(); }, []);
+
+  // live pop-ups for new notifications (they stay until dismissed, with a chime)
   useEffect(() => {
     const ch = supabase.channel(`notif-${me!.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${me!.id}` }, (p) => {
         const n = p.new as AppNotification;
         toast(n.title, 'note', { sub: n.body ?? undefined, onClick: n.link ? () => openNotification(n) : undefined });
+        playChime();
         refreshCounts();
         window.dispatchEvent(new Event('crm:notifications-changed'));
       })
@@ -170,6 +174,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 function Bell({ unread, onOpen }: { unread: number; onOpen: (n: AppNotification) => void }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<AppNotification[] | null>(null);
+  const [sound, setSound] = useState(soundEnabled());
   const ref = useRef<HTMLDivElement>(null);
   const nav = useNavigate();
 
@@ -195,6 +200,9 @@ function Bell({ unread, onOpen }: { unread: number; onOpen: (n: AppNotification)
         <div className="bell-drop">
           <div className="bell-head">
             <b>Notifications</b>
+            <button className="linkbtn small sound-toggle" onClick={() => { const v = !sound; setSound(v); setSoundEnabled(v); if (v) playChime(); }}>
+              Sound {sound ? 'on' : 'off'}
+            </button>
             {unread > 0 && <button className="linkbtn small" onClick={async () => {
               await supabase.rpc('mark_notifications_read', { p_ids: null });
               setItems((x) => x?.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })) ?? null);
