@@ -13,7 +13,7 @@ import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } 
 import { Select } from '../components/AddLead';
 import { DueTag, NewTaskModal, PriorityTag, StatusTag, TaskDrawer } from '../components/TaskParts';
 import type { Task } from '../lib/types';
-import { calendly, type CalendlyEventRow, type CalendlyEventType } from '../lib/calendly';
+import { calcom, type CalEventType, type MeetingRow } from '../lib/calcom';
 
 const ONBOARDING_ROUTE: Record<string, string> = {
   RIA: 'the Flameback app',
@@ -34,7 +34,7 @@ export default function LeadPage() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [openTask, setOpenTask] = useState<string | null>(null);
-  const [calEvent, setCalEvent] = useState<CalendlyEventRow | null>(null);
+  const [calEvent, setCalEvent] = useState<MeetingRow | null>(null);
 
   const load = useCallback(async () => {
     const [l, e, ev, tk] = await Promise.all([
@@ -44,9 +44,9 @@ export default function LeadPage() {
       supabase.from('tasks').select('*').eq('lead_id', id!).order('created_at', { ascending: false }),
     ]);
     setTasks((tk.data as Task[]) ?? []);
-    const { data: ce } = await supabase.from('calendly_events').select('*').eq('lead_id', id!).eq('status', 'active')
+    const { data: ce } = await supabase.from('meetings').select('*').eq('lead_id', id!).eq('status', 'active').eq('provider', 'calcom')
       .gt('start_time', new Date().toISOString()).order('start_time').limit(1);
-    setCalEvent(((ce as CalendlyEventRow[] | null) ?? [])[0] ?? null);
+    setCalEvent(((ce as MeetingRow[] | null) ?? [])[0] ?? null);
     if (!l.data) { setMissing(true); return; }
     setLead(l.data as Lead);
     setEntries((e.data as LeadEntry[]) ?? []);
@@ -166,7 +166,7 @@ export default function LeadPage() {
               <button className="btn ghost" onClick={() => setDialog('cal_reschedule')}>Reschedule</button>
               <button className="btn ghost" onClick={() => setDialog('cal_cancel')}>Cancel meeting</button>
             </> : <>
-              <button className="btn ghost" onClick={() => setDialog('schedule')}>Schedule on Calendly</button>
+              <button className="btn ghost" onClick={() => setDialog('schedule')}>Schedule on Cal.com</button>
               <button className="btn ghost" onClick={() => setDialog('reschedule')}>{lead.meeting_at ? 'Change time manually' : 'Set time manually'}</button>
             </>}
           </>}
@@ -207,14 +207,14 @@ export default function LeadPage() {
       </div>
 
       {(dialog === 'schedule' || dialog === 'cal_reschedule') && (
-        <ScheduleMeetingDialog lead={lead} connected={!!me!.calendly_url} replaces={dialog === 'cal_reschedule' ? calEvent : null}
+        <ScheduleMeetingDialog lead={lead} connected={!!me!.cal_connected_at} replaces={dialog === 'cal_reschedule' ? calEvent : null}
           onClose={() => setDialog(null)} onBooked={() => { setDialog(null); load(); setTimeout(load, 4000); setTimeout(load, 10000); }} />
       )}
       {dialog === 'cal_cancel' && calEvent && (
-        <CancelCalendlyDialog lead={lead} ev={calEvent} onClose={() => setDialog(null)} onDone={() => { setDialog(null); setTimeout(load, 3000); setTimeout(load, 8000); }} />
+        <CancelMeetingDialog lead={lead} ev={calEvent} onClose={() => setDialog(null)} onDone={() => { setDialog(null); setTimeout(load, 3000); setTimeout(load, 8000); }} />
       )}
       {dialog === 'email' && <EmailDialog lead={lead} onClose={() => setDialog(null)} onSent={() => { setDialog(null); load(); }} />}
-      {dialog === 'booking' && <BookingLinkDialog lead={lead} calendlyUrl={me!.calendly_url} rmName={me!.full_name ?? ''} onClose={() => setDialog(null)} />}
+      {dialog === 'booking' && <BookingLinkDialog lead={lead} bookingUrl={me!.cal_url} rmName={me!.full_name ?? ''} onClose={() => setDialog(null)} />}
       {dialog === 'task' && <NewTaskModal lead={{ id: lead.id, name: lead.name }} onClose={() => setDialog(null)} onSaved={load} />}
       {openTask && <TaskDrawer id={openTask} onClose={() => setOpenTask(null)} onChanged={load} />}
       {dialog === 'entry' && <AddEntry lead={lead} onClose={() => setDialog(null)} onSaved={load} />}
@@ -335,7 +335,7 @@ function Timeline({ entries, events, teamName, onChanged }: {
 
 function describeEvent(ev: LeadEvent, teamName: (id: string | null) => string): string {
   switch (ev.kind) {
-    case 'created': return ev.detail?.via === 'upload' ? 'Lead added from an upload' : ev.detail?.via === 'calendly' ? 'Lead created from a Calendly booking' : 'Lead added';
+    case 'created': return ev.detail?.via === 'upload' ? 'Lead added from an upload' : ev.detail?.via === 'calendly' ? 'Lead created from a Calendly booking' : ev.detail?.via === 'calcom' ? 'Lead created from a Cal.com booking' : 'Lead added';
     case 'assigned': return ev.from_value ? `Reassigned from ${teamName(ev.from_value)} to ${teamName(ev.to_value)}` : `Assigned to ${teamName(ev.to_value)}`;
     case 'bucket': {
       const reason = (ev.detail?.reason as string) ?? '';
@@ -574,20 +574,21 @@ export function BringBackDialog({ lead, onClose, act }: { lead: Lead; onClose: (
 }
 
 
-/* ───────── Calendly booking link ───────── */
-function BookingLinkDialog({ lead, calendlyUrl, rmName, onClose }: { lead: Lead; calendlyUrl: string | null; rmName: string; onClose: () => void }) {
+/* ───────── Cal.com booking link ───────── */
+function BookingLinkDialog({ lead, bookingUrl, rmName, onClose }: { lead: Lead; bookingUrl: string | null; rmName: string; onClose: () => void }) {
   const toast = useToast();
-  if (!calendlyUrl) {
+  if (!bookingUrl) {
     return (
       <Modal title="Send booking link" onClose={onClose}
-        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/connections" onClick={onClose}>Connect Calendly</Link></>}>
-        <p>Connect your Calendly first (Connections → Calendly). After that, this button gives you a link with {lead.name}'s details already filled in.</p>
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/connections" onClick={onClose}>Connect Cal.com</Link></>}>
+        <p>Connect your Cal.com first (Connections → Cal.com). After that, this button gives you a link with {lead.name}'s details already filled in.</p>
       </Modal>
     );
   }
-  const params = new URLSearchParams({ name: lead.name, utm_source: 'flameback_crm', utm_content: lead.id });
+  // Cal.com fills the form from name / email, and passes metadata[...] through to the booking
+  const params = new URLSearchParams({ name: lead.name, 'metadata[lead_id]': lead.id });
   if (lead.email) params.set('email', lead.email);
-  const link = `${calendlyUrl}${calendlyUrl.includes('?') ? '&' : '?'}${params.toString()}`;
+  const link = `${bookingUrl}${bookingUrl.includes('?') ? '&' : '?'}${params.toString()}`;
   const first = lead.name.split(' ')[0];
   const message = `Hi ${first}, thank you for your time. Please pick a slot that suits you for a short call: ${link}\n\n${rmName}, Flameback Capital`;
   const waNumber = lead.phone ? (/^\d{10}$/.test(lead.phone) ? '91' + lead.phone : lead.phone.replace(/\D/g, '')) : '';
@@ -598,7 +599,7 @@ function BookingLinkDialog({ lead, calendlyUrl, rmName, onClose }: { lead: Lead;
     <Modal title={`Send ${first} your booking link`} onClose={onClose} wide
       footer={<button className="btn ghost" onClick={onClose}>Done</button>}>
       <p className="muted" style={{ marginBottom: 12 }}>
-        When {first} books through this link, the CRM matches it to this lead and moves it to <b>Awaiting meeting</b> with the time, even if they type a different email.
+        When {first} books through this link, the CRM matches it to this lead and moves it to <b>Awaiting meeting</b> with the time and meeting link.
       </p>
       <Field label="Link (name and email already filled in)">
         <div className="row-gap"><input readOnly value={link} onFocus={(e) => e.target.select()} /><button className="btn ghost sm" onClick={() => copy(link, 'Link')}>Copy link</button></div>
@@ -615,13 +616,13 @@ function BookingLinkDialog({ lead, calendlyUrl, rmName, onClose }: { lead: Lead;
   );
 }
 
-/* ───────── schedule a Calendly meeting from the CRM ───────── */
+/* ───────── schedule a Cal.com meeting from the CRM ───────── */
 function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }: {
-  lead: Lead; connected: boolean; replaces: CalendlyEventRow | null; onClose: () => void; onBooked: () => void;
+  lead: Lead; connected: boolean; replaces: MeetingRow | null; onClose: () => void; onBooked: () => void;
 }) {
   const { team, me } = useApp();
   const toast = useToast();
-  const [types, setTypes] = useState<CalendlyEventType[] | null>(null);
+  const [types, setTypes] = useState<CalEventType[] | null>(null);
   const [type, setType] = useState('');
   const [day, setDay] = useState(addDays(todayIST(), 1));
   const [slots, setSlots] = useState<string[] | null>(null);
@@ -634,19 +635,15 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
 
   useEffect(() => {
     if (!connected) return;
-    calendly<{ event_types: CalendlyEventType[] }>({ action: 'event_types' })
-      .then((r) => { setTypes(r.event_types); if (r.event_types.length === 1) setType(r.event_types[0]!.uri); })
+    calcom<{ event_types: CalEventType[] }>({ action: 'event_types' })
+      .then((r) => { setTypes(r.event_types); if (r.event_types.length === 1) setType(String(r.event_types[0]!.id)); })
       .catch((e) => setErr((e as Error).message));
   }, [connected]);
 
   useEffect(() => {
     if (!type || !day) return;
     setSlots(null); setSlot(''); setErr(null);
-    const dayStart = new Date(day + 'T00:00:00+05:30').getTime();
-    const start = new Date(Math.max(dayStart, Date.now() + 60_000)).toISOString();
-    const end = new Date(dayStart + 86_400_000).toISOString();
-    if (start >= end) { setSlots([]); return; }
-    calendly<{ slots: string[] }>({ action: 'available_times', event_type: type, start_time: start, end_time: end })
+    calcom<{ slots: string[] }>({ action: 'slots', event_type_id: type, date: day })
       .then((r) => setSlots(r.slots))
       .catch((e) => { setSlots([]); setErr((e as Error).message); });
   }, [type, day]);
@@ -662,12 +659,12 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   async function book() {
     setBusy(true); setErr(null);
     try {
-      await calendly({ action: 'book', lead_id: lead.id, event_type: type, start_time: slot, email, guests });
+      await calcom({ action: 'book', lead_id: lead.id, event_type_id: type, start_time: slot, email, guests });
       if (replaces) {
-        try { await calendly({ action: 'cancel', lead_id: lead.id, event_uri: replaces.event_uri, reason: 'Rescheduled' }); }
+        try { await calcom({ action: 'cancel', lead_id: lead.id, booking_uid: replaces.booking_uid, reason: 'Rescheduled' }); }
         catch (e) { toast(`New time booked, but the old meeting couldn't be cancelled: ${(e as Error).message}`, 'err'); }
       }
-      toast(replaces ? 'Meeting rescheduled · Calendly is sending the new invite' : 'Meeting booked · Calendly is sending the invites');
+      toast(replaces ? 'Meeting rescheduled · Cal.com is sending the new invite' : 'Meeting booked · Cal.com is sending the invites');
       onBooked();
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
@@ -675,17 +672,17 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   if (!connected) {
     return (
       <Modal title="Schedule meeting" onClose={onClose}
-        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/connections" onClick={onClose}>Connect Calendly</Link></>}>
-        <p>Connect your Calendly first (Connections → Calendly) to book meetings from here.</p>
+        footer={<><button className="btn ghost" onClick={onClose}>Close</button><Link className="btn" to="/connections" onClick={onClose}>Connect Cal.com</Link></>}>
+        <p>Connect your Cal.com first (Connections → Cal.com) to book meetings from here.</p>
       </Modal>
     );
   }
   const colleagues = team.filter((t) => t.is_active && t.id !== me!.id && !guests.includes(t.email));
-  const selectedType = types?.find((t) => t.uri === type);
+  const selectedType = types?.find((t) => String(t.id) === type);
   return (
     <Modal title={replaces ? `Reschedule meeting with ${lead.name}` : `Schedule a meeting with ${lead.name}`} onClose={onClose} wide
       footer={<>
-        <span className="muted small" style={{ marginRight: 'auto' }}>Calendly emails the invite{guests.length ? 's' : ''} with the meeting link.</span>
+        <span className="muted small" style={{ marginRight: 'auto' }}>Cal.com emails the invite{guests.length ? 's' : ''} with the meeting link.</span>
         <button className="btn ghost" onClick={onClose}>Cancel</button>
         <button className="btn" disabled={busy || !slot || !email} onClick={book}>{busy ? 'Booking…' : replaces ? 'Book new time' : 'Book meeting'}</button>
       </>}>
@@ -694,21 +691,21 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
         <Field label="Meeting type" required>
           <select value={type} onChange={(e) => setType(e.target.value)} disabled={!types}>
             <option value="">{types ? 'Select…' : 'Loading…'}</option>
-            {types?.map((t) => <option key={t.uri} value={t.uri}>{t.name} · {t.duration} min</option>)}
+            {types?.map((t) => <option key={t.id} value={String(t.id)}>{t.title}{t.length ? ` · ${t.length} min` : ''}</option>)}
           </select>
         </Field>
         <Field label="Date" required><input type="date" min={todayIST()} value={day} onChange={(e) => setDay(e.target.value)} /></Field>
       </div>
-      {types && types.length === 0 && <div className="banner warn">You have no active event types in Calendly. Create one (e.g. "Intro call" with Google Meet) and reopen this.</div>}
+      {types && types.length === 0 && <div className="banner warn">You have no event types in Cal.com. Create one (e.g. "Intro call" with Google Meet) and reopen this.</div>}
       {type && (
-        <Field label={`Available times (IST)${selectedType ? ` · ${selectedType.duration} min` : ''}`} required>
+        <Field label={`Available times (IST)${selectedType?.length ? ` · ${selectedType.length} min` : ''}`} required>
           {slots === null ? <div className="muted small">Loading your free slots…</div>
             : slots.length === 0 ? <div className="muted small">No free slots on {fmtDate(day)}. Try another date.</div>
             : <div className="chips">{slots.map((s2) => <button key={s2} className={`chip ${slot === s2 ? 'on' : ''}`} onClick={() => setSlot(s2)}>{fmtTime(s2)}</button>)}</div>}
         </Field>
       )}
       <div className="grid2">
-        <Field label="Client" hint="Calendly sends the invite to this email."><input value={lead.name} readOnly /></Field>
+        <Field label="Client" hint="Cal.com sends the invite to this email."><input value={lead.name} readOnly /></Field>
         <Field label="Client email" required><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Needed for the invite" /></Field>
       </div>
       <Field label="Other invitees" hint="Colleagues or anyone else, e.g. the client's spouse. Up to 10.">
@@ -731,7 +728,7 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   );
 }
 
-function CancelCalendlyDialog({ lead, ev, onClose, onDone }: { lead: Lead; ev: CalendlyEventRow; onClose: () => void; onDone: () => void }) {
+function CancelMeetingDialog({ lead, ev, onClose, onDone }: { lead: Lead; ev: MeetingRow; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -741,10 +738,10 @@ function CancelCalendlyDialog({ lead, ev, onClose, onDone }: { lead: Lead; ev: C
       footer={<><button className="btn ghost" onClick={onClose}>Keep it</button>
         <button className="btn danger" disabled={busy} onClick={async () => {
           setBusy(true); setErr(null);
-          try { await calendly({ action: 'cancel', lead_id: lead.id, event_uri: ev.event_uri, reason }); toast('Meeting cancelled · Calendly is notifying everyone'); onDone(); }
+          try { await calcom({ action: 'cancel', lead_id: lead.id, booking_uid: ev.booking_uid, reason }); toast('Meeting cancelled · Cal.com is notifying everyone'); onDone(); }
           catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
         }}>Cancel meeting</button></>}>
-      <p style={{ marginBottom: 12 }}>Cancels <b>{ev.event_name ?? 'the meeting'}</b> on <b>{fmtDateTime(ev.start_time)}</b> in Calendly. Everyone invited gets a cancellation email, and the lead gets a follow-up for today.</p>
+      <p style={{ marginBottom: 12 }}>Cancels <b>{ev.event_name ?? 'the meeting'}</b> on <b>{fmtDateTime(ev.start_time)}</b> in Cal.com. Everyone invited gets a cancellation email, and the lead gets a follow-up for today.</p>
       <Field label="Reason (shared with the client)"><textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Something came up, I'll send new times shortly" /></Field>
       {err && <div className="form-err">{err}</div>}
     </Modal>

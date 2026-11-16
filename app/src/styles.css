@@ -486,3 +486,4 @@ td.red, td.amber { font-weight: 600; }
 .bell-head { gap: 10px; }
 .bell-head b { margin-right: auto; }
 .sound-toggle { color: var(--muted) !important; font-weight: 500 !important; }
+.sel { user-select: all; word-break: break-all; }
