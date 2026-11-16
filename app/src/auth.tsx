@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
-import { ArgusLockup } from './components/Brand';
+import { AuthLayout } from './components/Brand';
 import type { LeadSource, Profile } from './lib/types';
 
 interface AppCtx {
@@ -97,18 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? 'An admin has turned off your access to Argus. Speak to them if you think this is a mistake.'
       : 'Thanks for signing in. An admin has been asked to approve your access; this page will open the CRM once they do.';
     return (
-      <div className="login">
-        <div className="login-card">
-          <ArgusLockup />
-          <h2 style={{ fontSize: 18 }}>{title}</h2>
-          <p className="muted">{text}</p>
-          <p className="muted small">Signed in as {session.user.email}</p>
-          <div className="row-gap">
-            {!me.rejected_at && !me.approved_at && <button className="btn" onClick={() => reloadRef()}>Check again</button>}
-            <button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button>
-          </div>
+      <AuthLayout>
+        <h2 className="auth-h">{title}</h2>
+        <p className="muted">{text}</p>
+        <p className="muted small">Signed in as {session.user.email}</p>
+        <div className="row-gap" style={{ marginTop: 6 }}>
+          {!me.rejected_at && !me.approved_at && <button className="btn" onClick={() => reloadRef()}>Check again</button>}
+          <button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
