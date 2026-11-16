@@ -125,8 +125,8 @@ export interface ImportBatch {
 export const BUCKETS: { key: Bucket; label: string; short: string; help: string }[] = [
   { key: 'active_contact', label: 'Active contact', short: 'Contact', help: 'Being worked. Five unanswered attempts sends it to the Out List.' },
   { key: 'awaiting_meeting', label: 'Awaiting meeting', short: 'Meeting', help: 'Agreed to meet. Five reminders with no meeting sends it to the Out List.' },
-  { key: 'holding', label: 'Holding period', short: 'Holding', help: 'Met but not yet committed. Five follow-ups with no commitment sends it to the Out List.' },
-  { key: 'deferred', label: 'Deferred', short: 'Deferred', help: 'Will commit later. Returns to Holding on the agreed date.' },
+  { key: 'holding', label: 'Holding period', short: 'Holding', help: 'Met but not yet committed. Each follow-up you log counts; five with no decision sends it to the Out List. Record a decision with Log activity.' },
+  { key: 'deferred', label: 'Deferred', short: 'Deferred', help: 'Will commit later. Returns to Holding on the agreed date. If they get in touch early, use Log activity.' },
   { key: 'converting', label: 'Converting', short: 'Converting', help: 'Committed. Hands off to onboarding.' },
   { key: 'out', label: 'Out List', short: 'Out', help: 'Five strikes or not interested. Can be brought back.' },
 ];

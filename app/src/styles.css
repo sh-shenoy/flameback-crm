@@ -1,4 +1,4 @@
-/* Flameback CRM — visual language carried over from the demo (index.html). */
+/* Argus by Flameback — visual language carried over from the demo (index.html). */
 :root {
   --navy: #0f2742; --navy-2: #163556; --teal: #1d7f7f; --teal-d: #176a6a; --gold: #b8933f;
   --bg: #f6f7f9; --card: #ffffff; --line: #e4e7ec; --ink: #1a2230; --muted: #667085;
@@ -496,3 +496,14 @@ td input:not([type=checkbox]), td select { width: 100%; padding: 6px 8px; border
 .result-list button { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; padding: 9px 12px; }
 .result-list button span { font-size: 12px; color: var(--muted); }
 .result-list button.on { border-color: var(--teal); background: #f0f8f8; box-shadow: inset 3px 0 0 var(--teal); }
+
+/* ── Argus brand ── */
+.argus-lockup { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 6px; }
+.argus-word { font-size: 34px; font-weight: 700; letter-spacing: 9px; color: var(--navy); padding-left: 9px; display: flex; align-items: flex-start; line-height: 1; }
+.argus-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); margin-left: 3px; margin-top: 2px; }
+.argus-tagline { font-size: 14px; color: var(--muted); font-style: italic; }
+.argus-by { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
+.argus-by img { height: 30px; width: auto; }
+.wordmark.argus b { font-size: 17px; letter-spacing: 4px; }
+.wordmark.argus span { letter-spacing: 1.4px; text-transform: none; font-size: 11px; }
+.brand .sub { padding-left: 0; text-transform: none; letter-spacing: 0; font-style: italic; font-size: 11.5px; color: #8fa3ba; margin-top: 12px; }

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
+import { ArgusLockup } from './components/Brand';
 import type { LeadSource, Profile } from './lib/types';
 
 interface AppCtx {
@@ -93,12 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (session && me && !me.is_active) {
     const title = me.rejected_at ? 'Access not approved' : me.approved_at ? 'Access removed' : 'Waiting for approval';
     const text = me.rejected_at || me.approved_at
-      ? 'An admin has turned off your access to Flameback CRM. Speak to them if you think this is a mistake.'
+      ? 'An admin has turned off your access to Argus. Speak to them if you think this is a mistake.'
       : 'Thanks for signing in. An admin has been asked to approve your access; this page will open the CRM once they do.';
     return (
       <div className="login">
         <div className="login-card">
-          <img className="login-logo" src={`${import.meta.env.BASE_URL}logo-full.png`} alt="Flameback Capital" />
+          <ArgusLockup />
           <h2 style={{ fontSize: 18 }}>{title}</h2>
           <p className="muted">{text}</p>
           <p className="muted small">Signed in as {session.user.email}</p>
