@@ -22,7 +22,7 @@ const ONBOARDING_ROUTE: Record<string, string> = {
   'US RIA': 'the onboarding module (process to be decided)',
 };
 
-type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'reschedule' | 'not_interested' | 'bring_back';
+type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'reschedule' | 'not_interested' | 'bring_back' | 'stage';
 
 export default function LeadPage() {
   const { id } = useParams();
@@ -176,6 +176,7 @@ export default function LeadPage() {
           </>}
           {open && <button className="btn ghost danger-text" onClick={() => setDialog('not_interested')}>Not interested</button>}
           {lead.bucket === 'out' && <button className="btn" onClick={() => setDialog('bring_back')}>Bring back</button>}
+          <button className="btn ghost" onClick={() => setDialog('stage')}>Change stage</button>
           <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('email')}>Email</button>
           {open && <button className="btn ghost" onClick={() => setDialog('booking')}>Send booking link</button>}
           <button className="btn ghost" onClick={() => setDialog('task')}>Raise task</button>
@@ -221,6 +222,7 @@ export default function LeadPage() {
       {dialog === 'reschedule' && <RescheduleDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
       {dialog === 'not_interested' && <NotInterestedDialog onClose={() => setDialog(null)} act={act} />}
       {dialog === 'bring_back' && <BringBackDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
+      {dialog === 'stage' && <ChangeStageDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
     </div>
   );
 }
@@ -345,7 +347,7 @@ function describeEvent(ev: LeadEvent, teamName: (id: string | null) => string): 
 }
 
 /* ───────── add entry ───────── */
-type Result = '' | 'met' | 'commits' | 'later';
+type Result = '' | 'met' | 'commits' | 'later' | 'contact';
 
 function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
@@ -379,6 +381,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
     ? [
         { key: '', label: 'Just confirming the meeting', sub: 'Counts as a reminder' },
         { key: 'met', label: 'Met, still deciding', sub: 'Moves to Holding period' },
+        { key: 'contact', label: 'Spoke, no meeting fixed', sub: 'Back to Active contact, no strike' },
         { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
         { key: 'later', label: 'Will commit later', sub: 'Deferred until a date' },
       ]
@@ -391,6 +394,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const effect = (() => {
     if (outcome === 'not_interested') return { tone: 'red', text: 'Moves the lead to the Out List.' };
     if (asksResult && result === 'met') return { tone: 'green', text: `Moves to Holding period. No strikes there: first follow-up in 7 days, then 14, 28…` };
+    if (asksResult && result === 'contact') return { tone: 'green', text: 'Logs the conversation and moves the lead back to Active contact. No strike; strikes reset.' };
     if (asksResult && result === 'commits') return { tone: 'green', text: `Committed: moves to Converting (${product}).` };
     if (asksResult && result === 'later') return { tone: 'green', text: lead.bucket === 'deferred' ? 'Stays deferred with the new date; comes back to Holding then.' : 'Moves to Deferred; comes back to Holding on the date.' };
     if (lead.bucket === 'active_contact') {
@@ -429,6 +433,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
       });
       toast(asksResult && result === 'commits' ? 'Committed · moved to Converting'
         : asksResult && result === 'met' ? 'Moved to Holding period'
+        : asksResult && result === 'contact' ? 'Logged · back in Active contact'
         : asksResult && result === 'later' ? (lead.bucket === 'deferred' ? 'New return date saved' : 'Moved to Deferred') : 'Activity logged');
       onClose();
       onSaved();
@@ -557,6 +562,59 @@ export function BringBackDialog({ lead, onClose, act }: { lead: Lead; onClose: (
   );
 }
 
+
+const STAGE_EFFECT: Record<Bucket, string> = {
+  active_contact: 'Strikes reset. Follow up from here as with a new conversation.',
+  awaiting_meeting: 'Strikes reset. Use this when they agreed to meet but the time isn\'t fixed; book it later with Schedule meeting.',
+  holding: 'Met, still thinking. No strikes; follow-ups spaced out automatically (first in 7 days).',
+  deferred: 'Comes back to Holding period on the date you pick.',
+  converting: 'Committed: moves to Converting, ready for onboarding.',
+  out: 'Moves to the Out List and follow-ups stop. It can be brought back later.',
+};
+
+function ChangeStageDialog({ lead, onClose, act }: { lead: Lead; onClose: () => void; act: Act }) {
+  const [to, setTo] = useState<Bucket | ''>('');
+  const [note, setNote] = useState('');
+  const [next, setNext] = useState('');
+  const [until, setUntil] = useState('');
+  const [product, setProduct] = useState(lead.product);
+  const { busy, run } = useBusy();
+  const choices = BUCKETS.filter((b) => b.key !== lead.bucket);
+  const ok = !!to && (to !== 'deferred' || !!until);
+  return (
+    <Modal title={`Change stage · ${lead.name}`} onClose={onClose}
+      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
+        <button className={`btn ${to === 'out' ? 'danger' : ''}`} disabled={busy || !ok} onClick={() => run(() => act('set_bucket', {
+          p_to: to, p_note: note.trim() || null,
+          p_next_follow_up: (to === 'active_contact' || to === 'awaiting_meeting' || to === 'holding') && next ? next : null,
+          p_deferred_until: to === 'deferred' ? until : null,
+          p_product: to === 'converting' ? product : null,
+        }, `Moved to ${bucketLabel(to as Bucket)}`))}>{to ? `Move to ${bucketLabel(to)}` : 'Move'}</button></>}>
+      <p className="muted" style={{ marginBottom: 12 }}>Now in <b>{bucketLabel(lead.bucket)}</b>. To record a conversation, use Log activity instead; this only moves the lead.</p>
+      <Field label="Move to" required>
+        <div className="result-list">
+          {choices.map((b) => (
+            <button key={b.key} className={to === b.key ? 'on' : ''} onClick={() => setTo(b.key)}>
+              <b>{b.label}</b><span>{STAGE_EFFECT[b.key]}</span>
+            </button>
+          ))}
+        </div>
+      </Field>
+      {(to === 'active_contact' || to === 'awaiting_meeting' || to === 'holding') && (
+        <Field label="Next follow-up" hint={to === 'holding' ? 'Leave blank for 7 days' : 'Leave blank for tomorrow'}>
+          <input type="date" min={todayIST()} value={next} onChange={(e) => setNext(e.target.value)} />
+        </Field>
+      )}
+      {to === 'deferred' && (
+        <Field label="Comes back on" required><input type="date" min={addDays(todayIST(), 1)} value={until} onChange={(e) => setUntil(e.target.value)} /></Field>
+      )}
+      {to === 'converting' && (
+        <Field label="Product"><select value={product} onChange={(e) => setProduct(e.target.value as Lead['product'])}>{PRODUCTS.map((p) => <option key={p}>{p}</option>)}</select></Field>
+      )}
+      {to && <Field label="Why (optional)" hint="Saved as a note on the timeline"><textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>}
+    </Modal>
+  );
+}
 
 /* ───────── Cal.com booking link ───────── */
 function BookingLinkDialog({ lead, bookingUrl, rmName, onClose }: { lead: Lead; bookingUrl: string | null; rmName: string; onClose: () => void }) {
