@@ -25,9 +25,11 @@ do $$ declare a uuid := (select id from k where n=1); b uuid := (select id from 
   -- a decision needs actual contact
   begin perform log_activity(c, 'phone_call', 'no_answer', null, null, null, 'commits'); raise exception 'FAIL commit on no answer';
   exception when others then if sqlerrm like 'FAIL%' then raise; end if; end;
-  -- result ignored outside awaiting/holding (active contact uses normal rules)
-  perform log_activity((select id from k where n=4), 'phone_call', 'no_answer', null, null, null, 'commits');
-  assert (select bucket from leads where id=(select id from k where n=4))='active_contact' and (select strikes from leads where id=(select id from k where n=4))=1, 'active contact unaffected';
+  -- active contact: a decision needs them to have picked up; a plain no-answer is a strike
+  begin perform log_activity((select id from k where n=4), 'phone_call', 'no_answer', null, null, null, 'commits'); raise exception 'FAIL decision on no answer';
+  exception when others then if sqlerrm like 'FAIL%' then raise; end if; end;
+  perform log_activity((select id from k where n=4), 'phone_call', 'no_answer');
+  assert (select bucket from leads where id=(select id from k where n=4))='active_contact' and (select strikes from leads where id=(select id from k where n=4))=1, 'active contact no answer = strike';
 end $$;
 reset role;
 -- Gmail: outbound in awaiting meeting counts as a reminder

@@ -92,6 +92,13 @@
       "when": 1794838181111,
       "tag": "0013_change_stage",
       "breakpoints": false
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794838690661,
+      "tag": "0014_outcome_from_active_contact",
+      "breakpoints": false
     }
   ]
 }
