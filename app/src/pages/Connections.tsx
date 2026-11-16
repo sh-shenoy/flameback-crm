@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { GMAIL_FLAG, GMAIL_RESULT, useApp } from '../auth';
 import { supabase } from '../lib/supabase';
-import { calcom, type ConnectResult } from '../lib/calcom';
+import { calcom, describeSync, type ConnectResult, type SyncResult } from '../lib/calcom';
 import { fmtDateTime } from '../lib/format';
 import { Field, useToast } from '../components/ui';
 
@@ -22,6 +22,7 @@ function CalcomPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [manual, setManual] = useState<ConnectResult | null>(null);
+  const [sync, setSync] = useState<SyncResult | null>(null);
   const connected = !!me?.cal_connected_at;
 
   async function connect(apiKey: string) {
@@ -29,10 +30,16 @@ function CalcomPanel() {
     try {
       const r = await calcom<ConnectResult>({ action: 'connect', api_key: apiKey });
       if (!r.webhook_ok) setManual(r);
-      toast(r.webhook_ok ? 'Cal.com connected' : 'Cal.com connected, one manual step left');
+      if (r.event_types) setSync(r.event_types);
+      toast((r.webhook_ok ? 'Cal.com connected' : 'Cal.com connected, one manual step left') + (r.event_types?.created.length ? ` · ${describeSync(r.event_types)}` : ''));
       setKey('');
       await reloadRef();
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+  async function syncTypes() {
+    setBusy(true); setErr(null);
+    try { const r = await calcom<SyncResult>({ action: 'sync_event_types' }); setSync(r); toast(describeSync(r)); }
+    catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
   async function disconnect() {
     if (!confirm('Stop receiving Cal.com bookings in the CRM?')) return;
@@ -65,6 +72,7 @@ function CalcomPanel() {
             </div>
             <p className="hint" style={{ marginBottom: 14 }}>On a lead's page: <b>Schedule meeting</b> books them straight into your calendar, and <b>Send booking link</b> gives them your link with their details filled in.</p>
             <div className="row-gap">
+              <button className="btn ghost" disabled={busy} onClick={syncTypes}>Add Flameback meeting types</button>
               <button className="btn ghost" disabled={busy} onClick={() => { const k = prompt('Paste a new Cal.com API key'); if (k) connect(k); }}>Reconnect</button>
               <button className="btn ghost danger-text" disabled={busy} onClick={disconnect}>Disconnect</button>
             </div>
@@ -73,7 +81,7 @@ function CalcomPanel() {
           <>
             <p style={{ marginBottom: 12 }}>Connect your own Cal.com (signed up with your @flamebackcapital.com Google account, with Google Calendar connected) so meetings book and update by themselves.</p>
             <ol className="steps-list">
-              <li>In Cal.com, create at least one event type, e.g. <b>Intro call · 30 min</b> with <b>Google Meet</b> as the location.</li>
+              <li>In Cal.com, connect <b>Google Calendar</b> and <b>Google Meet</b> (Apps). The CRM adds the standard Flameback meeting types for you when you connect.</li>
               <li>Go to <b>Settings → Developer → API keys</b>, click <b>Add</b>, name it "Flameback CRM", choose <b>Never expires</b>, and copy the key.</li>
               <li>Paste it below and click <b>Connect</b>. It's stored securely and only used to talk to Cal.com.</li>
             </ol>
@@ -82,6 +90,15 @@ function CalcomPanel() {
             </Field>
             <button className="btn" disabled={busy || key.trim().length < 10} onClick={() => connect(key.trim())}>{busy ? 'Connecting…' : 'Connect'}</button>
           </>
+        )}
+        {sync && (
+          <div className="sync-box">
+            <b>{describeSync(sync)}</b>
+            {sync.created.length > 0 && <div className="small">Added: {sync.created.join(', ')}</div>}
+            {sync.existing.length > 0 && <div className="small muted">Already there: {sync.existing.join(', ')}</div>}
+            {sync.failed.map((f) => <div key={f.title} className="small red">{f.title}: {f.error}</div>)}
+            {sync.meet_fallback && <div className="small amber">Some were created with Cal.com's own video link because Google Meet isn't available yet. Connect Google Calendar / Meet in Cal.com and switch their location to Google Meet.</div>}
+          </div>
         )}
         {err && <div className="form-err">{err}</div>}
       </div>
