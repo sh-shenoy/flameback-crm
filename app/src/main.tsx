@@ -13,7 +13,7 @@ import LeadPage from './pages/LeadPage';
 import OutList from './pages/OutList';
 import Upload from './pages/Upload';
 import Tasks from './pages/Tasks';
-import Settings from './pages/Settings';
+import Connections from './pages/Connections';
 import Admin from './pages/Admin';
 import { PersonPage } from './pages/AdminOverview';
 import Notifications from './pages/Notifications';
@@ -40,7 +40,8 @@ function Routed() {
         <Route path="/onboarding" element={<ComingSoon title="Onboarding" what="RIA onboards in the Flameback app, PMS through Silver Bullet. Committed leads will appear here with their onboarding status." />} />
         <Route path="/reviews" element={<ComingSoon title="Reviews" what="Quarterly and annual client reviews with prep views." />} />
         <Route path="/tasks" element={<Tasks />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/connections" element={<Connections />} />
+        <Route path="/settings" element={<Navigate to="/connections" replace />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

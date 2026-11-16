@@ -127,7 +127,7 @@ type Ctx = { url: string; admin: ReturnType<typeof createClient>; jwt: string; u
 
 async function schedule(action: string, body: any, ctx: Ctx): Promise<Response> {
   const { conn } = ctx;
-  if (!conn && action !== 'cancel') return json({ error: 'Connect your Calendly first (Settings → Calendly).' }, 400);
+  if (!conn && action !== 'cancel') return json({ error: 'Connect your Calendly first (Connections → Calendly).' }, 400);
 
   if (action === 'event_types') {
     const r = await cal(conn.access_token, `/event_types?user=${encodeURIComponent(conn.calendly_user_uri)}&active=true&count=100`);

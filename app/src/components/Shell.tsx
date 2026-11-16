@@ -26,7 +26,7 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
     title: 'Account',
     items: [
       { to: '/notifications', label: 'Notifications', badge: 'notifications' },
-      { to: '/settings', label: 'Settings' },
+      { to: '/connections', label: 'Connections' },
     ],
   },
   { title: 'Admin', admin: true, items: [{ to: '/admin', label: 'Admin', badge: 'requests' }] },
@@ -153,7 +153,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               {menu && (
                 <div className="menu" onMouseLeave={() => setMenu(false)}>
                   <div className="menu-h">{me?.email}<br /><span className="muted small">{isAdmin ? 'Admin' : 'Relationship Manager'}</span></div>
-                  <NavLink to="/settings" className="menu-link">Settings</NavLink>
+                  <NavLink to="/connections" className="menu-link">Connections</NavLink>
                   <button onClick={signOut}>Log out</button>
                 </div>
               )}
