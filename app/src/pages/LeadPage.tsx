@@ -347,7 +347,7 @@ function describeEvent(ev: LeadEvent, teamName: (id: string | null) => string): 
 }
 
 /* ───────── add entry ───────── */
-type Result = '' | 'met' | 'commits' | 'later' | 'contact';
+type Result = '' | 'met' | 'commits' | 'later' | 'contact' | 'interested';
 
 function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
@@ -365,9 +365,9 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const isCall = kind === 'phone_call' || kind === 'meet_call';
   const isMsg = kind === 'message' || kind === 'email';
   const outcomes = isCall ? CALL_OUTCOMES : isMsg ? MESSAGE_OUTCOMES : [];
-  // did they actually talk / reply? then ask where it left things (Awaiting meeting & Holding only)
+  // did they actually talk / reply? then ask where it left things (any open stage)
   const reached = kind === 'in_person' || (isCall && outcome === 'connected') || (isMsg && outcome === 'replied');
-  const asksResult = reached && (lead.bucket === 'awaiting_meeting' || lead.bucket === 'holding' || lead.bucket === 'deferred');
+  const asksResult = reached && ['active_contact', 'awaiting_meeting', 'holding', 'deferred'].includes(lead.bucket);
   const notesRequired = outcome === 'connected' || kind === 'in_person' || kind === 'note' || !!result;
 
   const resultOptions: { key: Result; label: string; sub: string }[] = lead.bucket === 'deferred'
@@ -376,6 +376,14 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         { key: 'met', label: 'Ready to discuss again', sub: 'Moves to Holding period' },
         { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
         { key: 'later', label: 'Pushed to a new date', sub: 'Stays deferred, new return date' },
+      ]
+    : lead.bucket === 'active_contact'
+    ? [
+        { key: '', label: 'Just a conversation', sub: 'Stays in Active contact' },
+        { key: 'interested', label: 'Wants to meet', sub: 'Moves to Awaiting meeting' },
+        { key: 'met', label: 'Met / discussed, still thinking', sub: 'Moves to Holding period' },
+        { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
+        { key: 'later', label: 'Will commit later', sub: 'Deferred until a date' },
       ]
     : lead.bucket === 'awaiting_meeting'
     ? [
@@ -394,6 +402,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const effect = (() => {
     if (outcome === 'not_interested') return { tone: 'red', text: 'Moves the lead to the Out List.' };
     if (asksResult && result === 'met') return { tone: 'green', text: `Moves to Holding period. No strikes there: first follow-up in 7 days, then 14, 28…` };
+    if (asksResult && result === 'interested') return { tone: 'green', text: 'Moves to Awaiting meeting; strikes reset. Book the time later with Schedule meeting.' };
     if (asksResult && result === 'contact') return { tone: 'green', text: 'Logs the conversation and moves the lead back to Active contact. No strike; strikes reset.' };
     if (asksResult && result === 'commits') return { tone: 'green', text: `Committed: moves to Converting (${product}).` };
     if (asksResult && result === 'later') return { tone: 'green', text: lead.bucket === 'deferred' ? 'Stays deferred with the new date; comes back to Holding then.' : 'Moves to Deferred; comes back to Holding on the date.' };
@@ -434,6 +443,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
       toast(asksResult && result === 'commits' ? 'Committed · moved to Converting'
         : asksResult && result === 'met' ? 'Moved to Holding period'
         : asksResult && result === 'contact' ? 'Logged · back in Active contact'
+        : asksResult && result === 'interested' ? 'Moved to Awaiting meeting'
         : asksResult && result === 'later' ? (lead.bucket === 'deferred' ? 'New return date saved' : 'Moved to Deferred') : 'Activity logged');
       onClose();
       onSaved();
