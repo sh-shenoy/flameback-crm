@@ -30,6 +30,7 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
     items: [
       { to: '/notifications', label: 'Notifications', badge: 'notifications' },
       { to: '/connections', label: 'Connections' },
+      { to: '/help', label: 'Help' },
     ],
   },
   { title: 'Admin', admin: true, items: [{ to: '/admin', label: 'Admin', badge: 'requests' }] },

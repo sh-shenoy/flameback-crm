@@ -14,6 +14,7 @@ import OutList from './pages/OutList';
 import Upload from './pages/Upload';
 import Tasks from './pages/Tasks';
 import Connections from './pages/Connections';
+import Help from './pages/Help';
 import Admin from './pages/Admin';
 import { PersonPage } from './pages/AdminOverview';
 import Notifications from './pages/Notifications';
@@ -41,6 +42,7 @@ function Routed() {
         <Route path="/reviews" element={<ComingSoon title="Reviews" what="Quarterly and annual client reviews with prep views." />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/connections" element={<Connections />} />
+        <Route path="/help" element={<Help />} />
         <Route path="/settings" element={<Navigate to="/connections" replace />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
