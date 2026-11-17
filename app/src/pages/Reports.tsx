@@ -190,28 +190,38 @@ const STAGES: { key: keyof Counts; label: string }[] = [
   { key: 'committed', label: 'Committed' },
 ];
 
-/** Leads → Contacted → Wants to meet → Met → Committed, as centred bars sized by share of leads. */
+/**
+ * Leads → Contacted → Wants to meet → Met → Committed. Each bar sits on a track that stands for all
+ * leads, so every bar is a share of the same whole. Between stages: how many of the previous stage
+ * moved on, in counts (percentages of a tiny base mislead). Stages are cumulative: a lead that
+ * committed also counts as contacted, wanted to meet and met.
+ */
 function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
+  const fmt = (n: number) => n.toLocaleString('en-IN');
   return (
     <div className="pad">
       <div className="funnel" role="table" aria-label="Lead funnel">
         {STAGES.map((st, i) => {
           const n = c[st.key];
           const share = c.leads ? (n / c.leads) * 100 : 0;
-          const prev = i > 0 ? c[STAGES[i - 1].key] : null;
-          const step = prev !== null ? fmtPct(n, prev) : null;
-          const tip = `${st.label}: ${n} of ${c.leads} leads (${fmtPct(n, c.leads)})${step !== null ? ` · ${step} of ${STAGES[i - 1].label.toLowerCase()}` : ''}`;
+          const prevKey = i > 0 ? STAGES[i - 1].key : null;
+          const prev = prevKey ? c[prevKey] : null;
+          const overall = compare && i > 0 && compare.leads ? (compare[st.key] / compare.leads) * 100 : null;
           return (
             <div key={st.key} className="fn-block" role="row">
-              {i > 0 && <div className="fn-step" role="presentation"><span>↓ {prev ? `${step} moved on` : '—'}</span></div>}
+              {prev !== null && (
+                <div className="fn-step" role="presentation">
+                  <span>{prev ? <>↓ {fmt(n)} of {fmt(prev)} moved on <b>({fmtPct(n, prev)})</b></> : '↓ nobody reached the previous stage'}</span>
+                </div>
+              )}
               <div className="fn-row">
                 <div className="fn-label" role="rowheader">{st.label}</div>
-                <div className="fn-track" title={tip}>
-                  {n > 0 && <div className="fn-bar" style={{ width: `${Math.max(share, 1)}%` }} />}
+                <div className="fn-track" title={`${st.label}: ${fmt(n)} of ${fmt(c.leads)} leads (${fmtPct(n, c.leads)})`}>
+                  {n > 0 && <div className="fn-bar" style={{ width: `${share}%` }} />}
+                  {overall !== null && <i className="fn-mark" style={{ left: `${overall}%` }} title={`All leads in this report: ${fmtPct(compare![st.key], compare!.leads)}`} />}
                 </div>
                 <div className="fn-num" role="cell">
-                  <b>{n.toLocaleString('en-IN')}</b><span>{fmtPct(n, c.leads)}</span>
-                  {compare && i > 0 && <em title="All leads in this report">all {fmtPct(compare[st.key], compare.leads)}</em>}
+                  <b>{fmt(n)}</b><span>{fmtPct(n, c.leads)} of leads</span>
                 </div>
               </div>
             </div>
@@ -219,8 +229,9 @@ function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
         })}
       </div>
       <div className="fn-foot">
-        <span><b>{c.out_list}</b> on the Out List</span>
-        <span><b>{c.still_open}</b> still open</span>
+        <span><b>{c.out_list.toLocaleString('en-IN')}</b> on the Out List</span>
+        <span><b>{c.still_open.toLocaleString('en-IN')}</b> still open</span>
+        {compare && <span className="fn-key"><i className="fn-mark-key" /> all leads in this report</span>}
         {c.leads > 0 && c.leads < 5 && <span className="muted">Fewer than 5 leads, so percentages are rough</span>}
       </div>
     </div>
