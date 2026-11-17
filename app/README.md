@@ -30,7 +30,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Access | New sign-ups wait on **Admin → Access requests**; an admin approves them as RM or Admin (or rejects). Admins are notified of each request. |
 | Notifications | Bell with unread count, live pop-ups and a Notifications page: new leads (one per upload), Calendly bookings and cancellations, 9 am digest, meeting in 30 min, task created / assigned / moved / commented / file added, email replies, access requests. |
 | Calendar | Day, week and month views of your meetings (Calendly and manual) and tasks due, in IST; schedule from the calendar. |
-| Reports | Conversion by source, campaign, referrer, product or RM (admins): leads, contacted, met, committed, Out List; CSV download. |
+| Reports | Conversion by source, campaign, referrer, product or RM (admins): leads, contacted, wants to meet, met, committed, Out List; CSV download. A **funnel** (Leads → Contacted → Wants to meet → Met → Committed) shows the whole report; click any row to see that source's funnel next to the overall rates. |
 | Gmail | Connect under Connections; send from the lead page (optionally replying in the last thread); emails with leads appear on the timeline and a reply clears strikes. |
 | Task files | Attach files to tasks (20 MB each), stored privately; visible to whoever can see the task. |
 | Products | RIA, PMS, US RIA. |
