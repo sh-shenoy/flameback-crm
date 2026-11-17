@@ -6,11 +6,12 @@ import {
   addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, fromISTInput, toISTInput, todayIST,
 } from '../lib/format';
 import {
-  BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, INCOME_BANDS, LANGUAGES, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
+  BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
   bucketLabel, holdingGap, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
 import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
-import { Select } from '../components/AddLead';
+import { LanguagePicker, Select } from '../components/AddLead';
+import NotesCard from '../components/NotesCard';
 import SummaryBox from '../components/SummaryBox';
 import { DueTag, NewTaskModal, PriorityTag, StatusTag, TaskDrawer } from '../components/TaskParts';
 import type { Task } from '../lib/types';
@@ -187,7 +188,10 @@ export default function LeadPage() {
       <SummaryBox leadId={lead.id} version={`${lead.updated_at}:${entries.length}:${tasks.length}`} />
 
       <div className="lead-cols">
-        <ProfileCard lead={lead} onSaved={load} />
+        <div className="stack">
+          <NotesCard lead={lead} onSaved={load} />
+          <ProfileCard lead={lead} onSaved={load} />
+        </div>
         <div className="stack">
           {tasks.length > 0 && (
             <div className="panel">
@@ -268,11 +272,11 @@ function ProfileCard({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
           <Field label="Age"><input type="number" value={f.age} onChange={set('age')} /></Field>
           <Field label="Marital status"><Select v={f.marital_status} on={set('marital_status')} opts={MARITAL} /></Field>
           <Field label="Income level"><Select v={f.income_band} on={set('income_band')} opts={INCOME_BANDS} /></Field>
-          <Field label="Language"><Select v={f.language} on={set('language')} opts={LANGUAGES} /></Field>
           <Field label="Budget"><input value={f.budget} onChange={set('budget')} /></Field>
           <Field label="Campaign"><input value={f.campaign} onChange={set('campaign')} /></Field>
           <Field label="Referred by"><input value={f.referred_by} onChange={set('referred_by')} /></Field>
         </div>
+        <Field label="Languages"><LanguagePicker value={f.language} onChange={(v) => setF({ ...f, language: v })} /></Field>
         <Field label="What they want"><textarea value={f.requirement} onChange={set('requirement')} /></Field>
         <div className="row-gap" style={{ justifyContent: 'flex-end' }}>
           {dirty && <button className="btn ghost sm" onClick={() => setF(init())}>Discard</button>}

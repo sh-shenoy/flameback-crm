@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc } from '../lib/supabase';
@@ -155,9 +155,9 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
             <Field label="Age"><input type="number" min={16} max={110} value={f.age} onChange={set('age')} /></Field>
             <Field label="Marital status"><Select v={f.marital_status} on={set('marital_status')} opts={MARITAL} /></Field>
             <Field label="Income level"><Select v={f.income_band} on={set('income_band')} opts={INCOME_BANDS} /></Field>
-            <Field label="Language preference"><Select v={f.language} on={set('language')} opts={LANGUAGES} /></Field>
             <Field label="Budget"><input value={f.budget} onChange={set('budget')} placeholder="e.g. ₹50L" /></Field>
           </div>
+          <Field label="Languages"><LanguagePicker value={f.language} onChange={(v) => setF({ ...f, language: v })} /></Field>
           <Field label="What they want"><textarea value={f.requirement} onChange={set('requirement')} /></Field>
         </div>
       )}
@@ -172,5 +172,30 @@ export function Select({ v, on, opts }: { v: string; on: (e: { target: { value: 
       <option value="">—</option>
       {opts.map((o) => <option key={o}>{o}</option>)}
     </select>
+  );
+}
+
+/** Several languages as toggle chips, plus any other typed in. Value is "Hindi, English". */
+export function LanguagePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [other, setOther] = useState('');
+  const picked = value.split(',').map((x) => x.trim()).filter(Boolean);
+  const has = (l: string) => picked.some((p) => p.toLowerCase() === l.toLowerCase());
+  const toggle = (l: string) => onChange((has(l) ? picked.filter((p) => p.toLowerCase() !== l.toLowerCase()) : [...picked, l]).join(', '));
+  const add = () => {
+    const l = other.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+    if (l && !has(l)) onChange([...picked, l].join(', '));
+    setOther('');
+  };
+  const extra = picked.filter((p) => !LANGUAGES.some((l) => l.toLowerCase() === p.toLowerCase()));
+  return (
+    <div className="lang-picker">
+      <div className="chips">
+        {[...LANGUAGES, ...extra].map((l) => (
+          <button type="button" key={l} className={`chip ${has(l) ? 'on' : ''}`} onClick={() => toggle(l)}>{l}</button>
+        ))}
+      </div>
+      <input className="lang-other" placeholder="Other language, then Enter" value={other} onChange={(e) => setOther(e.target.value)}
+        onBlur={add} onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} />
+    </div>
   );
 }

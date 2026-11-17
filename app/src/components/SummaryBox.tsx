@@ -7,18 +7,21 @@ import { useToast } from './ui';
 interface Summary { headline: string; who: string; wants: string; status: string; concerns: string[]; next_steps: string[] }
 interface Row { lead_id: string; summary: Summary; covers_until: string; model: string | null; generated_at: string; edited_by: string | null; edited_at: string | null }
 
-async function callSummarize(leadId: string, force: boolean): Promise<{ error?: string; code?: string }> {
-  const { data, error } = await supabase.functions.invoke('summarize', { body: { lead_id: leadId, force } });
-  const d = data as { error?: string; code?: string } | null;
+/** Calls the AI edge function; errors come back as { error } with a readable message. */
+export async function invokeAI<T extends object>(body: Record<string, unknown>): Promise<T & { error?: string; code?: string }> {
+  const { data, error } = await supabase.functions.invoke('summarize', { body });
+  const d = data as (T & { error?: string; code?: string }) | null;
   if (d?.error) return d;
   if (error) {
     const ctx = (error as { context?: Response }).context;
     try { const b = ctx ? await ctx.clone().json() : null; if (b?.error) return b; } catch { /* ignore */ }
-    if (ctx?.status === 404) return { error: 'The summarize function isn’t deployed in Supabase yet.', code: 'not_configured' };
-    return { error: error.message };
+    if (ctx?.status === 404) return { error: 'The summarize function isn’t deployed in Supabase yet.', code: 'not_configured' } as unknown as T & { error: string };
+    return { error: error.message } as unknown as T & { error: string };
   }
-  return {};
+  return (d ?? {}) as T;
 }
+
+const callSummarize = (leadId: string, force: boolean) => invokeAI<object>({ lead_id: leadId, force });
 
 /**
  * AI conversation summary at the top of a lead. Refreshes by itself when there is activity

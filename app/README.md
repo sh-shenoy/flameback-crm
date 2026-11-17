@@ -17,6 +17,8 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Holding ("still thinking") | No strikes. Follow-ups are spaced out automatically: 7 days after entering Holding, then 14, 28, 56 … days after each follow-up (at most 90 days apart). A date picked by hand wins. Leaves Holding only by a decision: Committed, Deferred or Not interested. |
 | Out List | Five strikes or Not interested. Bring back needs a follow-up date, resets strikes, returns to the bucket it left. |
 | Deferred | Returns to Holding on its date. |
+| Notes | A free **Notes** box on every lead for anything worth keeping. The AI summary reads it. **Fix grammar** corrects spelling and grammar (contact details and ID numbers are swapped out before sending and put back); review, then Save. |
+| Languages | A lead can have several languages (pick chips or type another). |
 | Change stage | Lead page → **Change stage**: move a lead to any stage by hand, with an optional reason saved as a note. Log activity in Awaiting meeting also has **Spoke, no meeting fixed**: logs the conversation and moves the lead back to Active contact, no strike. |
 | Converting | Committed. RIA onboards in the Flameback app, PMS via Silver Bullet (onboarding module is separate, coming later). |
 | Access | RMs see only their own leads (enforced in the database). Admins see all. Only admins can delete leads (selected, or from an upload). |

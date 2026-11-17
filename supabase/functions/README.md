@@ -7,7 +7,7 @@ Small functions that run inside Supabase. Each is pasted in once through the Sup
 | `calcom` | Called from **Connections → Cal.com** and the lead page. Checks the RM's Cal.com API key, sets up the booking webhook, lists event types and free slots, books meetings (with extra invitees) and cancels them. | **On** (only signed-in CRM users) |
 | `calcom-webhook` | Cal.com calls it when someone books, reschedules or cancels. Every request is checked against that RM's secret (X-Cal-Signature-256), then the lead is created or moved to Awaiting meeting. | **Off** (Cal.com can't sign in; the signature check protects it) |
 | `gmail` | Called from **Connections → Gmail** and the lead page. Saves the RM's Gmail connection, sends emails from their address, and pulls emails with their leads onto the timeline. | **On** |
-| `summarize` | Called from the lead page. Reads everything on the lead (with the RM's own permissions), strips phone numbers, emails, PAN and Aadhaar, asks our hosted model (OpenAI-compatible API) for a short structured summary and saves it. | **On** |
+| `summarize` | Called from the lead page. Reads everything on the lead (with the RM's own permissions), strips phone numbers, emails, PAN and Aadhaar, asks our hosted model (OpenAI-compatible API) for a short structured summary and saves it. Also powers **Fix grammar** in the lead Notes box. | **On** |
 | `calendly-connect`, `calendly-webhook` | **Retired** (replaced by Cal.com). Safe to delete from Supabase once everyone has moved. | |
 
 ## Deploy (one time per function)
