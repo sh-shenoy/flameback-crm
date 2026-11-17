@@ -123,6 +123,7 @@ const SECTIONS: Section[] = [
     id: 'notifications', title: 'Notifications and reports',
     items: [
       { q: 'What will I be notified about?', a: <p>New leads, bookings and cancellations, a meeting in 30 minutes, the 9 am digest, email replies, task changes and nudges from your manager. Pop-ups stay until you dismiss them.</p> },
+      { q: 'Will I be reminded before a meeting?', a: <p>Yes. 5 minutes before each meeting a pop-up appears (bottom right, with a sound) showing the time and who it is with: <b>Join</b> opens the Google Meet, <b>Snooze 5m</b> brings it back in 5 minutes, × closes it. It needs Argus open in a tab. You also get a notification about 30 minutes before.</p> },
       { q: 'How do I turn the sound off?', a: <p>Open the bell (top right) → <b>Sound on/off</b>.</p> },
       { q: 'Which sources and campaigns convert?', a: <p><Link to="/reports">Reports</Link> shows leads, contacted, met, committed and Out List by source, campaign, referrer or product (admins also by RM), with CSV download.</p> },
     ],

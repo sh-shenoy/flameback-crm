@@ -619,3 +619,14 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
   .fn-num em { display: none; }
 }
 .funnel-panel { margin-bottom: 18px; }
+
+/* ── 5-minute meeting pop-up ── */
+.meet-alerts { position: fixed; right: 20px; bottom: 20px; z-index: 110; display: flex; flex-direction: column; gap: 10px; max-width: calc(100vw - 32px); }
+.meet-alert { position: relative; width: 340px; max-width: 100%; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(16, 35, 63, .18); border-left: 4px solid #d92d20; padding: 14px 16px 14px 18px; animation: slidein .2s ease-out; }
+.ma-head { font-weight: 700; color: var(--ink); margin-bottom: 4px; padding-right: 20px; }
+.ma-body { font-size: 13.5px; color: #344054; line-height: 1.4; }
+.ma-when { color: #d92d20; }
+.ma-time { font-size: 13px; color: #667085; margin-top: 2px; }
+.ma-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.ma-x { position: absolute; top: 8px; right: 10px; border: 0; background: none; font-size: 18px; color: #667085; cursor: pointer; line-height: 1; padding: 2px 4px; }
+.ma-x:hover { color: var(--ink); }
