@@ -338,7 +338,10 @@ function Timeline({ entries, events, teamName, onChanged }: {
 function describeEvent(ev: LeadEvent, teamName: (id: string | null) => string): string {
   switch (ev.kind) {
     case 'created': return ev.detail?.via === 'upload' ? 'Lead added from an upload' : ev.detail?.via === 'calendly' ? 'Lead created from a Calendly booking' : ev.detail?.via === 'calcom' ? 'Lead created from a Cal.com booking' : 'Lead added';
-    case 'assigned': return ev.from_value ? `Reassigned from ${teamName(ev.from_value)} to ${teamName(ev.to_value)}` : `Assigned to ${teamName(ev.to_value)}`;
+    case 'assigned': {
+      const why = (ev.detail?.reason as string) ?? '';
+      return (ev.from_value ? `Reassigned from ${teamName(ev.from_value)} to ${teamName(ev.to_value)}` : `Assigned to ${teamName(ev.to_value)}`) + (why ? ` · ${why}` : '');
+    }
     case 'bucket': {
       const reason = (ev.detail?.reason as string) ?? '';
       return `Moved from ${bucketLabel(ev.from_value as Bucket)} to ${bucketLabel(ev.to_value as Bucket)}${reason ? ` · ${reason}` : ''}`;

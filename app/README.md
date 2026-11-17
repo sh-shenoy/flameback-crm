@@ -58,7 +58,7 @@ npm run dev
 ```
 
 ## Making someone an admin
-On **Team & rotation**, an admin can change roles, take people in or out of the round-robin, and remove access. The very first sign-in is admin automatically.
+On **Team & rotation**, an admin can change roles, take people in or out of the round-robin, and remove access. Removing access hands the person's leads over (all stages): round-robin to the RMs in rotation, or all to one person; each new owner gets one notification and every lead's timeline shows the hand-over. The very first sign-in is admin automatically.
 
 ## Tests
 The database rules are covered by `../supabase/tests/rules_test.sql`, which runs on plain Postgres with a stand-in for Supabase's auth schema:
