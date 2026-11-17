@@ -53,6 +53,7 @@ export interface Lead {
   notes_updated_at?: string | null;
   notes_updated_by?: string | null;
   residency?: 'resident' | 'nri' | null;
+  meeting_pref?: 'google-meet' | 'zoom' | null;
   funded_at?: string | null;
   funded_amount?: number | null;
   requirement: string | null;

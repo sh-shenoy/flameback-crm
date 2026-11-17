@@ -19,7 +19,22 @@ export async function calcom<T = Record<string, unknown>>(body: Record<string, u
   return data as T;
 }
 
-export interface CalEventType { id: number; title: string; slug: string; length: number | null }
+export interface CalEventType { id: number; title: string; slug: string; length: number | null; locations?: string[] }
+
+/** Names for Cal.com video integrations. */
+export const VIDEO_LABEL: Record<string, string> = {
+  'google-meet': 'Google Meet', zoom: 'Zoom', 'cal-video': 'Cal Video', 'office365-video': 'Microsoft Teams', 'webex-video': 'Webex',
+};
+export const videoLabel = (k: string) => VIDEO_LABEL[k] ?? k.replace(/-video$/, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** "Join Zoom" / "Join Google Meet" / "Join meeting", from the link itself. */
+export function joinLabel(url: string | null | undefined): string {
+  if (!url) return 'Join meeting';
+  if (/zoom\.us/i.test(url)) return 'Join Zoom';
+  if (/meet\.google\.com/i.test(url)) return 'Join Google Meet';
+  if (/teams\.microsoft|teams\.live/i.test(url)) return 'Join Teams';
+  return 'Join meeting';
+}
 
 export interface MeetingRow {
   booking_uid: string; provider: 'calendly' | 'calcom'; rm_id: string; lead_id: string | null;
