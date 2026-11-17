@@ -143,6 +143,10 @@ Deno.serve(async (req) => {
       if (!r.ok) return json({ error: calError(r) }, 400);
       const types = list(r.body?.data).filter((e: any) => !e.hidden).map((e: any) => ({
         id: e.id, title: e.title, slug: e.slug, length: e.lengthInMinutes ?? e.length ?? null,
+        // video apps this meeting type offers, e.g. ["google-meet", "zoom"] (Cal.com: { type: "integration", integration })
+        locations: (Array.isArray(e.locations) ? e.locations : [])
+          .filter((l: any) => l?.type === 'integration' && typeof l.integration === 'string')
+          .map((l: any) => l.integration as string),
       }));
       return json({ event_types: types });
     }
@@ -179,9 +183,13 @@ Deno.serve(async (req) => {
         metadata: { lead_id: lead.id, source: 'flameback_crm' },
         ...(guests.length ? { guests } : {}),
       };
+      // video app picked for this meeting (only when the meeting type offers more than one)
+      const loc = typeof body.location === 'string' && /^[a-z0-9-]{2,40}$/.test(body.location) ? body.location : null;
+      if (loc) payload.location = { type: 'integration', integration: loc };
       const r = await cal(key, '/bookings', { method: 'POST', version: V_BOOKINGS, body: JSON.stringify(payload) });
       if (!r.ok) return json({ error: calError(r) }, 400);
       if (!lead.email) await admin.from('leads').update({ email }).eq('id', lead.id).is('email', null);
+      if (loc === 'google-meet' || loc === 'zoom') await admin.from('leads').update({ meeting_pref: loc }).eq('id', lead.id);
       return json({ ok: true, booking_uid: r.body?.data?.uid ?? null });
     }
 

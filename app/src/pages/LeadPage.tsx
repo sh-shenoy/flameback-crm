@@ -16,7 +16,7 @@ import OnboardingCard, { fmtINR } from '../components/OnboardingCard';
 import SummaryBox from '../components/SummaryBox';
 import { DueTag, NewTaskModal, PriorityTag, StatusTag, TaskDrawer } from '../components/TaskParts';
 import type { Task } from '../lib/types';
-import { calcom, type CalEventType, type MeetingRow } from '../lib/calcom';
+import { calcom, joinLabel, videoLabel, type CalEventType, type MeetingRow } from '../lib/calcom';
 
 const ONBOARDING_ROUTE: Record<string, string> = {
   RIA: 'the Flameback app',
@@ -128,6 +128,13 @@ export default function LeadPage() {
             </select>
           </div>
           <div>
+            <div className="k">Meets on</div>
+            <select className="inline-select" value={lead.meeting_pref ?? ''}
+              onChange={(e) => act('set_meeting_pref', { p_pref: e.target.value || null }, e.target.value ? `Prefers ${videoLabel(e.target.value)}` : 'Preference cleared')}>
+              <option value="">No preference</option><option value="google-meet">Google Meet</option><option value="zoom">Zoom</option>
+            </select>
+          </div>
+          <div>
             <div className="k">Next follow-up</div>
             {open ? (
               <input type="date" className="inline-select" value={lead.next_follow_up ?? ''}
@@ -136,12 +143,12 @@ export default function LeadPage() {
           </div>
           {lead.bucket === 'awaiting_meeting' && (
             <div><div className="k">Meeting</div>{lead.meeting_at ? fmtDateTime(lead.meeting_at) : <span className="amber">Not booked yet</span>}
-              {lead.meeting_url && <div><a href={lead.meeting_url} target="_blank" rel="noreferrer">Join Google Meet</a></div>}</div>
+              {lead.meeting_url && <div><a href={lead.meeting_url} target="_blank" rel="noreferrer">{joinLabel(lead.meeting_url)}</a></div>}</div>
           )}
           {lead.bucket === 'deferred' && <div><div className="k">Returns on</div>{fmtDate(lead.deferred_until)}</div>}
           {lead.bucket !== 'awaiting_meeting' && calEvent && (
             <div><div className="k">Next meeting</div>{fmtDateTime(calEvent.start_time)}
-              {calEvent.join_url && <div><a href={calEvent.join_url} target="_blank" rel="noreferrer">Join Google Meet</a></div>}</div>
+              {calEvent.join_url && <div><a href={calEvent.join_url} target="_blank" rel="noreferrer">{joinLabel(calEvent.join_url)}</a></div>}</div>
           )}
           <div>
             <div className="k">RM</div>
@@ -712,6 +719,14 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   const [guestInput, setGuestInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [loc, setLoc] = useState('');
+  const typeLocs = types?.find((t) => String(t.id) === type)?.locations ?? [];
+
+  // pick the lead's preferred video app when this meeting type offers it, else the type's first
+  useEffect(() => {
+    if (!typeLocs.length) { setLoc(''); return; }
+    setLoc(lead.meeting_pref && typeLocs.includes(lead.meeting_pref) ? lead.meeting_pref : typeLocs[0]!);
+  }, [type, types]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!connected) return;
@@ -739,7 +754,7 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   async function book() {
     setBusy(true); setErr(null);
     try {
-      await calcom({ action: 'book', lead_id: lead.id, event_type_id: type, start_time: slot, email, guests });
+      await calcom({ action: 'book', lead_id: lead.id, event_type_id: type, start_time: slot, email, guests, ...(typeLocs.length > 1 && loc ? { location: loc } : {}) });
       if (replaces) {
         try { await calcom({ action: 'cancel', lead_id: lead.id, booking_uid: replaces.booking_uid, reason: 'Rescheduled' }); }
         catch (e) { toast(`New time booked, but the old meeting couldn't be cancelled: ${(e as Error).message}`, 'err'); }
@@ -762,7 +777,7 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   return (
     <Modal title={replaces ? `Reschedule meeting with ${lead.name}` : `Schedule a meeting with ${lead.name}`} onClose={onClose} wide
       footer={<>
-        <span className="muted small" style={{ marginRight: 'auto' }}>Cal.com emails the invite{guests.length ? 's' : ''} with the meeting link.</span>
+        <span className="muted small" style={{ marginRight: 'auto' }}>Cal.com emails the invite{guests.length ? 's' : ''} with the {loc ? videoLabel(loc) : 'meeting'} link.</span>
         <button className="btn ghost" onClick={onClose}>Cancel</button>
         <button className="btn" disabled={busy || !slot || !email} onClick={book}>{busy ? 'Booking…' : replaces ? 'Book new time' : 'Book meeting'}</button>
       </>}>
@@ -776,6 +791,12 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
         </Field>
         <Field label="Date" required><input type="date" min={todayIST()} value={day} onChange={(e) => setDay(e.target.value)} /></Field>
       </div>
+      {typeLocs.length > 1 && (
+        <Field label="Meet on" hint={lead.meeting_pref ? `${lead.name.split(' ')[0]} prefers ${videoLabel(lead.meeting_pref)}` : 'Saved as their preference for next time'}>
+          <div className="chips">{typeLocs.map((l) => <button key={l} className={`chip ${loc === l ? 'on' : ''}`} onClick={() => setLoc(l)}>{videoLabel(l)}</button>)}</div>
+        </Field>
+      )}
+      {typeLocs.length === 1 && type && <p className="muted small" style={{ margin: '-4px 0 10px' }}>This meeting type is on {videoLabel(typeLocs[0]!)}.</p>}
       {types && types.length === 0 && <div className="banner warn">You have no event types in Cal.com. Create one (e.g. "Intro call" with Google Meet) and reopen this.</div>}
       {type && (
         <Field label={`Available times (IST)${selectedType?.length ? ` · ${selectedType.length} min` : ''}`} required>
