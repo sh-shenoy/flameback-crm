@@ -220,7 +220,7 @@ function DeleteLeads({ ids, onClose, onDone }: { ids: string[]; onClose: () => v
           try { onDone(await rpc<number>('delete_leads', { p_leads: ids })); }
           catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
         }}>{busy ? 'Deleting…' : 'Delete permanently'}</button></>}>
-      <p style={{ marginBottom: 10 }}>This permanently removes the selected leads with their activity, notes, emails and summaries. It can't be undone.</p>
+      <p style={{ marginBottom: 10 }}>This permanently removes the selected leads and everything about them: activity, notes, emails, summary, onboarding checklist, meetings, tasks and notifications. Reports and the funnel stop counting them. It can't be undone.</p>
       {needType && <Field label={`Type ${ids.length} to confirm`}><input value={text} onChange={(e) => setText(e.target.value)} inputMode="numeric" /></Field>}
       {err && <div className="form-err">{err}</div>}
     </Modal>
