@@ -601,8 +601,7 @@ tr.lead-row.selected { background: #f0f8f8; }
 .fn-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 150px; align-items: center; gap: 14px; }
 .fn-label { font-weight: 600; font-size: 13.5px; color: var(--ink); }
 .fn-track { display: flex; justify-content: center; height: 34px; align-items: stretch; }
-.fn-bar { background: var(--teal); border-radius: 4px; transition: width .3s ease; }
-.fn-bar.empty { width: 0; }
+.fn-bar { background: var(--teal); border-radius: 4px; min-width: 6px; transition: width .3s ease; }
 .fn-num { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
 .fn-num b { font-size: 16px; color: var(--ink); }
 .fn-num span { color: #475467; font-size: 13px; }
