@@ -209,7 +209,7 @@ function PickLead({ onClose, onPick }: { onClose: () => void; onPick: (id: strin
   const [res, setRes] = useState<Lead[]>([]);
   useEffect(() => {
     const t = setTimeout(async () => {
-      let query = supabase.from('leads').select('*').eq('rm_id', me!.id).not('bucket', 'in', '(out,converting)').order('next_follow_up', { ascending: true, nullsFirst: false }).limit(8);
+      let query = supabase.from('leads').select('*').eq('rm_id', me!.id).not('bucket', 'in', '(out,converting,client)').order('next_follow_up', { ascending: true, nullsFirst: false }).limit(8);
       const term = q.trim().replace(/[%,()]/g, '');
       if (term.length >= 2) query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term.replace(/\D/g, '') || term}%`);
       const { data } = await query;

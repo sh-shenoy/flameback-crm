@@ -13,7 +13,8 @@ const STAGES: [string, string, string][] = [
   ['Awaiting meeting', 'They agreed to meet (time booked or not).', 'Five reminders with no meeting → Out List'],
   ['Holding period', 'You have met or properly discussed; they are still thinking.', 'No strikes. Follow-ups at 7, 14, 28, 56 days (max 90 apart)'],
   ['Deferred', 'They will decide later, on a date they gave.', 'Comes back to Holding on that date'],
-  ['Converting', 'Committed. Waits for onboarding.', 'RIA → Flameback app · PMS → Silver Bullet'],
+  ['Prospect', 'Agreed to join. Onboarding in progress (documents, accounts).', 'Checklist on the lead; becomes a client when funded'],
+  ['Client', 'Funded.', 'Shown under Clients'],
   ['Out List', 'Not interested, or five strikes.', 'Can be brought back any time'],
 ];
 
@@ -30,7 +31,7 @@ const SECTIONS: Section[] = [
       </ol> },
       { q: 'Which leads can I see?', a: <p>RMs see only their own leads. Admins see everyone's. If you can't find a lead, it probably belongs to someone else: ask an admin.</p> },
       { q: 'What is the one habit that matters most?', a: <p>Log every conversation with <b>Log activity</b>, straight after it happens. Stages, strikes, follow-up dates, reports and the AI summary all come from what you log.</p> },
-      { q: 'Where do onboarding, clients and reviews happen?', a: <p>Not here yet. Once a lead commits it moves to <b>Converting</b>. RIA onboarding happens in the Flameback app and PMS in Silver Bullet. Clients, Onboarding and Reviews are marked "Coming soon".</p> },
+      { q: 'Where do onboarding and clients happen?', a: <p>Here. When someone agrees to join they become a <b>prospect</b> with an onboarding checklist (see <Link to="/prospects">Prospects</Link>); when they fund they become a <b>client</b> (see <Link to="/clients">Clients</Link>). Accounts themselves are still opened in the Flameback app (RIA) and Silver Bullet (PMS). Reviews are coming later.</p> },
     ],
   },
   {
@@ -52,7 +53,23 @@ const SECTIONS: Section[] = [
           <tbody>{STAGES.map(([s, m, r]) => <tr key={s}><td><b>{s}</b></td><td>{m}</td><td>{r}</td></tr>)}</tbody></table>
       ) },
       { q: 'How does a lead move between stages?', a: <p>Mostly through <b>Log activity</b>: when you spoke to them, answer "Where did this leave things?" and the lead moves. You can also use <b>Change stage</b> on the lead page to move it by hand (add a reason; it is saved as a note).</p> },
-      { q: 'What happens when a lead commits?', a: <p>Log activity → <b>Committed</b> (or Change stage → Converting) and confirm the product. The lead moves to Converting and waits for onboarding. Made a mistake? <b>Undo</b> on the lead moves it back to Holding.</p> },
+      { q: 'What is the difference between a lead, a prospect and a client?', a: <ul>
+        <li><b>Lead</b>: someone we are trying to win (Active contact, Awaiting meeting, Holding, Deferred).</li>
+        <li><b>Prospect</b>: agreed to join; now being onboarded (documents, bank and broker accounts).</li>
+        <li><b>Client</b>: has funded their account.</li>
+      </ul> },
+      { q: 'What happens when someone agrees to join?', a: <p>Log activity → <b>Agreed to join</b> and confirm the product. They become a <b>prospect</b> and get an onboarding checklist for their product and Resident / NRI. Not joining after all? The link on the lead moves them back to Holding.</p> },
+    ],
+  },
+  {
+    id: 'onboarding', title: 'Prospects and onboarding',
+    items: [
+      { q: 'Where do I see everyone being onboarded?', a: <p><Link to="/prospects">Prospects</Link> lists them with progress, what each is waiting on (client, Ops), the next due item and how long onboarding has taken.</p> },
+      { q: 'How does the onboarding checklist work?', a: <p>Each prospect gets the checklist for their product and Resident / NRI (set Residency in the lead header). Set each item's status: To do, Waiting on client, Submitted, Done or Blocked (with a reason). Add a due date or notes, add your own items, or delete ones that don't apply.</p> },
+      { q: 'Their spouse is joining too.', a: <p>Use <b>+ Joint holder</b> on the checklist. Per-person items (KYC and similar) are added for them automatically.</p> },
+      { q: 'Something needs Operations.', a: <p>Press <b>Ask Ops</b> on the item. Operations gets a task linked to the lead; when they mark it done, the item ticks itself. You decide what you do and what Ops does.</p> },
+      { q: 'When do they become a client?', a: <p>When the money arrives: <b>Mark as funded</b> at the bottom of the checklist, with the date and amount. They move to <Link to="/clients">Clients</Link>. Entered by mistake? <b>Undo</b> on the lead.</p> },
+      { q: 'The checklist is empty.', a: <p>Set Resident / NRI, then press <b>Load checklist</b>. If it is still empty, no checklist has been set up for that product yet: add items by hand, and ask an admin to set one up in Admin → Onboarding checklists.</p> },
     ],
   },
   {
@@ -74,11 +91,11 @@ const SECTIONS: Section[] = [
     items: [
       { q: 'How do I log a call, chat or meeting?', a: <p>Lead page → <b>Log activity</b> → what happened (phone, Google Meet, in-person, message, email or note) → the outcome → notes → next follow-up. Notes are required when you actually spoke.</p> },
       { q: 'Do I need to schedule a meeting before I can record a conversation?', a: <p>No. You can log any conversation: a call, a chance meeting, a WhatsApp chat. If they picked up or replied, Log activity asks where it left things, so the lead moves to the right stage.</p> },
-      { q: 'What do the "Where did this leave things?" choices do?', text: 'Just a conversation Wants to meet Met still thinking Committed Will commit later Spoke no meeting fixed', a: <ul>
+      { q: 'What do the "Where did this leave things?" choices do?', text: 'Just a conversation Wants to meet Met still thinking Agreed to join Will commit later Spoke no meeting fixed', a: <ul>
         <li><b>Just a conversation</b>: stays where it is.</li>
         <li><b>Wants to meet</b>: Awaiting meeting (book the time later).</li>
         <li><b>Met / discussed, still thinking</b>: Holding period.</li>
-        <li><b>Committed</b>: Converting.</li>
+        <li><b>Agreed to join</b>: becomes a prospect with an onboarding checklist.</li>
         <li><b>Will commit later</b>: Deferred until the date you pick.</li>
         <li><b>Spoke, no meeting fixed</b> (from Awaiting meeting): back to Active contact, no strike.</li>
       </ul> },
@@ -125,7 +142,7 @@ const SECTIONS: Section[] = [
       { q: 'What will I be notified about?', a: <p>New leads, bookings and cancellations, a meeting in 30 minutes, the 9 am digest, email replies, task changes and nudges from your manager. Pop-ups stay until you dismiss them.</p> },
       { q: 'Will I be reminded before a meeting?', a: <p>Yes. 5 minutes before each meeting a pop-up appears (bottom right, with a sound) showing the time and who it is with: <b>Join</b> opens the Google Meet, <b>Snooze 5m</b> brings it back in 5 minutes, × closes it. It needs Argus open in a tab. You also get a notification about 30 minutes before.</p> },
       { q: 'How do I turn the sound off?', a: <p>Open the bell (top right) → <b>Sound on/off</b>.</p> },
-      { q: 'Which sources and campaigns convert?', a: <p><Link to="/reports">Reports</Link> shows leads, contacted, met, committed and Out List by source, campaign, referrer or product (admins also by RM), with CSV download.</p> },
+      { q: 'Which sources and campaigns convert?', a: <p><Link to="/reports">Reports</Link> shows the funnel (leads, contacted, wants to meet, met, prospect, client) and Out List by source, campaign, referrer or product (admins also by RM), with CSV download.</p> },
     ],
   },
   {
@@ -136,6 +153,7 @@ const SECTIONS: Section[] = [
       { q: 'Someone is leaving', a: <p>Team &amp; rotation → <b>Remove access</b> → share their leads across the RMs in rotation or give them all to one person. Every lead moves with its history; reassign their open tasks from Tasks.</p> },
       { q: 'Keeping an eye on the team', a: <p>Admin → <b>Team overview</b>: each person's follow-ups due and overdue, meetings without an outcome, untouched leads and conversions. Send a <b>nudge</b> in one click; open a person to reassign or delete their leads.</p> },
       { q: 'Meeting types', a: <p>Admin → <b>Meeting types</b> sets the standard Cal.com types pushed to every RM's account.</p> },
+      { q: 'Onboarding checklists', a: <p>Admin → <b>Onboarding checklists</b>: the items each new prospect gets, per product and Resident / NRI. Mark items done by Operations, and ones to repeat for each joint holder.</p> },
     ],
   },
   {

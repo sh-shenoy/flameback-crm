@@ -15,6 +15,8 @@ import Upload from './pages/Upload';
 import Tasks from './pages/Tasks';
 import Connections from './pages/Connections';
 import Help from './pages/Help';
+import Prospects from './pages/Prospects';
+import Clients from './pages/Clients';
 import Admin from './pages/Admin';
 import { PersonPage } from './pages/AdminOverview';
 import Notifications from './pages/Notifications';
@@ -37,8 +39,9 @@ function Routed() {
         <Route path="/admin/people/:id" element={<PersonPage />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/clients" element={<ComingSoon title="Clients" what="Your book of funded clients, households, holdings and returns." />} />
-        <Route path="/onboarding" element={<ComingSoon title="Onboarding" what="RIA onboards in the Flameback app, PMS through Silver Bullet. Committed leads will appear here with their onboarding status." />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/prospects" element={<Prospects />} />
+        <Route path="/onboarding" element={<Navigate to="/prospects" replace />} />
         <Route path="/reviews" element={<ComingSoon title="Reviews" what="Quarterly and annual client reviews with prep views." />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/connections" element={<Connections />} />

@@ -632,3 +632,49 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
 .ma-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .ma-x { position: absolute; top: 8px; right: 10px; border: 0; background: none; font-size: 18px; color: #667085; cursor: pointer; line-height: 1; padding: 2px 4px; }
 .ma-x:hover { color: var(--ink); }
+
+/* ── onboarding (prospects) ── */
+.onboarding { margin-bottom: 18px; }
+.ob-summary { display: flex; align-items: center; gap: 10px; }
+.ob-progress { width: 120px; height: 8px; background: #eef2f6; border-radius: 4px; overflow: hidden; display: inline-block; }
+.ob-progress i { display: block; height: 100%; background: var(--teal); border-radius: 4px; }
+.ob-meta { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-bottom: 12px; font-size: 13px; color: #475467; }
+.ob-holders { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ob-chip { display: inline-flex; align-items: center; gap: 4px; background: #eef2f6; border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 12.5px; color: var(--ink); }
+.ob-chip button { border: 0; background: none; cursor: pointer; color: #667085; font-size: 14px; line-height: 1; padding: 0 4px; }
+.ob-addholder { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ob-addholder input { padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; width: 150px; }
+.ob-group { margin-bottom: 14px; }
+.ob-person { font-weight: 700; font-size: 13px; color: var(--ink); margin: 4px 0 6px; }
+.ob-item { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; background: #fff; }
+.ob-item.s-done { background: #f6fbf9; }
+.ob-item.s-done .ob-title { color: #667085; text-decoration: line-through; text-decoration-color: #98a2b3; }
+.ob-item.s-blocked { border-color: #f4c7c3; }
+.ob-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ob-status { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 8px; border: 1px solid var(--line); background: #fff; color: #344054; }
+.ob-status.st-waiting { background: #fff6e5; border-color: #f5d79e; color: #8a5a00; }
+.ob-status.st-submitted { background: #eef4ff; border-color: #c7d7fe; color: #2d4ea2; }
+.ob-status.st-done { background: #e8f6f1; border-color: #a6dcc8; color: #1d6b52; }
+.ob-status.st-blocked { background: #fdecea; border-color: #f4c7c3; color: #b42318; }
+.ob-title { font-size: 13.5px; color: var(--ink); }
+.ob-owner { font-size: 11px; font-weight: 700; letter-spacing: .03em; border-radius: 4px; padding: 1px 6px; }
+.ob-owner.o-rm { background: #eef2f6; color: #475467; }
+.ob-owner.o-ops { background: #f3eefe; color: #5b3fb0; }
+.ob-spacer { flex: 1; }
+.ob-due { font-size: 12px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; color: #475467; }
+.ob-del { border: 0; background: none; cursor: pointer; color: #98a2b3; font-size: 16px; line-height: 1; padding: 0 2px; }
+.ob-del:hover { color: #b42318; }
+.ob-sub { font-size: 12.5px; margin: 5px 0 0 2px; white-space: pre-wrap; }
+.ob-notes { display: flex; gap: 8px; margin-top: 6px; align-items: flex-start; }
+.ob-notes textarea { flex: 1; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; resize: vertical; }
+.ob-add { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.ob-add input { flex: 1; min-width: 200px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px; }
+.ob-add select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+.ob-empty { padding: 10px 0 4px; color: #475467; font-size: 13.5px; display: grid; gap: 10px; justify-items: start; }
+.ob-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ob-foot .muted { margin-right: auto; }
+.ob-inline { display: inline-flex; align-items: center; gap: 6px; } .ob-inline .ob-progress { width: 70px; }
+.tpl-title { width: 100%; min-width: 220px; }
+.tpl-add { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); }
+.tpl-add input:not([type=checkbox]) { flex: 1; min-width: 220px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.tpl-add select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }

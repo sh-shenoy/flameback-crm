@@ -7,11 +7,12 @@ import {
 } from '../lib/format';
 import {
   BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
-  bucketLabel, holdingGap, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
+  RESIDENCY_LABEL, bucketLabel, holdingGap, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
 import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
 import { LanguagePicker, Select } from '../components/AddLead';
 import NotesCard from '../components/NotesCard';
+import OnboardingCard, { fmtINR } from '../components/OnboardingCard';
 import SummaryBox from '../components/SummaryBox';
 import { DueTag, NewTaskModal, PriorityTag, StatusTag, TaskDrawer } from '../components/TaskParts';
 import type { Task } from '../lib/types';
@@ -84,7 +85,7 @@ export default function LeadPage() {
   if (missing) return <div className="main-inner"><Empty>This lead doesn't exist or isn't in your book. <Link to="/leads">Back to leads</Link></Empty></div>;
   if (!lead) return <div className="main-inner"><Skeleton h={90} /><br /><Skeleton h={300} /></div>;
 
-  const open = lead.bucket !== 'out' && lead.bucket !== 'converting';
+  const open = lead.bucket !== 'out' && lead.bucket !== 'converting' && lead.bucket !== 'client';
   const countsStrikes = ['active_contact', 'awaiting_meeting'].includes(lead.bucket);
   const bucketHelp = BUCKETS.find((b) => b.key === lead.bucket)?.help;
 
@@ -120,6 +121,13 @@ export default function LeadPage() {
             </select>
           </div>
           <div>
+            <div className="k">Residency</div>
+            <select className="inline-select" value={lead.residency ?? ''}
+              onChange={(e) => act('set_residency', { p_residency: e.target.value || null }, e.target.value ? `Marked as ${RESIDENCY_LABEL[e.target.value]}` : 'Residency cleared')}>
+              <option value="">Not set</option><option value="resident">Resident</option><option value="nri">NRI</option>
+            </select>
+          </div>
+          <div>
             <div className="k">Next follow-up</div>
             {open ? (
               <input type="date" className="inline-select" value={lead.next_follow_up ?? ''}
@@ -146,9 +154,14 @@ export default function LeadPage() {
 
         {lead.bucket === 'converting' && (
           <div className="banner ok">
-            <b>Committed {fmtDate(lead.converted_at)}.</b> {lead.product} onboarding happens in {ONBOARDING_ROUTE[lead.product] ?? 'the onboarding module'}.
-            The onboarding module is coming soon; this lead now waits there.
-            <button className="linkbtn" onClick={() => act('undo_converting', {}, 'Moved back to Holding period')}>Undo</button>
+            <b>Prospect since {fmtDate(lead.converted_at)}.</b> They agreed to join; work through the onboarding checklist below. {lead.product} accounts are opened in {ONBOARDING_ROUTE[lead.product] ?? 'the product platform'}.
+            <button className="linkbtn" onClick={() => act('undo_converting', {}, 'Moved back to Holding period')}>Not joining after all?</button>
+          </div>
+        )}
+        {lead.bucket === 'client' && (
+          <div className="banner ok">
+            <b>Client since {fmtDate(lead.funded_at ?? null)}</b>{lead.funded_amount != null && <> · funded {fmtINR(lead.funded_amount)}</>}.
+            <button className="linkbtn" onClick={() => act('undo_funded', {}, 'Moved back to Prospect')}>Undo</button>
           </div>
         )}
         {lead.bucket === 'out' && (
@@ -158,7 +171,7 @@ export default function LeadPage() {
         )}
 
         <div className="actions">
-          {open && <button className="btn" onClick={() => setDialog('entry')}>Log activity</button>}
+          {lead.bucket !== 'out' && <button className="btn" onClick={() => setDialog('entry')}>Log activity</button>}
           {lead.bucket === 'active_contact' && <>
             <button className="btn gold" onClick={() => setDialog('schedule')}>Schedule meeting</button>
             <button className="btn ghost" onClick={() => setDialog('interested')}>Interested (no time yet)</button>
@@ -184,6 +197,8 @@ export default function LeadPage() {
         </div>
         {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
       </div>
+
+      {(lead.bucket === 'converting' || lead.bucket === 'client') && <OnboardingCard lead={lead} onChanged={load} />}
 
       <SummaryBox leadId={lead.id} version={`${lead.updated_at}:${entries.length}:${tasks.length}`} />
 
@@ -381,7 +396,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
     ? [
         { key: '', label: 'Just a check-in', sub: `Stays deferred until ${fmtDate(lead.deferred_until)}` },
         { key: 'met', label: 'Ready to discuss again', sub: 'Moves to Holding period' },
-        { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
+        { key: 'commits', label: 'Agreed to join', sub: 'Becomes a prospect → onboarding checklist' },
         { key: 'later', label: 'Pushed to a new date', sub: 'Stays deferred, new return date' },
       ]
     : lead.bucket === 'active_contact'
@@ -389,7 +404,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         { key: '', label: 'Just a conversation', sub: 'Stays in Active contact' },
         { key: 'interested', label: 'Wants to meet', sub: 'Moves to Awaiting meeting' },
         { key: 'met', label: 'Met / discussed, still thinking', sub: 'Moves to Holding period' },
-        { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
+        { key: 'commits', label: 'Agreed to join', sub: 'Becomes a prospect → onboarding checklist' },
         { key: 'later', label: 'Will commit later', sub: 'Deferred until a date' },
       ]
     : lead.bucket === 'awaiting_meeting'
@@ -397,12 +412,12 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         { key: '', label: 'Just confirming the meeting', sub: 'Counts as a reminder' },
         { key: 'met', label: 'Met, still deciding', sub: 'Moves to Holding period' },
         { key: 'contact', label: 'Spoke, no meeting fixed', sub: 'Back to Active contact, no strike' },
-        { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
+        { key: 'commits', label: 'Agreed to join', sub: 'Becomes a prospect → onboarding checklist' },
         { key: 'later', label: 'Will commit later', sub: 'Deferred until a date' },
       ]
     : [
         { key: '', label: 'Still thinking', sub: `Next follow-up in ${holdingGap((lead.holding_step ?? 0) + 1)} days` },
-        { key: 'commits', label: 'Committed', sub: 'Moves to Converting → onboarding' },
+        { key: 'commits', label: 'Agreed to join', sub: 'Becomes a prospect → onboarding checklist' },
         { key: 'later', label: 'Will commit later', sub: 'Deferred until a date' },
       ];
 
@@ -411,7 +426,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
     if (asksResult && result === 'met') return { tone: 'green', text: `Moves to Holding period. No strikes there: first follow-up in 7 days, then 14, 28…` };
     if (asksResult && result === 'interested') return { tone: 'green', text: 'Moves to Awaiting meeting; strikes reset. Book the time later with Schedule meeting.' };
     if (asksResult && result === 'contact') return { tone: 'green', text: 'Logs the conversation and moves the lead back to Active contact. No strike; strikes reset.' };
-    if (asksResult && result === 'commits') return { tone: 'green', text: `Committed: moves to Converting (${product}).` };
+    if (asksResult && result === 'commits') return { tone: 'green', text: `Agreed to join: becomes a prospect (${product}) with an onboarding checklist.` };
     if (asksResult && result === 'later') return { tone: 'green', text: lead.bucket === 'deferred' ? 'Stays deferred with the new date; comes back to Holding then.' : 'Moves to Deferred; comes back to Holding on the date.' };
     if (lead.bucket === 'active_contact') {
       if (outcome === 'no_answer') return lead.strikes + 1 >= 5
@@ -447,7 +462,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         p_deferred_until: asksResult && result === 'later' ? later : null,
         p_product: asksResult && result === 'commits' ? product : null,
       });
-      toast(asksResult && result === 'commits' ? 'Committed · moved to Converting'
+      toast(asksResult && result === 'commits' ? 'Agreed to join · now a prospect'
         : asksResult && result === 'met' ? 'Moved to Holding period'
         : asksResult && result === 'contact' ? 'Logged · back in Active contact'
         : asksResult && result === 'interested' ? 'Moved to Awaiting meeting'
@@ -585,7 +600,8 @@ const STAGE_EFFECT: Record<Bucket, string> = {
   awaiting_meeting: 'Strikes reset. Use this when they agreed to meet but the time isn\'t fixed; book it later with Schedule meeting.',
   holding: 'Met, still thinking. No strikes; follow-ups spaced out automatically (first in 7 days).',
   deferred: 'Comes back to Holding period on the date you pick.',
-  converting: 'Committed: moves to Converting, ready for onboarding.',
+  converting: 'Agreed to join: becomes a prospect and gets an onboarding checklist.',
+  client: 'Funded (use Mark as funded on the checklist).',
   out: 'Moves to the Out List and follow-ups stop. It can be brought back later.',
 };
 
@@ -596,7 +612,7 @@ function ChangeStageDialog({ lead, onClose, act }: { lead: Lead; onClose: () => 
   const [until, setUntil] = useState('');
   const [product, setProduct] = useState(lead.product);
   const { busy, run } = useBusy();
-  const choices = BUCKETS.filter((b) => b.key !== lead.bucket);
+  const choices = BUCKETS.filter((b) => b.key !== lead.bucket && b.key !== 'client');
   const ok = !!to && (to !== 'deferred' || !!until);
   return (
     <Modal title={`Change stage · ${lead.name}`} onClose={onClose}

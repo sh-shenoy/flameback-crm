@@ -63,8 +63,8 @@ export default function Dashboard() {
       count((q) => q.in('bucket', WORKING).lt('next_follow_up', today)),
       count((q) => q.eq('bucket', 'awaiting_meeting').gte('meeting_at', todayStart).lt('meeting_at', weekEnd)),
       count((q) => q.eq('bucket', 'awaiting_meeting').gte('meeting_at', todayStart).lt('meeting_at', tomorrowStart)),
-      count((q) => q.gte('converted_at', monthStart(0)).eq('bucket', 'converting')),
-      count((q) => q.gte('converted_at', monthStart(-1)).lt('converted_at', monthStart(0)).eq('bucket', 'converting')),
+      count((q) => q.gte('converted_at', monthStart(0)).in('bucket', ['converting', 'client'])),
+      count((q) => q.gte('converted_at', monthStart(-1)).lt('converted_at', monthStart(0)).in('bucket', ['converting', 'client'])),
       taskCount((q) => q.lt('due_date', today)),
       taskCount((q) => q.eq('due_date', today)),
     ]).then(([active, newToday, dueToday, overdue, meetingsWeek, meetingsToday, committedMonth, committedLastMonth, tasksOverdue, tasksToday]) =>
@@ -105,7 +105,7 @@ export default function Dashboard() {
     Promise.all([
       count((q) => inMonth(q)),
       count((q) => inMonth(q).in('bucket', WORKING)),
-      count((q) => inMonth(q).eq('bucket', 'converting')),
+      count((q) => inMonth(q).in('bucket', ['converting', 'client'])),
       count((q) => inMonth(q).eq('bucket', 'out')),
     ]).then(([n, follow, conv, out]) => setFunnel({ n, follow, conv, out })).catch(() => undefined);
   }, [me, period]);
@@ -129,7 +129,7 @@ export default function Dashboard() {
         <Card label="Follow-ups due" v={stats?.dueToday} sub={stats && (stats.overdue ? <span className="red">{stats.overdue} overdue</span> : 'Nothing overdue')}
           dot={!!stats?.overdue} onClick={() => document.getElementById('todays-actions')?.scrollIntoView({ behavior: 'smooth' })} />
         <Card label="Meetings this week" v={stats?.meetingsWeek} sub={stats && `${stats.meetingsToday} today`} onClick={() => nav(leadsLink('?bucket=awaiting_meeting'))} />
-        <Card label="Committed this month" v={stats?.committedMonth} sub={stats && `${stats.committedLastMonth} last month`} onClick={() => nav(leadsLink('?bucket=converting'))} />
+        <Card label="New prospects this month" v={stats?.committedMonth} sub={stats && `${stats.committedLastMonth} last month`} onClick={() => nav(leadsLink('?bucket=converting'))} />
         <Card label="Overdue tasks" v={stats?.tasksOverdue} sub={stats && `${stats.tasksToday} due today`} dot={!!stats?.tasksOverdue} onClick={() => nav('/tasks?due=overdue')} />
         <Card label="AUM" soon />
         <Card label="Reviews this week" soon />
@@ -206,7 +206,7 @@ export default function Dashboard() {
             <div className="pad">
               {!funnel ? <Skeleton h={120} /> : funnel.n === 0 ? <div className="muted">No leads {period === 0 ? 'this month' : 'last month'} yet.</div> : (
                 <div className="funnel">
-                  {([['New', funnel.n, ''], ['In follow-up', funnel.follow, ''], ['Committed', funnel.conv, '?bucket=converting'], ['Out', funnel.out, '']] as const).map(([l, n, link], i) => (
+                  {([['New', funnel.n, ''], ['In follow-up', funnel.follow, ''], ['Prospect / client', funnel.conv, '?bucket=converting'], ['Out', funnel.out, '']] as const).map(([l, n, link], i) => (
                     <div key={l} className="f-row" onClick={() => nav(l === 'Out' ? '/out' : leadsLink(link))}>
                       <span className="f-l">{l}</span>
                       <span className="f-bar"><i style={{ width: `${Math.max(2, (n / funnel.n) * 100)}%` }} className={`fb${i}`} /></span>
