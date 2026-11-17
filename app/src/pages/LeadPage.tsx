@@ -24,6 +24,7 @@ const ONBOARDING_ROUTE: Record<string, string> = {
   'US RIA': 'the onboarding module (process to be decided)',
 };
 
+type LeadTab = 'onboarding' | 'timeline' | 'notes' | 'profile' | 'tasks';
 type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'reschedule' | 'not_interested' | 'bring_back' | 'stage';
 
 export default function LeadPage() {
@@ -38,6 +39,8 @@ export default function LeadPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [openTask, setOpenTask] = useState<string | null>(null);
   const [calEvent, setCalEvent] = useState<MeetingRow | null>(null);
+  const [tab, setTab] = useState<LeadTab | null>(null);   // null = default for the stage
+  useEffect(() => setTab(null), [id]);
 
   const load = useCallback(async () => {
     const [l, e, ev, tk] = await Promise.all([
@@ -210,32 +213,53 @@ export default function LeadPage() {
         {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
       </div>
 
-      {(lead.bucket === 'converting' || lead.bucket === 'client') && <OnboardingCard lead={lead} onChanged={load} />}
-
       <SummaryBox leadId={lead.id} version={`${lead.updated_at}:${entries.length}:${tasks.length}`} />
 
-      <div className="lead-cols">
-        <div className="stack">
-          <NotesCard lead={lead} onSaved={load} />
-          <ProfileCard lead={lead} onSaved={load} />
-        </div>
-        <div className="stack">
-          {tasks.length > 0 && (
-            <div className="panel">
-              <div className="panel-head"><h2>Tasks</h2><span className="muted small">{tasks.filter((t) => t.status !== 'done').length} open</span></div>
-              {tasks.map((t) => (
-                <div key={t.id} className="task-row" onClick={() => setOpenTask(t.id)}>
-                  <PriorityTag p={t.priority} />
-                  <span className="tr-title">{t.title}<span className="muted small"> · {t.to_team}</span></span>
-                  <DueTag task={t} />
-                  <StatusTag s={t.status} />
-                </div>
+      {(() => {
+        const onboarding = lead.bucket === 'converting' || lead.bucket === 'client';
+        const openTasks = tasks.filter((t) => t.status !== 'done').length;
+        const tabs: { key: LeadTab; label: string; n?: number }[] = [
+          ...(onboarding ? [{ key: 'onboarding' as const, label: 'Onboarding' }] : []),
+          { key: 'timeline', label: 'Timeline', n: entries.length },
+          { key: 'notes', label: lead.general_notes ? 'Notes •' : 'Notes' },
+          { key: 'profile', label: 'Profile' },
+          { key: 'tasks', label: 'Tasks', n: openTasks },
+        ];
+        const cur: LeadTab = tab && tabs.some((t) => t.key === tab) ? tab : onboarding && lead.bucket === 'converting' ? 'onboarding' : 'timeline';
+        return (
+          <>
+            <div className="tabs lead-tabs" role="tablist">
+              {tabs.map((t) => (
+                <button key={t.key} role="tab" aria-selected={cur === t.key} className={`tab ${cur === t.key ? 'on' : ''}`} onClick={() => setTab(t.key)}>
+                  {t.label}{t.n ? <span className="tab-n">{t.n}</span> : null}
+                </button>
               ))}
             </div>
-          )}
-          <Timeline entries={entries} events={events} teamName={teamName} onChanged={load} />
-        </div>
-      </div>
+            <div className="lead-tab-body" role="tabpanel">
+              {cur === 'onboarding' && <OnboardingCard lead={lead} onChanged={load} />}
+              {cur === 'timeline' && <Timeline entries={entries} events={events} teamName={teamName} onChanged={load} />}
+              {cur === 'notes' && <NotesCard lead={lead} onSaved={load} />}
+              {cur === 'profile' && <ProfileCard lead={lead} onSaved={load} />}
+              {cur === 'tasks' && (
+                <div className="panel">
+                  <div className="panel-head"><h2>Tasks</h2>
+                    <span className="row-gap"><span className="muted small">{openTasks} open</span>
+                      <button className="btn ghost sm" onClick={() => setDialog('task')}>Raise task</button></span>
+                  </div>
+                  {tasks.length === 0 ? <Empty>No tasks about this lead yet.</Empty> : tasks.map((t) => (
+                    <div key={t.id} className="task-row" onClick={() => setOpenTask(t.id)}>
+                      <PriorityTag p={t.priority} />
+                      <span className="tr-title">{t.title}<span className="muted small"> · {t.to_team}</span></span>
+                      <DueTag task={t} />
+                      <StatusTag s={t.status} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {(dialog === 'schedule' || dialog === 'cal_reschedule') && (
         <ScheduleMeetingDialog lead={lead} connected={!!me!.cal_connected_at} replaces={dialog === 'cal_reschedule' ? calEvent : null}

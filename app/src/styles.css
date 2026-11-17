@@ -678,3 +678,6 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
 .tpl-add { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); }
 .tpl-add input:not([type=checkbox]) { flex: 1; min-width: 220px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; }
 .tpl-add select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }
+.lead-tabs { margin: 4px 0 14px; position: sticky; top: 57px; z-index: 5; background: var(--bg, #f5f7fa); }
+.lead-tab-body > .panel { margin-bottom: 18px; }
+.lead-tab-body .onboarding { margin-bottom: 18px; }
