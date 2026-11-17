@@ -8,6 +8,7 @@ import { BucketPill, useToast } from './ui';
 import AddLead from './AddLead';
 import { ArgusSidebar } from './Brand';
 import { TAGLINE } from '../lib/brand';
+import MeetingAlerts from './MeetingAlerts';
 import { playChime, setSoundEnabled, soundEnabled, unlockSound } from '../lib/sound';
 
 type Badge = 'overdue' | 'tasks' | 'notifications' | 'requests';
@@ -167,6 +168,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="main">{children}</main>
+        <MeetingAlerts />
       </div>
       {adding && <AddLead onClose={() => setAdding(false)} />}
     </div>
