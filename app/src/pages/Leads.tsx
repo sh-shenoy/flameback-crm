@@ -7,7 +7,7 @@ import { BUCKETS, PRODUCTS, type Bucket, type Lead } from '../lib/types';
 import { BucketPill, Empty, Field, FollowUp, Modal, ProductTag, Skeleton, Strikes, useToast } from '../components/ui';
 
 type Row = Lead & { lead_entries: { count: number }[] };
-const PAGE = 50;
+const PAGE = 100;
 const WORKING: Bucket[] = ['active_contact', 'awaiting_meeting', 'holding', 'deferred'];
 
 export default function Leads() {
