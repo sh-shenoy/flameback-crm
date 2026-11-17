@@ -29,6 +29,12 @@ const PERIODS: { key: string; label: string; range: () => [string, string] }[] =
   { key: 'all', label: 'All time', range: () => ['2020-01-01', todayIST()] },
 ];
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+/** Percentage for display: one decimal below 1% so 3 of 1,337 reads 0.2%, not 0%. */
+const fmtPct = (n: number, d: number) => {
+  if (!d || !n) return '0%';
+  const v = (n / d) * 100;
+  return v < 0.1 ? '<0.1%' : v < 1 ? `${v.toFixed(1)}%` : `${Math.round(v)}%`;
+};
 
 export default function Reports() {
   const { isAdmin, team, me } = useApp();
@@ -110,9 +116,9 @@ export default function Reports() {
 
       <div className="cards">
         <div className="card"><div className="k">Leads</div><div className="v">{rows ? total.leads : '·'}</div></div>
-        <div className="card"><div className="k">Contacted</div><div className="v">{rows ? `${pct(total.contacted, total.leads)}%` : '·'}</div><div className="meta">{total.contacted} leads</div></div>
-        <div className="card"><div className="k">Met</div><div className="v">{rows ? `${pct(total.met, total.leads)}%` : '·'}</div><div className="meta">{total.met} leads</div></div>
-        <div className="card"><div className="k">Committed</div><div className="v">{rows ? `${pct(total.committed, total.leads)}%` : '·'}</div><div className="meta">{total.committed} leads</div></div>
+        <div className="card"><div className="k">Contacted</div><div className="v">{rows ? `${fmtPct(total.contacted, total.leads)}` : '·'}</div><div className="meta">{total.contacted} lead{total.contacted === 1 ? '' : 's'}</div></div>
+        <div className="card"><div className="k">Met</div><div className="v">{rows ? `${fmtPct(total.met, total.leads)}` : '·'}</div><div className="meta">{total.met} lead{total.met === 1 ? '' : 's'}</div></div>
+        <div className="card"><div className="k">Committed</div><div className="v">{rows ? `${fmtPct(total.committed, total.leads)}` : '·'}</div><div className="meta">{total.committed} lead{total.committed === 1 ? '' : 's'}</div></div>
       </div>
 
       {err && <div className="banner warn">Couldn't load the report: {err}</div>}
@@ -144,13 +150,13 @@ export default function Reports() {
                     title="Show this funnel">
                     <td><b>{r.grp}</b>{r.source_kind && <span className={`kind k-${r.source_kind}`}>{r.source_kind}</span>}</td>
                     <td>{r.leads}</td>
-                    <td>{r.contacted} <span className="muted small">{pct(r.contacted, r.leads)}%</span></td>
-                    <td>{r.interested} <span className="muted small">{pct(r.interested, r.leads)}%</span></td>
-                    <td>{r.met} <span className="muted small">{pct(r.met, r.leads)}%</span></td>
+                    <td>{r.contacted} <span className="muted small">{fmtPct(r.contacted, r.leads)}</span></td>
+                    <td>{r.interested} <span className="muted small">{fmtPct(r.interested, r.leads)}</span></td>
+                    <td>{r.met} <span className="muted small">{fmtPct(r.met, r.leads)}</span></td>
                     <td><b>{r.committed}</b></td>
                     <td className="conv-cell">
                       <span className="conv-bar"><i style={{ width: `${Math.min(100, (c / best) * 100)}%` }} /></span>
-                      <b>{c}%</b>{r.leads < 5 && <span className="muted small" title="Fewer than 5 leads"> · small</span>}
+                      <b>{fmtPct(r.committed, r.leads)}</b>{r.leads < 5 && <span className="muted small" title="Fewer than 5 leads"> · small</span>}
                     </td>
                     <td>{r.out_list}</td>
                     <td>{r.still_open}</td>
@@ -160,7 +166,7 @@ export default function Reports() {
               {rows && rows.length > 0 && (
                 <tr className="total-row">
                   <td>Total</td><td>{total.leads}</td><td>{total.contacted}</td><td>{total.interested}</td><td>{total.met}</td><td>{total.committed}</td>
-                  <td><b>{pct(total.committed, total.leads)}%</b></td><td>{total.out_list}</td><td>{total.still_open}</td>
+                  <td><b>{fmtPct(total.committed, total.leads)}</b></td><td>{total.out_list}</td><td>{total.still_open}</td>
                 </tr>
               )}
             </tbody>
@@ -191,21 +197,21 @@ function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
       <div className="funnel" role="table" aria-label="Lead funnel">
         {STAGES.map((st, i) => {
           const n = c[st.key];
-          const share = pct(n, c.leads);
+          const share = c.leads ? (n / c.leads) * 100 : 0;
           const prev = i > 0 ? c[STAGES[i - 1].key] : null;
-          const step = prev !== null ? pct(n, prev) : null;
-          const tip = `${st.label}: ${n} of ${c.leads} leads (${share}%)${step !== null ? ` · ${step}% of ${STAGES[i - 1].label.toLowerCase()}` : ''}`;
+          const step = prev !== null ? fmtPct(n, prev) : null;
+          const tip = `${st.label}: ${n} of ${c.leads} leads (${fmtPct(n, c.leads)})${step !== null ? ` · ${step} of ${STAGES[i - 1].label.toLowerCase()}` : ''}`;
           return (
             <div key={st.key} className="fn-block" role="row">
-              {i > 0 && <div className="fn-step" role="presentation"><span>↓ {step}% moved on</span></div>}
+              {i > 0 && <div className="fn-step" role="presentation"><span>↓ {prev ? `${step} moved on` : '—'}</span></div>}
               <div className="fn-row">
                 <div className="fn-label" role="rowheader">{st.label}</div>
                 <div className="fn-track" title={tip}>
-                  <div className={`fn-bar ${n === 0 ? 'empty' : ''}`} style={{ width: `${c.leads ? Math.max(share, n ? 1.5 : 0) : 0}%` }} />
+                  {n > 0 && <div className="fn-bar" style={{ width: `${Math.max(share, 1)}%` }} />}
                 </div>
                 <div className="fn-num" role="cell">
-                  <b>{n}</b><span>{share}%</span>
-                  {compare && i > 0 && <em title="All leads in this report">all {pct(compare[st.key], compare.leads)}%</em>}
+                  <b>{n.toLocaleString('en-IN')}</b><span>{fmtPct(n, c.leads)}</span>
+                  {compare && i > 0 && <em title="All leads in this report">all {fmtPct(compare[st.key], compare.leads)}</em>}
                 </div>
               </div>
             </div>
