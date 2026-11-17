@@ -3,6 +3,8 @@
 //   { lead_id, force? }  → reads everything on the lead (with the caller's own permissions),
 //                          strips phone numbers / emails / PAN / Aadhaar, asks our hosted model (through
 //                          its OpenAI-compatible API) for a short structured summary, saves it and returns it.
+//   { action: 'polish', text } → corrects spelling and grammar in an RM's notes. Contact details and ID
+//                          numbers are swapped for placeholders before sending and put back afterwards.
 // Secrets (Edge Functions → Secrets), all three required, no defaults:
 //   OPENAI_BASE_URL  base URL of the hosted, OpenAI-compatible endpoint (e.g. https://…/v1)
 //   OPENAI_API_KEY   key for that endpoint
@@ -29,6 +31,22 @@ export function redact(text: string | null | undefined): string {
     .replace(/(\+?\d[\d\s-]{8,}\d)/g, '[phone]');
 }
 
+/** Like redact(), but reversible: swaps sensitive bits for [[n]] tokens and remembers them. */
+function protect(text: string, kept: string[]): string {
+  const keep = (m: string) => { kept.push(m); return `[[${kept.length}]]`; };
+  return text
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, keep)
+    .replace(/\b[A-Z]{5}[0-9]{4}[A-Z]\b/g, keep)
+    .replace(/\b\d{4}\s?\d{4}\s?\d{4}\b/g, keep)
+    .replace(/(\+?\d[\d\s-]{8,}\d)/g, keep);
+}
+
+const POLISH = `You correct an Indian wealth manager's notes about a client.
+Fix spelling, grammar and punctuation only. Keep the meaning, every fact, number, name and date, the tone,
+and the layout (line breaks, bullets). Do not add, remove, reorder or summarise anything. Keep Indian English
+and Hindi/Hinglish words as they are. Placeholders like [[1]] must stay exactly as written.
+Reply with the corrected notes only: no preamble, no quotes, no explanation.`;
+
 const IST = (ts: string | null | undefined) => ts
   ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }).format(new Date(ts))
   : '';
@@ -43,7 +61,9 @@ Return a JSON object with exactly these keys:
 - "wants": what they want: goals, budget/ticket size, product interest, time horizon
 - "status": where things stand: stage, last real conversation and its outcome, meetings booked or held
 - "concerns": array of short strings, their objections or worries (empty array if none)
-- "next_steps": array of short strings, agreed or sensible next actions with dates if known (max 4)`;
+- "next_steps": array of short strings, agreed or sensible next actions with dates if known (max 4)
+The RM's general notes are background they wrote themselves: use them, but where they conflict with newer
+dated activity, the newer activity wins.`;
 
 // JSON from the model: tolerate ```json fences or text around the object
 function parseJson(text: string): any {
@@ -71,7 +91,31 @@ Deno.serve(async (req) => {
     const { data: who } = await admin.auth.getUser(jwt);
     if (!who?.user) return json({ error: 'Please sign in again.' }, 401);
 
-    const { lead_id, force } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const ai = new OpenAI({ baseURL, apiKey: key });
+
+    if (body.action === 'polish') {
+      const original = String(body.text ?? '');
+      if (!original.trim()) return json({ text: original });
+      if (original.length > 20000) return json({ error: 'Notes are too long to check in one go.' }, 400);
+      const kept: string[] = [];
+      const masked = protect(original, kept);
+      const done = await ai.chat.completions.create({
+        model: model!,
+        messages: [{ role: 'system', content: POLISH }, { role: 'user', content: masked }],
+      });
+      let out = (done.choices[0]?.message?.content ?? '').trim()
+        .replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '').trim();
+      if (!out) return json({ error: 'The AI returned nothing. Try again.' }, 502);
+      // every placeholder must come back exactly once, or we don't trust the result
+      for (let i = 1; i <= kept.length; i++) {
+        if (out.split(`[[${i}]]`).length !== 2) return json({ error: 'The AI changed a phone number, email or ID in the notes, so the correction wasn’t applied. Try again.' }, 502);
+      }
+      out = out.replace(/\[\[(\d+)\]\]/g, (_, n) => kept[Number(n) - 1] ?? _);
+      return json({ text: out });
+    }
+
+    const { lead_id, force } = body;
     // read with the caller's own permissions: no access, no summary
     const db = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: `Bearer ${jwt}` } } });
     const { data: lead } = await db.from('leads').select('*').eq('id', lead_id ?? '').maybeSingle();
@@ -92,10 +136,11 @@ Deno.serve(async (req) => {
     lines.push(`RM: ${rmName} · Added ${IST(lead.created_at)} · Next follow-up ${lead.next_follow_up ?? 'none'}${lead.meeting_at ? ` · Meeting ${IST(lead.meeting_at)}` : ''}${lead.deferred_until ? ` · Deferred until ${lead.deferred_until}` : ''}`);
     const profile = [
       lead.city && `City: ${lead.city}`, lead.age && `Age: ${lead.age}`, lead.marital_status && `Marital: ${lead.marital_status}`,
-      lead.income_band && `Income: ${lead.income_band}`, lead.language && `Language: ${lead.language}`, lead.budget && `Budget: ${lead.budget}`,
+      lead.income_band && `Income: ${lead.income_band}`, lead.language && `Languages: ${lead.language}`, lead.budget && `Budget: ${lead.budget}`,
     ].filter(Boolean).join(' · ');
     if (profile) lines.push(profile);
     if (lead.requirement) lines.push(`What they want (RM note): ${redact(lead.requirement)}`);
+    if (lead.general_notes) lines.push('', `RM'S GENERAL NOTES (updated ${IST(lead.notes_updated_at)}):`, redact(lead.general_notes).slice(0, 6000));
 
     lines.push('', 'ACTIVITY (oldest first):');
     for (const e of entries.data ?? []) {
@@ -119,7 +164,6 @@ Deno.serve(async (req) => {
 
     const { data: coversUntil } = await admin.rpc('lead_last_activity', { p_lead: lead.id });
 
-    const ai = new OpenAI({ baseURL, apiKey: key });
     const messages = [
       { role: 'system' as const, content: INSTRUCTIONS },
       { role: 'user' as const, content: lines.join('\n') },

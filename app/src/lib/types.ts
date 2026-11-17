@@ -46,7 +46,11 @@ export interface Lead {
   age: number | null;
   marital_status: string | null;
   income_band: string | null;
-  language: string | null;
+  language: string | null;          // comma-separated: "Hindi, English"
+  languages?: string[] | null;
+  general_notes?: string | null;
+  notes_updated_at?: string | null;
+  notes_updated_by?: string | null;
   requirement: string | null;
   budget: string | null;
   product: Product;
@@ -157,7 +161,7 @@ export const MESSAGE_OUTCOMES: Outcome[] = ['sent', 'replied', 'not_interested']
 
 export const INCOME_BANDS = ['< ₹10L', '₹10–25L', '₹25–50L', '₹50L–1Cr', '> ₹1Cr'];
 export const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
-export const LANGUAGES = ['English', 'Hindi', 'Marathi', 'Gujarati', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Malayalam', 'Other'];
+export const LANGUAGES = ['English', 'Hindi', 'Marathi', 'Gujarati', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Malayalam', 'Punjabi', 'Urdu'];
 
 /* ───────── tasks ───────── */
 export type Team = 'Sales' | 'Operations' | 'Compliance' | 'Investment';

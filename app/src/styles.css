@@ -559,3 +559,10 @@ td input:not([type=checkbox]), td select { width: 100%; padding: 6px 8px; border
 th.chk, td.chk { width: 36px; padding-right: 0; }
 tr.lead-row.selected { background: #f0f8f8; }
 .result-list + .field { margin-top: 14px; }
+
+/* ── lead notes & languages ── */
+.notes-card textarea { width: 100%; resize: vertical; min-height: 140px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfe; line-height: 1.5; }
+.notes-card textarea:focus { outline: none; border-color: var(--teal); background: #fff; }
+.notes-actions { margin-top: 10px; align-items: center; }
+.lang-picker { display: grid; gap: 8px; }
+.field .lang-other { max-width: 260px; }
