@@ -139,6 +139,10 @@ export default function LeadPage() {
               {lead.meeting_url && <div><a href={lead.meeting_url} target="_blank" rel="noreferrer">Join Google Meet</a></div>}</div>
           )}
           {lead.bucket === 'deferred' && <div><div className="k">Returns on</div>{fmtDate(lead.deferred_until)}</div>}
+          {lead.bucket !== 'awaiting_meeting' && calEvent && (
+            <div><div className="k">Next meeting</div>{fmtDateTime(calEvent.start_time)}
+              {calEvent.join_url && <div><a href={calEvent.join_url} target="_blank" rel="noreferrer">Join Google Meet</a></div>}</div>
+          )}
           <div>
             <div className="k">RM</div>
             {isAdmin ? (
@@ -185,14 +189,15 @@ export default function LeadPage() {
               <button className="btn ghost" onClick={() => setDialog('reschedule')}>{lead.meeting_at ? 'Change time manually' : 'Set time manually'}</button>
             </>}
           </>}
-          {lead.bucket === 'holding' && <>
-            <button className="btn ghost" onClick={() => setDialog('schedule')}>Schedule follow-up meeting</button>
-          </>}
+          {(['holding', 'deferred', 'converting', 'client'] as Bucket[]).includes(lead.bucket) && (calEvent ? <>
+            <button className="btn ghost" onClick={() => setDialog('cal_reschedule')}>Reschedule meeting</button>
+            <button className="btn ghost" onClick={() => setDialog('cal_cancel')}>Cancel meeting</button>
+          </> : <button className="btn ghost" onClick={() => setDialog('schedule')}>{lead.bucket === 'holding' ? 'Schedule follow-up meeting' : 'Schedule meeting'}</button>)}
           {open && <button className="btn ghost danger-text" onClick={() => setDialog('not_interested')}>Not interested</button>}
           {lead.bucket === 'out' && <button className="btn" onClick={() => setDialog('bring_back')}>Bring back</button>}
           <button className="btn ghost" onClick={() => setDialog('stage')}>Change stage</button>
           <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('email')}>Email</button>
-          {open && <button className="btn ghost" onClick={() => setDialog('booking')}>Send booking link</button>}
+          {lead.bucket !== 'out' && <button className="btn ghost" onClick={() => setDialog('booking')}>Send booking link</button>}
           <button className="btn ghost" onClick={() => setDialog('task')}>Raise task</button>
         </div>
         {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
