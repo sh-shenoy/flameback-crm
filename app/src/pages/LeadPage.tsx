@@ -131,13 +131,6 @@ export default function LeadPage() {
             </select>
           </div>
           <div>
-            <div className="k">Meets on</div>
-            <select className="inline-select" value={lead.meeting_pref ?? ''}
-              onChange={(e) => act('set_meeting_pref', { p_pref: e.target.value || null }, e.target.value ? `Prefers ${videoLabel(e.target.value)}` : 'Preference cleared')}>
-              <option value="">No preference</option><option value="google-meet">Google Meet</option><option value="zoom">Zoom</option>
-            </select>
-          </div>
-          <div>
             <div className="k">Next follow-up</div>
             {open ? (
               <input type="date" className="inline-select" value={lead.next_follow_up ?? ''}
@@ -744,7 +737,9 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [loc, setLoc] = useState('');
-  const typeLocs = types?.find((t) => String(t.id) === type)?.locations ?? [];
+  // every Flameback meeting type offers Google Meet and Zoom; use the type's own list when Cal.com reports one
+  const reported = types?.find((t) => String(t.id) === type)?.locations ?? [];
+  const typeLocs = reported.length ? reported : ['google-meet', 'zoom'];
 
   // pick the lead's preferred video app when this meeting type offers it, else the type's first
   useEffect(() => {
@@ -778,7 +773,7 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
   async function book() {
     setBusy(true); setErr(null);
     try {
-      await calcom({ action: 'book', lead_id: lead.id, event_type_id: type, start_time: slot, email, guests, ...(typeLocs.length > 1 && loc ? { location: loc } : {}) });
+      await calcom({ action: 'book', lead_id: lead.id, event_type_id: type, start_time: slot, email, guests, ...(type && loc ? { location: loc } : {}) });
       if (replaces) {
         try { await calcom({ action: 'cancel', lead_id: lead.id, booking_uid: replaces.booking_uid, reason: 'Rescheduled' }); }
         catch (e) { toast(`New time booked, but the old meeting couldn't be cancelled: ${(e as Error).message}`, 'err'); }
@@ -815,8 +810,8 @@ function ScheduleMeetingDialog({ lead, connected, replaces, onClose, onBooked }:
         </Field>
         <Field label="Date" required><input type="date" min={todayIST()} value={day} onChange={(e) => setDay(e.target.value)} /></Field>
       </div>
-      {typeLocs.length > 1 && (
-        <Field label="Meet on" hint={lead.meeting_pref ? `${lead.name.split(' ')[0]} prefers ${videoLabel(lead.meeting_pref)}` : 'Saved as their preference for next time'}>
+      {type && typeLocs.length > 1 && (
+        <Field label="Meet on" hint={lead.meeting_pref ? `Last time: ${videoLabel(lead.meeting_pref)}` : 'Remembered for this lead next time'}>
           <div className="chips">{typeLocs.map((l) => <button key={l} className={`chip ${loc === l ? 'on' : ''}`} onClick={() => setLoc(l)}>{videoLabel(l)}</button>)}</div>
         </Field>
       )}
