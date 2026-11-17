@@ -245,7 +245,7 @@ export function PersonPage() {
               </select>
               <button className="btn sm" disabled={!to} onClick={reassign}>Reassign</button>
               <button className="btn danger sm" onClick={async () => {
-                if (!confirm(`Permanently delete ${sel.size} lead${sel.size === 1 ? '' : 's'} with their activity and notes? This can't be undone.`)) return;
+                if (!confirm(`Permanently delete ${sel.size} lead${sel.size === 1 ? '' : 's'} and everything about them (activity, notes, meetings, tasks)? This can't be undone.`)) return;
                 try { const n = await rpc<number>('delete_leads', { p_leads: [...sel] }); toast(`${n} lead${n === 1 ? '' : 's'} deleted`); load(); }
                 catch (e) { toast((e as Error).message, 'err'); }
               }}>Delete</button>

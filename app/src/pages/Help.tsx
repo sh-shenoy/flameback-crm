@@ -40,7 +40,7 @@ const SECTIONS: Section[] = [
       { q: 'How do I add one lead?', a: <p>Press <b>Add lead</b> (top right). Name, phone or email, product and source are enough; profile details can wait. If the phone or email already exists you get a warning and can merge instead of creating a duplicate.</p> },
       { q: 'How do I upload a list?', a: <p><Link to="/upload">Upload leads</Link> → choose an Excel or CSV file → match the columns → check the preview → import. You can set one product and source for the whole file or per row. Duplicates are skipped or merged, and you can download the rows that weren't imported.</p> },
       { q: 'Who gets a new lead?', a: <p>Round-robin across Sales RMs who are "in rotation" (Admin → Team &amp; rotation). Admins can also assign a lead to anyone.</p> },
-      { q: 'I uploaded the wrong file. Can I remove the leads?', a: <p>Only admins can delete leads: Upload history → <b>Remove leads</b>, or tick leads on the Leads list → Delete. Deleting is permanent. If a lead is real but not interested, use <b>Not interested</b> instead so the history stays.</p> },
+      { q: 'I uploaded the wrong file. Can I remove the leads?', a: <p>Only admins can delete leads: Upload history → <b>Remove leads</b>, or tick leads on the Leads list → Delete. Deleting is permanent and removes the lead from everything: reports, the funnel, the calendar, tasks and notifications. When all leads of an upload are removed, the upload leaves Upload history too. If a lead is real but not interested, use <b>Not interested</b> instead so the history stays.</p> },
       { q: 'Can a lead have more than one language?', a: <p>Yes. In the profile, click as many language chips as apply, or type another and press Enter.</p> },
     ],
   },

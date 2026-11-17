@@ -421,7 +421,7 @@ function RemoveUploadLeads({ batch, onClose, onDone }: { batch: ImportBatch; onC
   const { isAdmin } = useApp();
   const toast = useToast();
   const [counts, setCounts] = useState<{ untouched: number; worked: number } | null>(null);
-  const [mode, setMode] = useState<'untouched' | 'all'>('untouched');
+  const [mode, setMode] = useState<'untouched' | 'all'>('all');
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -457,16 +457,16 @@ function RemoveUploadLeads({ batch, onClose, onDone }: { batch: ImportBatch; onC
         <>
           <p style={{ marginBottom: 12 }}>This upload still has <b>{total}</b> lead{total === 1 ? '' : 's'} in Argus: <b>{counts.untouched}</b> nobody has worked yet and <b>{counts.worked}</b> with activity logged or moved on.</p>
           <div className="result-list">
+            <button className={mode === 'all' ? 'on' : ''} disabled={!isAdmin} onClick={() => setMode('all')}
+              title={isAdmin ? undefined : 'Only an admin can remove leads that have been worked'}>
+              <b>All leads from this upload ({total})</b><span>Gone from everywhere, and the upload leaves the history</span>
+            </button>
             <button className={mode === 'untouched' ? 'on' : ''} onClick={() => setMode('untouched')}>
               <b>Only untouched leads ({counts.untouched})</b><span>Leads someone has worked stay</span>
             </button>
-            <button className={mode === 'all' ? 'on' : ''} disabled={!isAdmin} onClick={() => setMode('all')}
-              title={isAdmin ? undefined : 'Only an admin can remove leads that have been worked'}>
-              <b>All leads from this upload ({total})</b><span>{isAdmin ? 'Including worked ones and their history' : 'Admins only'}</span>
-            </button>
           </div>
           {mode === 'all' && (
-            <Field label={`Type ${total} to confirm`} hint="Their activity, notes, emails and summaries are deleted too. This can't be undone.">
+            <Field label={`Type ${total} to confirm`} hint="Everything about them goes too: activity, notes, emails, summary, onboarding checklist, meetings, tasks and notifications. Reports and the funnel stop counting them. This can't be undone.">
               <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} inputMode="numeric" />
             </Field>
           )}
