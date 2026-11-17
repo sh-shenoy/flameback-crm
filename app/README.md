@@ -12,7 +12,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Leads in | Manual add, or upload a `.xlsx` / `.csv` (column matching, preview, duplicate check, undo, download of skipped/failed rows). No integrations yet. |
 | Assignment | Round-robin across RMs who are "in rotation" (Team & rotation page). Admins can assign by hand. |
 | Product | RIA or PMS on every lead; set when added (per lead, per upload, or per row), changeable any time. |
-| Pipeline | Active contact → Awaiting meeting → Holding period / Deferred → Converting. |
+| Pipeline | Lead: Active contact → Awaiting meeting → Holding period / Deferred. Then Prospect (agreed to join, onboarding) → Client (funded). |
 | Five strikes | Active contact: unanswered attempts (call "No answer", or a message "Sent" with no reply in 48h; Connected/Replied resets). Awaiting meeting: every reminder. Fifth strike → Out List. Counter resets on every bucket change. |
 | Holding ("still thinking") | No strikes. Follow-ups are spaced out automatically: 7 days after entering Holding, then 14, 28, 56 … days after each follow-up (at most 90 days apart). A date picked by hand wins. Leaves Holding only by a decision: Committed, Deferred or Not interested. |
 | Out List | Five strikes or Not interested. Bring back needs a follow-up date, resets strikes, returns to the bucket it left. |
@@ -20,7 +20,8 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 | Notes | A free **Notes** box on every lead for anything worth keeping. The AI summary reads it. **Fix grammar** corrects spelling and grammar (contact details and ID numbers are swapped out before sending and put back); review, then Save. |
 | Languages | A lead can have several languages (pick chips or type another). |
 | Change stage | Lead page → **Change stage**: move a lead to any stage by hand, with an optional reason saved as a note. Log activity in Awaiting meeting also has **Spoke, no meeting fixed**: logs the conversation and moves the lead back to Active contact, no strike. |
-| Converting | Committed. RIA onboards in the Flameback app, PMS via Silver Bullet (onboarding module is separate, coming later). |
+| Prospect | Agreed to join (was "Converting"). Onboarding checklist on the lead, from admin templates per product × Resident/NRI (Admin → Onboarding checklists); statuses To do / Waiting on client / Submitted / Done / Blocked; joint holders get per-person items; **Ask Ops** raises an Operations task and the item ticks itself when the task is done. **Prospects** page shows progress, what each is waiting on and days in onboarding. |
+| Client | Funded: **Mark as funded** (date, amount) on the checklist. **Clients** page lists them. Reports funnel runs Leads → … → Prospect → Client. |
 | Access | RMs see only their own leads (enforced in the database). Admins see all. Only admins can delete leads (selected, or from an upload). |
 | Duplicates | Same phone or email in the unit can't be added twice; you get a warning with a merge option. |
 | Tasks | Kanban board (Open / In Progress / Blocked / Done) and list view; Assigned to me, my team, Raised by me. Raised to a team and optionally a person, with priority, due date, optional lead, comments and history. Blocked needs a reason. Templates: account opening, address change, strategy switch, withdrawal, top-up, compliance query. Overdue tasks show on the dashboard and in Today's actions. |

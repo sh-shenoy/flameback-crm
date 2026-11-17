@@ -4,9 +4,10 @@ import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
 import { addDays, fmtDate, todayIST } from '../lib/format';
 import { Empty, Skeleton } from '../components/ui';
+import { fmtINR } from '../components/OnboardingCard';
 
 type Group = 'source' | 'campaign' | 'referrer' | 'product' | 'rm';
-interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; interested: number; met: number; committed: number; out_list: number; still_open: number }
+interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; interested: number; met: number; committed: number; clients: number; funded_amount: number; out_list: number; still_open: number }
 type Counts = Omit<Row, 'grp' | 'source_kind'>;
 
 const GROUPS: { key: Group; label: string; admin?: boolean }[] = [
@@ -54,7 +55,7 @@ export default function Reports() {
     supabase.rpc('report_conversion', { p_from: from, p_to: to, p_group: group, p_rm: rm || null })
       .then(({ data, error }) => {
         if (error) { setErr(error.message); setRows([]); return; }
-        setRows(((data as Row[]) ?? []).map((r) => ({ ...r, leads: +r.leads, contacted: +r.contacted, interested: +r.interested, met: +r.met, committed: +r.committed, out_list: +r.out_list, still_open: +r.still_open })));
+        setRows(((data as Row[]) ?? []).map((r) => ({ ...r, leads: +r.leads, contacted: +r.contacted, interested: +r.interested, met: +r.met, committed: +r.committed, clients: +r.clients, funded_amount: +r.funded_amount, out_list: +r.out_list, still_open: +r.still_open })));
       });
   }, [group, from, to, rm]);
 
@@ -62,16 +63,17 @@ export default function Reports() {
     sort === 'grp' ? a.grp.localeCompare(b.grp) : (b[sort] as number) - (a[sort] as number) || b.leads - a.leads), [rows, sort]);
   const total: Counts = (rows ?? []).reduce((t, r) => ({
     leads: t.leads + r.leads, contacted: t.contacted + r.contacted, interested: t.interested + r.interested, met: t.met + r.met,
-    committed: t.committed + r.committed, out_list: t.out_list + r.out_list, still_open: t.still_open + r.still_open,
-  }), { leads: 0, contacted: 0, interested: 0, met: 0, committed: 0, out_list: 0, still_open: 0 });
+    committed: t.committed + r.committed, clients: t.clients + r.clients, funded_amount: t.funded_amount + r.funded_amount,
+    out_list: t.out_list + r.out_list, still_open: t.still_open + r.still_open,
+  }), { leads: 0, contacted: 0, interested: 0, met: 0, committed: 0, clients: 0, funded_amount: 0, out_list: 0, still_open: 0 });
   const selRow = sel ? rows?.find((r) => r.grp === sel) ?? null : null;
   const best = Math.max(1, ...(rows ?? []).filter((r) => r.leads >= 5).map((r) => pct(r.committed, r.leads)));
   const groupLabel = GROUPS.find((g) => g.key === group)!.label;
 
   function exportCsv() {
     const csv = Papa.unparse([
-      [groupLabel, ...(group === 'source' ? ['Type'] : []), 'Leads', 'Contacted', 'Wants to meet', 'Met', 'Committed', 'Conversion %', 'Out List', 'Still open'],
-      ...sorted.map((r) => [r.grp, ...(group === 'source' ? [r.source_kind ?? ''] : []), r.leads, r.contacted, r.interested, r.met, r.committed, pct(r.committed, r.leads), r.out_list, r.still_open]),
+      [groupLabel, ...(group === 'source' ? ['Type'] : []), 'Leads', 'Contacted', 'Wants to meet', 'Met', 'Prospect', 'Client', 'Funded (₹)', 'Prospect %', 'Out List', 'Still open'],
+      ...sorted.map((r) => [r.grp, ...(group === 'source' ? [r.source_kind ?? ''] : []), r.leads, r.contacted, r.interested, r.met, r.committed, r.clients, r.funded_amount, pct(r.committed, r.leads), r.out_list, r.still_open]),
     ]);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
@@ -118,7 +120,7 @@ export default function Reports() {
         <div className="card"><div className="k">Leads</div><div className="v">{rows ? total.leads : '·'}</div></div>
         <div className="card"><div className="k">Contacted</div><div className="v">{rows ? `${fmtPct(total.contacted, total.leads)}` : '·'}</div><div className="meta">{total.contacted} lead{total.contacted === 1 ? '' : 's'}</div></div>
         <div className="card"><div className="k">Met</div><div className="v">{rows ? `${fmtPct(total.met, total.leads)}` : '·'}</div><div className="meta">{total.met} lead{total.met === 1 ? '' : 's'}</div></div>
-        <div className="card"><div className="k">Committed</div><div className="v">{rows ? `${fmtPct(total.committed, total.leads)}` : '·'}</div><div className="meta">{total.committed} lead{total.committed === 1 ? '' : 's'}</div></div>
+        <div className="card"><div className="k">Became prospect</div><div className="v">{rows ? `${fmtPct(total.committed, total.leads)}` : '·'}</div><div className="meta">{total.committed} lead{total.committed === 1 ? '' : 's'}</div></div>
       </div>
 
       {err && <div className="banner warn">Couldn't load the report: {err}</div>}
@@ -138,11 +140,11 @@ export default function Reports() {
           <table className="report">
             <thead><tr>
               <Th k="grp">{groupLabel}</Th>
-              <Th k="leads">Leads</Th><Th k="contacted">Contacted</Th><Th k="interested">Wants to meet</Th><Th k="met">Met</Th><Th k="committed">Committed</Th>
-              <th>Conversion</th><Th k="out_list">Out List</Th><Th k="still_open">Still open</Th>
+              <Th k="leads">Leads</Th><Th k="contacted">Contacted</Th><Th k="interested">Wants to meet</Th><Th k="met">Met</Th><Th k="committed">Prospect</Th><Th k="clients">Client</Th>
+              <th>Became prospect</th><Th k="out_list">Out List</Th><Th k="still_open">Still open</Th>
             </tr></thead>
             <tbody>
-              {rows === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={9}><Skeleton /></td></tr>)}
+              {rows === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={10}><Skeleton /></td></tr>)}
               {sorted.map((r) => {
                 const c = pct(r.committed, r.leads);
                 return (
@@ -154,6 +156,7 @@ export default function Reports() {
                     <td>{r.interested} <span className="muted small">{fmtPct(r.interested, r.leads)}</span></td>
                     <td>{r.met} <span className="muted small">{fmtPct(r.met, r.leads)}</span></td>
                     <td><b>{r.committed}</b></td>
+                    <td>{r.clients ? <b>{r.clients}</b> : 0}</td>
                     <td className="conv-cell">
                       <span className="conv-bar"><i style={{ width: `${Math.min(100, (c / best) * 100)}%` }} /></span>
                       <b>{fmtPct(r.committed, r.leads)}</b>{r.leads < 5 && <span className="muted small" title="Fewer than 5 leads"> · small</span>}
@@ -165,7 +168,7 @@ export default function Reports() {
               })}
               {rows && rows.length > 0 && (
                 <tr className="total-row">
-                  <td>Total</td><td>{total.leads}</td><td>{total.contacted}</td><td>{total.interested}</td><td>{total.met}</td><td>{total.committed}</td>
+                  <td>Total</td><td>{total.leads}</td><td>{total.contacted}</td><td>{total.interested}</td><td>{total.met}</td><td>{total.committed}</td><td>{total.clients}</td>
                   <td><b>{fmtPct(total.committed, total.leads)}</b></td><td>{total.out_list}</td><td>{total.still_open}</td>
                 </tr>
               )}
@@ -176,7 +179,7 @@ export default function Reports() {
       </div>
       <p className="hint" style={{ marginTop: 10 }}>
         <b>Contacted</b>: anything logged, or moved past Active contact. <b>Wants to meet</b>: reached Awaiting meeting or further. <b>Met</b>: reached Holding, Deferred or Converting.
-        <b> Committed</b>: reached Converting. <b>Conversion</b> = committed ÷ leads; bars compare groups with 5+ leads.
+        <b> Prospect</b>: agreed to join. <b>Client</b>: funded. <b>Became prospect</b> = prospects ÷ leads; bars compare groups with 5+ leads.
       </p>
     </div>
   );
@@ -187,14 +190,15 @@ const STAGES: { key: keyof Counts; label: string }[] = [
   { key: 'contacted', label: 'Contacted' },
   { key: 'interested', label: 'Wants to meet' },
   { key: 'met', label: 'Met' },
-  { key: 'committed', label: 'Committed' },
+  { key: 'committed', label: 'Prospect' },
+  { key: 'clients', label: 'Client' },
 ];
 
 /**
- * Leads → Contacted → Wants to meet → Met → Committed. Each bar sits on a track that stands for all
+ * Leads → Contacted → Wants to meet → Met → Prospect → Client. Each bar sits on a track that stands for all
  * leads, so every bar is a share of the same whole. Between stages: how many of the previous stage
  * moved on, in counts (percentages of a tiny base mislead). Stages are cumulative: a lead that
- * committed also counts as contacted, wanted to meet and met.
+ * became a client also counts as contacted, wanted to meet, met and prospect.
  */
 function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
   const fmt = (n: number) => n.toLocaleString('en-IN');
@@ -229,6 +233,7 @@ function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
         })}
       </div>
       <div className="fn-foot">
+        {c.funded_amount > 0 && <span><b>{fmtINR(c.funded_amount)}</b> funded</span>}
         <span><b>{c.out_list.toLocaleString('en-IN')}</b> on the Out List</span>
         <span><b>{c.still_open.toLocaleString('en-IN')}</b> still open</span>
         {compare && <span className="fn-key"><i className="fn-mark-key" /> all leads in this report</span>}

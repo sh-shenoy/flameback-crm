@@ -19,6 +19,8 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
     items: [
       { to: '/', label: 'Dashboard' },
       { to: '/leads', label: 'Leads', badge: 'overdue' },
+      { to: '/prospects', label: 'Prospects' },
+      { to: '/clients', label: 'Clients' },
       { to: '/tasks', label: 'Tasks', badge: 'tasks' },
       { to: '/calendar', label: 'Calendar' },
       { to: '/reports', label: 'Reports' },
@@ -39,8 +41,6 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
     title: 'Coming soon',
     soon: true,
     items: [
-      { to: '/clients', label: 'Clients' },
-      { to: '/onboarding', label: 'Onboarding' },
       { to: '/reviews', label: 'Reviews' },
     ],
   },
@@ -59,7 +59,7 @@ export default function Shell({ children }: { children: ReactNode }) {
     const today = todayIST();
     const [a, b, c] = await Promise.all([
       supabase.from('leads').select('id', { count: 'exact', head: true }).eq('rm_id', me!.id)
-        .not('bucket', 'in', '(out,converting)').lt('next_follow_up', today),
+        .not('bucket', 'in', '(out,converting,client)').lt('next_follow_up', today),
       supabase.from('tasks').select('id', { count: 'exact', head: true })
         .or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`).neq('status', 'done').lt('due_date', today),
       supabase.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null),

@@ -3,7 +3,8 @@ export type Bucket =
   | 'awaiting_meeting'
   | 'holding'
   | 'deferred'
-  | 'converting'
+  | 'converting'      // shown as Prospect: agreed to join, onboarding
+  | 'client'          // funded
   | 'out';
 
 export type Product = 'RIA' | 'PMS' | 'US RIA';
@@ -51,6 +52,9 @@ export interface Lead {
   general_notes?: string | null;
   notes_updated_at?: string | null;
   notes_updated_by?: string | null;
+  residency?: 'resident' | 'nri' | null;
+  funded_at?: string | null;
+  funded_amount?: number | null;
   requirement: string | null;
   budget: string | null;
   product: Product;
@@ -132,7 +136,8 @@ export const BUCKETS: { key: Bucket; label: string; short: string; help: string 
   { key: 'awaiting_meeting', label: 'Awaiting meeting', short: 'Meeting', help: 'Agreed to meet. Five reminders with no meeting sends it to the Out List.' },
   { key: 'holding', label: 'Holding period', short: 'Holding', help: 'Met, still thinking. No strikes: follow-ups are spaced out automatically (7, 14, 28, 56 days…, at most 90). Record a decision with Log activity.' },
   { key: 'deferred', label: 'Deferred', short: 'Deferred', help: 'Will commit later. Returns to Holding on the agreed date. If they get in touch early, use Log activity.' },
-  { key: 'converting', label: 'Converting', short: 'Converting', help: 'Committed. Hands off to onboarding.' },
+  { key: 'converting', label: 'Prospect', short: 'Prospect', help: 'Agreed to join; onboarding in progress (documents, accounts). Becomes a client when they fund.' },
+  { key: 'client', label: 'Client', short: 'Client', help: 'Funded. Onboarding complete.' },
   { key: 'out', label: 'Out List', short: 'Out', help: 'Five strikes or not interested. Can be brought back.' },
 ];
 
@@ -235,3 +240,23 @@ export const NOTIFICATION_KINDS: { key: string; label: string }[] = [
 
 /** Days until the next follow-up for a Holding lead after `step` follow-ups (7, 14, 28 … max 90). */
 export const holdingGap = (step: number) => Math.min(7 * 2 ** Math.max(step, 0), 90);
+
+export type ItemStatus = 'todo' | 'waiting' | 'submitted' | 'done' | 'blocked';
+export const ITEM_STATUSES: { key: ItemStatus; label: string }[] = [
+  { key: 'todo', label: 'To do' },
+  { key: 'waiting', label: 'Waiting on client' },
+  { key: 'submitted', label: 'Submitted' },
+  { key: 'done', label: 'Done' },
+  { key: 'blocked', label: 'Blocked' },
+];
+export interface Holder { id: string; lead_id: string; name: string; relation: string | null }
+export interface OnboardingItem {
+  id: string; lead_id: string; holder_id: string | null; title: string; owner: 'rm' | 'ops'; status: ItemStatus;
+  blocked_reason: string | null; due_date: string | null; notes: string | null; task_id: string | null;
+  sort_order: number; done_at: string | null; created_at: string;
+}
+export interface OnboardingTemplate {
+  id: string; product: string; residency: 'resident' | 'nri'; title: string; owner: 'rm' | 'ops';
+  per_holder: boolean; sort_order: number; is_active: boolean;
+}
+export const RESIDENCY_LABEL: Record<string, string> = { resident: 'Resident', nri: 'NRI' };

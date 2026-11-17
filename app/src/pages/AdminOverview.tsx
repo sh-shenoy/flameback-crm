@@ -77,7 +77,7 @@ export function TeamOverview() {
         <div className="card"><div className="k">Open leads</div><div className="v">{rows ? sum('open_leads') : '·'}</div><div className="meta">{shown.length} people</div></div>
         <div className="card"><div className="k">Overdue follow-ups{sum('overdue') > 0 && <span className="red-dot" />}</div><div className={`v ${sum('overdue') ? 'red' : ''}`}>{rows ? sum('overdue') : '·'}</div><div className="meta">{rows ? `${sum('due_today')} due today` : ''}</div></div>
         <div className="card"><div className="k">Activity logged</div><div className="v">{rows ? sum('entries') : '·'}</div><div className="meta">{rows ? `${sum('calls')} calls` : ''}</div></div>
-        <div className="card"><div className="k">Committed</div><div className="v">{rows ? sum('committed') : '·'}</div><div className="meta">{rows ? `${sum('new_leads')} new leads` : ''}</div></div>
+        <div className="card"><div className="k">New prospects</div><div className="v">{rows ? sum('committed') : '·'}</div><div className="meta">{rows ? `${sum('new_leads')} new leads` : ''}</div></div>
       </div>
 
       <div className="panel">
@@ -236,7 +236,7 @@ export function PersonPage() {
         <div className="panel-head">
           <h2>{showClosed ? 'All leads' : 'Open leads'} {leads && <span className="muted">· {leads.length}</span>}</h2>
           <div className="row-gap">
-            <label className="check"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Include converting and Out List</label>
+            <label className="check"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Include prospects, clients and Out List</label>
             {sel.size > 0 && <>
               <span className="small"><b>{sel.size}</b> selected →</span>
               <select className="filter" value={to} onChange={(e) => setTo(e.target.value)}>

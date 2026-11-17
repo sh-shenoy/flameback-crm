@@ -76,7 +76,7 @@ export default function Leads() {
       setSel(new Set());
     });
     // tab counts
-    Promise.all([...WORKING, 'converting' as Bucket].map(async (b) => {
+    Promise.all([...WORKING, 'converting' as Bucket, 'client' as Bucket].map(async (b) => {
       const { count } = await applyFilters(supabase.from('leads').select('id', { count: 'exact', head: true }).eq('bucket', b));
       return [b, count ?? 0] as const;
     })).then((pairs) => {
@@ -183,7 +183,7 @@ export default function Leads() {
                     </td>
                     <td>{n}</td>
                     <td><Strikes n={l.strikes} show={strikeBucket(l.bucket)} /></td>
-                    <td>{l.bucket === 'converting' ? <span className="muted small">Committed {fmtDate(l.converted_at)}</span> : <FollowUp date={l.next_follow_up} />}</td>
+                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : <FollowUp date={l.next_follow_up} />}</td>
                   </tr>
                 );
               })}
