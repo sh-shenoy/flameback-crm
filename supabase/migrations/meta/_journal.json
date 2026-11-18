@@ -162,6 +162,13 @@
       "when": 1794976909565,
       "tag": "0023_admin_upload_merge",
       "breakpoints": false
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794983302944,
+      "tag": "0024_keep_one_admin",
+      "breakpoints": false
     }
   ]
 }
