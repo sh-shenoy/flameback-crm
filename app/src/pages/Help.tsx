@@ -84,6 +84,7 @@ const SECTIONS: Section[] = [
       { q: 'Do follow-ups in Holding count as strikes?', a: <p>No. When someone is "still thinking", follow-ups are spaced out automatically: 7 days after the meeting, then 14, 28, 56… days after each follow-up (never more than 90 days apart). Pick a date yourself in Next follow-up if you want a different one.</p> },
       { q: 'I sent a WhatsApp and they replied. How do I stop the strike?', a: <p>On the lead's timeline, press <b>They replied</b> on that message within 48 hours, or log their reply as a new activity. Emails sent through Gmail are matched automatically.</p> },
       { q: 'How do I bring someone back from the Out List?', a: <p>Open the lead (or the <Link to="/out">Out List</Link>) → <b>Bring back</b> → pick a follow-up date. Strikes reset and the lead returns to the stage it left.</p> },
+      { q: 'Why isn\'t a new lead in my follow-ups?', a: <p>A new lead is just a lead until you reach out. It shows on the Dashboard under <b>New leads</b> (oldest first) and on the Leads list with the filter <b>New (not contacted yet)</b>. Once you log the first call (even unanswered), message, email or meeting, it becomes a follow-up: on the date you pick, or tomorrow (two days after a message).</p> },
       { q: 'Where do I see what is due?', a: <p>Dashboard → <b>Today's actions</b>, the red number next to Leads in the sidebar, the 9 am digest notification, and the Leads list filters <b>Due today</b> and <b>Overdue</b>.</p> },
     ],
   },
