@@ -20,6 +20,7 @@ export default function Leads() {
   const source = sp.get('source') ?? '';
   const due = sp.get('due') ?? '';
   const added = sp.get('added') ?? '';
+  const sort = sp.get('sort') ?? '';   // '' = most urgent, 'new' = newest added, 'old' = oldest added
   const addedFrom = sp.get('from') ?? '';
   const addedTo = sp.get('to') ?? '';
   const sc = useRmScope();
@@ -82,9 +83,10 @@ export default function Leads() {
       : tab === 'new' ? query.eq('bucket', 'active_contact').is('next_follow_up', null)
       : tab === 'active_contact' ? query.eq('bucket', 'active_contact').not('next_follow_up', 'is', null)
       : query.eq('bucket', tab);
-    query = applyFilters(query)
-      .order('next_follow_up', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: false })
+    query = applyFilters(query);
+    query = (sort === 'new' ? query.order('created_at', { ascending: false })
+      : sort === 'old' ? query.order('created_at', { ascending: true })
+      : query.order('next_follow_up', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }))
       .range(page * PAGE, page * PAGE + PAGE - 1);
     query.then(({ data, count }: { data: Row[] | null; count: number | null }) => {
       if (cancelled) return;
@@ -106,7 +108,7 @@ export default function Leads() {
       setCounts(c);
     });
     return () => { cancelled = true; };
-  }, [tab, page, applyFilters, reload]);
+  }, [tab, page, applyFilters, reload, sort]);
 
   const tabs: { key: string; label: string }[] = [
     { key: 'open', label: 'All open' },
@@ -152,6 +154,11 @@ export default function Leads() {
               <option value="today">Due today</option>
               <option value="week">Due this week</option>
             </select>
+            <select className="filter" value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="Sort">
+              <option value="">Sort: most urgent</option>
+              <option value="new">Sort: newest added</option>
+              <option value="old">Sort: oldest added</option>
+            </select>
             <select className="filter" value={added} onChange={(e) => setParam('added', e.target.value)} aria-label="Added">
               <option value="">Added any time</option>
               <option value="today">Added today</option>
@@ -195,7 +202,7 @@ export default function Leads() {
               {isAdmin && <th className="chk"><input type="checkbox" aria-label="Select all on this page"
                 checked={!!rows?.length && sel.size === rows.length}
                 onChange={() => setSel(rows && sel.size !== rows.length ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
-              <th>Name</th><th>Source</th><th>Product</th><th>Stage</th><th>Added</th><th>Interactions</th><th>Strikes</th><th>Next follow-up</th>
+              <th>Name</th><th>Source</th><th>Product</th><th>Stage</th><th className="sortable" onClick={() => setParam('sort', sort === 'new' ? 'old' : 'new')} title="Sort by date added">Added {sort === 'new' ? '↓' : sort === 'old' ? '↑' : ''}</th><th>Interactions</th><th>Strikes</th><th>Next follow-up</th>
             </tr></thead>
             <tbody>
               {rows === null && [0, 1, 2, 3, 4].map((i) => <tr key={i}><td colSpan={10}><Skeleton /></td></tr>)}
