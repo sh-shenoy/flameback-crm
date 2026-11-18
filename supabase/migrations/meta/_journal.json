@@ -148,6 +148,13 @@
       "when": 1794976130390,
       "tag": "0021_admins_routing",
       "breakpoints": false
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794976621739,
+      "tag": "0022_manager_dashboard",
+      "breakpoints": false
     }
   ]
 }

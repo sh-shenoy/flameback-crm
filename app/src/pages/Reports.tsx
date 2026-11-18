@@ -7,8 +7,8 @@ import { Empty, Skeleton } from '../components/ui';
 import { fmtINR } from '../components/OnboardingCard';
 
 type Group = 'source' | 'campaign' | 'referrer' | 'product' | 'rm';
-interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; interested: number; met: number; committed: number; clients: number; funded_amount: number; out_list: number; still_open: number }
-type Counts = Omit<Row, 'grp' | 'source_kind'>;
+export interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; interested: number; met: number; committed: number; clients: number; funded_amount: number; out_list: number; still_open: number }
+export type Counts = Omit<Row, 'grp' | 'source_kind'>;
 
 const GROUPS: { key: Group; label: string; admin?: boolean }[] = [
   { key: 'source', label: 'Source' },
@@ -29,9 +29,9 @@ const PERIODS: { key: string; label: string; range: () => [string, string] }[] =
   { key: 'year', label: 'This year', range: () => [todayIST().slice(0, 4) + '-01-01', todayIST()] },
   { key: 'all', label: 'All time', range: () => ['2020-01-01', todayIST()] },
 ];
-const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+export const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
 /** Percentage for display: one decimal below 1% so 3 of 1,337 reads 0.2%, not 0%. */
-const fmtPct = (n: number, d: number) => {
+export const fmtPct = (n: number, d: number) => {
   if (!d || !n) return '0%';
   const v = (n / d) * 100;
   return v < 0.1 ? '<0.1%' : v < 1 ? `${v.toFixed(1)}%` : `${Math.round(v)}%`;
@@ -200,7 +200,7 @@ const STAGES: { key: keyof Counts; label: string }[] = [
  * moved on, in counts (percentages of a tiny base mislead). Stages are cumulative: a lead that
  * became a client also counts as contacted, wanted to meet, met and prospect.
  */
-function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
+export function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
   const fmt = (n: number) => n.toLocaleString('en-IN');
   return (
     <div className="pad">
