@@ -25,7 +25,7 @@ const ONBOARDING_ROUTE: Record<string, string> = {
 };
 
 type LeadTab = 'onboarding' | 'timeline' | 'notes' | 'profile' | 'tasks';
-type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'interested' | 'reschedule' | 'not_interested' | 'bring_back' | 'stage';
+type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'booking' | 'task' | 'entry' | 'reschedule' | 'bring_back' | 'stage';
 
 export default function LeadPage() {
   const { id } = useParams();
@@ -198,7 +198,6 @@ export default function LeadPage() {
           {lead.bucket !== 'out' && <button className="btn" onClick={() => setDialog('entry')}>Log activity</button>}
           {lead.bucket === 'active_contact' && <>
             <button className="btn gold" onClick={() => setDialog('schedule')}>Schedule meeting</button>
-            <button className="btn ghost" onClick={() => setDialog('interested')}>Interested (no time yet)</button>
           </>}
           {lead.bucket === 'awaiting_meeting' && <>
             {calEvent ? <>
@@ -213,7 +212,6 @@ export default function LeadPage() {
             <button className="btn ghost" onClick={() => setDialog('cal_reschedule')}>Reschedule meeting</button>
             <button className="btn ghost" onClick={() => setDialog('cal_cancel')}>Cancel meeting</button>
           </> : <button className="btn ghost" onClick={() => setDialog('schedule')}>{lead.bucket === 'holding' ? 'Schedule follow-up meeting' : 'Schedule meeting'}</button>)}
-          {open && <button className="btn ghost danger-text" onClick={() => setDialog('not_interested')}>Not interested</button>}
           {lead.bucket === 'out' && <button className="btn" onClick={() => setDialog('bring_back')}>Bring back</button>}
           <button className="btn ghost" onClick={() => setDialog('stage')}>Change stage</button>
           <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('email')}>Email</button>
@@ -284,9 +282,7 @@ export default function LeadPage() {
       {dialog === 'task' && <NewTaskModal lead={{ id: lead.id, name: lead.name }} onClose={() => setDialog(null)} onSaved={load} />}
       {openTask && <TaskDrawer id={openTask} onClose={() => setOpenTask(null)} onChanged={load} />}
       {dialog === 'entry' && <AddEntry lead={lead} onClose={() => setDialog(null)} onSaved={load} />}
-      {dialog === 'interested' && <InterestedDialog onClose={() => setDialog(null)} act={act} />}
       {dialog === 'reschedule' && <RescheduleDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
-      {dialog === 'not_interested' && <NotInterestedDialog onClose={() => setDialog(null)} act={act} />}
       {dialog === 'bring_back' && <BringBackDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
       {dialog === 'stage' && <ChangeStageDialog lead={lead} onClose={() => setDialog(null)} act={act} />}
     </div>
@@ -622,21 +618,6 @@ function useBusy() {
   return { busy, run };
 }
 
-function InterestedDialog({ onClose, act }: { onClose: () => void; act: Act }) {
-  const [when, setWhen] = useState('');
-  const { busy, run } = useBusy();
-  return (
-    <Modal title="Interested · book the first meeting" onClose={onClose}
-      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
-        <button className="btn" disabled={busy} onClick={() => run(() => act('mark_interested', { p_meeting_at: fromISTInput(when) }, 'Moved to Awaiting meeting'))}>Move to Awaiting meeting</button></>}>
-      <p className="muted" style={{ marginBottom: 12 }}>The lead moves to <b>Awaiting meeting</b> and strikes reset. From here, each reminder counts; five reminders with no meeting sends it to the Out List.</p>
-      <Field label="Meeting date and time (IST)" hint="Leave empty if the time isn't fixed yet; you can set it later.">
-        <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
-      </Field>
-    </Modal>
-  );
-}
-
 function RescheduleDialog({ lead, onClose, act }: { lead: Lead; onClose: () => void; act: Act }) {
   const [when, setWhen] = useState(toISTInput(lead.meeting_at));
   const { busy, run } = useBusy();
@@ -645,19 +626,6 @@ function RescheduleDialog({ lead, onClose, act }: { lead: Lead; onClose: () => v
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
         <button className="btn" disabled={busy || !when} onClick={() => run(() => act('set_meeting', { p_meeting_at: fromISTInput(when) }, 'Meeting time saved'))}>Save</button></>}>
       <Field label="Meeting date and time (IST)" required><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></Field>
-    </Modal>
-  );
-}
-
-function NotInterestedDialog({ onClose, act }: { onClose: () => void; act: Act }) {
-  const [note, setNote] = useState('');
-  const { busy, run } = useBusy();
-  return (
-    <Modal title="Mark not interested" onClose={onClose}
-      footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
-        <button className="btn danger" disabled={busy} onClick={() => run(() => act('mark_not_interested', { p_note: note || null }, 'Moved to the Out List'))}>Move to Out List</button></>}>
-      <p className="muted" style={{ marginBottom: 12 }}>The lead moves to the Out List and its follow-ups stop. It can be brought back later.</p>
-      <Field label="Reason / note (optional)"><textarea value={note} onChange={(e) => setNote(e.target.value)} /></Field>
     </Modal>
   );
 }
