@@ -684,3 +684,23 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
 .routing-sum { text-align: left; max-width: 220px; white-space: normal; }
 .plain-fs { border: 0; padding: 0; margin: 0; min-width: 0; } .plain-fs:disabled input, .plain-fs:disabled select, .plain-fs:disabled textarea { color: var(--ink); opacity: 1; background: #f6f7f9; } .admin-note { max-width: 70%; }
 .team-table select.filter { min-width: 118px; } .team-table td { vertical-align: middle; } .nowrap { white-space: nowrap; }
+
+/* ── admin home ── */
+.ah-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 18px; }
+.ah-cards .v.red { color: var(--hot); }
+.ah-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+.ah-cols .panel { margin: 0; }
+.admin-home > .panel { margin-bottom: 18px; }
+.ah-list { list-style: none; margin: 0; padding: 0; }
+.ah-list li { display: grid; grid-template-columns: 130px 1fr; gap: 10px; padding: 10px 18px; border-top: 1px solid var(--line); cursor: pointer; font-size: 13.5px; }
+.ah-list li:first-child { border-top: 0; }
+.ah-list li:hover { background: #f6f8fb; }
+.ah-list li span { color: #475467; }
+.tag-soft { font-size: 11px; font-weight: 600; color: #8a5a00; background: #fff6e5; border-radius: 4px; padding: 1px 6px; margin-left: 4px; }
+.mini { display: inline-flex; align-items: center; gap: 8px; }
+.mini-track { position: relative; width: 90px; height: 8px; background: #eef2f6; border-radius: 4px; overflow: visible; display: inline-block; }
+.mini-track i { position: absolute; inset: 0 auto 0 0; background: var(--teal); border-radius: 4px; }
+.mini-track em { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); opacity: .5; }
+.mini-n { font-size: 12.5px; color: #344054; font-variant-numeric: tabular-nums; min-width: 38px; }
+@media (max-width: 1100px) { .ah-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ah-cols { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .ah-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ah-list li { grid-template-columns: 1fr; gap: 2px; } }

@@ -15,6 +15,7 @@ import Upload from './pages/Upload';
 import Tasks from './pages/Tasks';
 import Connections from './pages/Connections';
 import Help from './pages/Help';
+import AdminHome from './pages/AdminHome';
 import Prospects from './pages/Prospects';
 import Clients from './pages/Clients';
 import Admin from './pages/Admin';
@@ -23,13 +24,18 @@ import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
 import CalendarPage from './pages/Calendar';
 
+function Home() {
+  const { isAdmin } = useApp();
+  return isAdmin ? <AdminHome /> : <Dashboard />;
+}
+
 function Routed() {
   const { session } = useApp();
   if (!session) return <Login />;
   return (
     <Shell>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Home />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/leads/:id" element={<LeadPage />} />
         <Route path="/out" element={<OutList />} />
