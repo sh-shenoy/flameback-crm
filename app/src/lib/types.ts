@@ -60,6 +60,8 @@ export interface Lead {
   notes_updated_at?: string | null;
   notes_updated_by?: string | null;
   residency?: 'resident' | 'nri' | null;
+  lead_status?: string | null;
+  lead_status_at?: string | null;
   meeting_pref?: 'google-meet' | 'zoom' | null;
   funded_at?: string | null;
   funded_amount?: number | null;
@@ -105,6 +107,7 @@ export interface LeadEntry {
   created_by: string | null;
   created_at: string;
   platform?: Platform | null;
+  lead_status?: string | null;
 }
 
 /** Where a video call or message happened. */
@@ -131,6 +134,14 @@ export interface LeadEvent {
   actor: string | null;
   at: string;
 }
+
+/** What the RM recorded on a call (DNP, Interested, Demo Required…) and the call outcome it stands for. */
+export interface LeadStatus { name: string; outcome: 'connected' | 'no_answer' | 'call_back' | 'not_interested'; out_reason: string | null; sort_order: number; is_active: boolean }
+export const STATUS_GROUPS: { label: string; test: (s: LeadStatus) => boolean }[] = [
+  { label: "Didn't connect", test: (s) => s.outcome === 'no_answer' || s.outcome === 'call_back' },
+  { label: 'Spoke', test: (s) => s.outcome === 'connected' },
+  { label: 'Not interested', test: (s) => s.outcome === 'not_interested' },
+];
 
 export interface LeadSource {
   name: string;

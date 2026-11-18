@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { AuthLayout } from './components/Brand';
-import type { LeadSource, Profile } from './lib/types';
+import type { LeadSource, LeadStatus, Profile } from './lib/types';
 
 interface AppCtx {
   session: Session | null;
@@ -10,6 +10,7 @@ interface AppCtx {
   isAdmin: boolean;
   team: Profile[];
   sources: LeadSource[];
+  statuses: LeadStatus[];
   teamName: (id: string | null | undefined) => string;
   reloadRef: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [team, setTeam] = useState<Profile[]>([]);
   const [sources, setSources] = useState<LeadSource[]>([]);
+  const [statuses, setStatuses] = useState<LeadStatus[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -62,14 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function reloadRef() {
-    const [p, s] = await Promise.all([
+    const [p, s, st] = await Promise.all([
       supabase.from('profiles').select('*').order('full_name'),
       supabase.from('lead_sources').select('*').order('sort_order'),
+      supabase.from('lead_statuses').select('*').eq('is_active', true).order('sort_order'),
     ]);
     if (p.error) setLoadErr(p.error.message);
     else setLoadErr(null);
     setTeam((p.data as Profile[]) ?? []);
     setSources((s.data as LeadSource[]) ?? []);
+    setStatuses((st.data as LeadStatus[]) ?? []);
     setLoaded(true);
   }
 
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else {
       setTeam([]);
       setSources([]);
+      setStatuses([]);
       setLoaded(false);
     }
   }, [session?.user.id]);
@@ -131,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: me?.role === 'admin',
     team,
     sources,
+    statuses,
     teamName: (id) => team.find((t) => t.id === id)?.full_name ?? '—',
     reloadRef,
     signOut: async () => {
