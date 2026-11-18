@@ -169,6 +169,13 @@
       "when": 1794983302944,
       "tag": "0024_keep_one_admin",
       "breakpoints": false
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794984224108,
+      "tag": "0025_phone_formats",
+      "breakpoints": false
     }
   ]
 }
