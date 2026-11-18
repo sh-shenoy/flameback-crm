@@ -1,7 +1,8 @@
 \set ON_ERROR_STOP 1
+insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000ff','boss@flamebackcapital.com','{"full_name":"Boss"}');  -- first sign-in = admin; Argus always keeps one
 insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000b','priya@flamebackcapital.com','{"full_name":"Priya"}');
 insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000c','ravi@flamebackcapital.com','{"full_name":"Ravi"}');
-update profiles set is_active = true, approved_at = now(), role = 'rm', in_rotation = (email like 'priya%');
+update profiles set is_active = true, approved_at = now(), role = case when email like 'boss%' then 'admin' else 'rm' end, in_rotation = (email like 'priya%');
 set role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false);
 create temp table k(id uuid);
