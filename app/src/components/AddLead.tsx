@@ -15,7 +15,7 @@ const blank = {
 };
 
 export default function AddLead({ onClose }: { onClose: () => void }) {
-  const { sources, team, isAdmin, teamName } = useApp();
+  const { sources, team, isAdmin, teamName, me } = useApp();
   const [f, setF] = useState(blank);
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -55,7 +55,7 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
 
   function payload() {
     const p: Record<string, string> = {};
-    for (const [k, v] of Object.entries(f)) if (v !== '' && (k !== 'rm_id' || isAdmin)) p[k] = v;
+    for (const [k, v] of Object.entries(f)) if (v !== '') p[k] = v;
     return p;
   }
 
@@ -103,7 +103,7 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
     <Modal title="New lead" onClose={onClose}
       footer={<>
         <span className="muted small" style={{ marginRight: 'auto' }}>
-          {isAdmin && f.rm_id ? `Assigned to ${teamName(f.rm_id)}` : 'Assigned automatically by routing (language, product, NRI)'}
+          {f.rm_id ? (f.rm_id === me?.id ? 'Assigned to you' : `Assigned to ${teamName(f.rm_id)}`) : 'Round-robin: the next RM who fits (product, NRI, language)'}
         </span>
         <button className="btn ghost" onClick={onClose}>Cancel</button>
         <button className="btn" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Add lead'}</button>
@@ -136,14 +136,13 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
       </div>
       <div className="grid2">
         <Field label="Follow-up date (optional)" hint="Leave empty: it's a new lead until the first call or message."><input type="date" value={f.next_follow_up} onChange={set('next_follow_up')} /></Field>
-        {isAdmin && (
-          <Field label="Assign to">
-            <select value={f.rm_id} onChange={set('rm_id')}>
-              <option value="">Automatic (routing)</option>
-              {team.filter((t) => t.is_active && t.role !== 'admin').map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-            </select>
-          </Field>
-        )}
+        <Field label="Who gets this lead">
+          <select value={f.rm_id} onChange={set('rm_id')}>
+            <option value="">Round-robin (automatic)</option>
+            {!isAdmin && me && <option value={me.id}>Me</option>}
+            {team.filter((t) => t.is_active && t.role !== 'admin' && t.id !== me?.id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+          </select>
+        </Field>
       </div>
 
       <button className="linkbtn" onClick={() => setMore(!more)}>{more ? '− Fewer details' : '+ More details (profile)'}</button>

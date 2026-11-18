@@ -3,13 +3,13 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
 import {
-  addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, fromISTInput, toISTInput, todayIST,
+  addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, fromISTInput, istAt, istHHMM, toISTInput, todayIST,
 } from '../lib/format';
 import {
   BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
-  RESIDENCY_LABEL, bucketLabel, holdingGap, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
+  RESIDENCY_LABEL, bucketLabel, holdingGap, isNewLead, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
-import { BucketPill, Drawer, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
+import { Drawer, StagePill, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
 import { LanguagePicker, Select } from '../components/AddLead';
 import NotesCard from '../components/NotesCard';
 import OnboardingCard, { fmtINR } from '../components/OnboardingCard';
@@ -110,7 +110,7 @@ export default function LeadPage() {
             </div>
           </div>
           <div className="lh-right">
-            <BucketPill bucket={lead.bucket} />
+            <StagePill lead={lead} />
             {countsStrikes && <div className="small muted" style={{ marginTop: 6 }}><Strikes n={lead.strikes} /> {lead.strikes}/5</div>}
             {lead.bucket === 'holding' && <div className="small muted" style={{ marginTop: 6 }}>{(lead.holding_step ?? 0) === 0 ? 'No follow-ups yet' : `${lead.holding_step} follow-up${lead.holding_step === 1 ? '' : 's'} so far`} · next gap {holdingGap((lead.holding_step ?? 0) + 1)} days</div>}
           </div>
@@ -133,9 +133,14 @@ export default function LeadPage() {
           <div>
             <div className="k">Next follow-up</div>
             {open && !isAdmin ? (
-              <input type="date" className="inline-select" value={lead.next_follow_up ?? ''}
-                onChange={(e) => act('update_lead', { p: { next_follow_up: e.target.value } }, 'Follow-up date updated')} />
-            ) : <span className={open ? '' : 'muted'}>{open ? fmtDate(lead.next_follow_up) : '—'}</span>}
+              <div className="row-gap fu-inline">
+                <input type="date" className="inline-select" value={lead.next_follow_up ?? ''}
+                  onChange={(e) => act('update_lead', { p: { next_follow_up: e.target.value } }, 'Follow-up date updated')} />
+                <input type="time" className="inline-select" value={lead.next_follow_up_at ? istHHMM(lead.next_follow_up_at) : ''} disabled={!lead.next_follow_up}
+                  title={lead.next_follow_up ? 'Time (IST): puts the follow-up on your calendar' : 'Pick a date first'}
+                  onChange={(e) => e.target.value && act('set_follow_up', { p_at: istAt(lead.next_follow_up!, e.target.value) }, `Follow-up set for ${fmtDate(lead.next_follow_up)}, ${e.target.value}`)} />
+              </div>
+            ) : <span className={open ? '' : 'muted'}>{open ? <>{isNewLead(lead) ? 'Not contacted yet' : fmtDate(lead.next_follow_up)}{lead.next_follow_up_at && `, ${fmtTime(lead.next_follow_up_at)}`}</> : '—'}</span>}
           </div>
           {lead.bucket === 'awaiting_meeting' && (
             <div><div className="k">Meeting</div>{lead.meeting_at ? fmtDateTime(lead.meeting_at) : <span className="amber">Not booked yet</span>}
@@ -419,6 +424,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const [product, setProduct] = useState(lead.product);
   const [notes, setNotes] = useState('');
   const [next, setNext] = useState('');
+  const [nextTime, setNextTime] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -500,9 +506,13 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         p_deferred_until: asksResult && result === 'later' ? later : null,
         p_product: asksResult && result === 'commits' ? product : null,
       });
+      // a follow-up time puts it on the calendar
+      if (next && nextTime && outcome !== 'not_interested' && result !== 'commits' && result !== 'later') {
+        try { await rpc('set_follow_up', { p_lead: lead.id, p_at: istAt(next, nextTime) }); } catch { /* stage changed: no follow-up */ }
+      }
       toast(asksResult && result === 'commits' ? 'Agreed to join · now a prospect'
         : asksResult && result === 'met' ? 'Moved to Holding period'
-        : asksResult && result === 'contact' ? 'Logged · back in Active contact'
+        : asksResult && result === 'contact' ? 'Logged · back in Follow-up'
         : asksResult && result === 'interested' ? 'Moved to Awaiting meeting'
         : asksResult && result === 'later' ? (lead.bucket === 'deferred' ? 'New return date saved' : 'Moved to Deferred') : 'Activity logged');
       onClose();
@@ -559,10 +569,11 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         <textarea rows={7} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What was discussed, concerns, decisions, next steps" />
       </Field>
       {outcome !== 'not_interested' && result !== 'commits' && result !== 'later' && (
-        <Field label="Next follow-up" hint={lead.bucket === 'holding' || result === 'met' ? 'Leave blank to space it out automatically' : lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}` : undefined}>
+        <Field label="Next follow-up (date and time)" hint={lead.bucket === 'holding' || result === 'met' ? 'Leave blank to space it out automatically' : next ? 'With a time it goes on your calendar, with a reminder 5 minutes before.' : lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}. Leave blank to keep it.` : 'Leave blank: tomorrow (2 days after a message), without a time.'}>
           <div className="row-gap">
-            <input type="date" value={next} onChange={(e) => setNext(e.target.value)} />
-            {[1, 2, 7].map((d) => <button key={d} className="chip" onClick={() => setNext(addDays(todayIST(), d))}>+{d}d</button>)}
+            <input type="date" min={todayIST()} value={next} onChange={(e) => { setNext(e.target.value); if (e.target.value && !nextTime) setNextTime('11:00'); }} />
+            <input type="time" value={nextTime} disabled={!next} onChange={(e) => setNextTime(e.target.value)} aria-label="Follow-up time" />
+            {[1, 2, 7].map((d) => <button key={d} className="chip" onClick={() => { setNext(addDays(todayIST(), d)); if (!nextTime) setNextTime('11:00'); }}>+{d}d</button>)}
           </div>
         </Field>
       )}

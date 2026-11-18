@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '../auth';
+import { RmScopeSelect, scoped, useRmScope } from '../components/RmScope';
 import { rpc, supabase } from '../lib/supabase';
-import { addDays, fmtDate, fmtPhone, todayIST } from '../lib/format';
+import { addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, todayIST } from '../lib/format';
 import { BUCKETS, PRODUCTS, type Bucket, type Lead } from '../lib/types';
-import { BucketPill, Empty, Field, FollowUp, Modal, ProductTag, Skeleton, Strikes, useToast } from '../components/ui';
+import { Empty, Field, FollowUp, Modal, ProductTag, Skeleton, StagePill, Strikes, useToast } from '../components/ui';
 
 type Row = Lead & { lead_entries: { count: number }[] };
 const PAGE = 100;
@@ -14,10 +15,15 @@ export default function Leads() {
   const { me, sources, isAdmin, team } = useApp();
   const [sp, setSp] = useSearchParams();
   const nav = useNavigate();
-  const tab = (sp.get('bucket') as Bucket | 'open' | null) ?? 'open';
+  const tab = (sp.get('bucket') as Bucket | 'open' | 'new' | null) ?? 'open';
   const product = sp.get('product') ?? '';
   const source = sp.get('source') ?? '';
   const due = sp.get('due') ?? '';
+  const added = sp.get('added') ?? '';
+  const addedFrom = sp.get('from') ?? '';
+  const addedTo = sp.get('to') ?? '';
+  const sc = useRmScope();
+  const scopeKey = sc.ids === null ? 'all' : sc.ids.join(',');
   const q = sp.get('q') ?? '';
   const page = Number(sp.get('page') ?? 0);
 
@@ -45,7 +51,14 @@ export default function Leads() {
     let x = query;
     if (product) x = x.eq('product', product);
     if (source) x = x.eq('source', source);
-    x = x.eq('rm_id', me!.id);
+    x = scoped(x, sc.ids);
+    // when the lead was added (IST days)
+    const ist = (d: string) => `${d}T00:00:00+05:30`;
+    const t0 = todayIST();
+    const range: [string, string] | null = added === 'today' ? [t0, t0] : added === 'yesterday' ? [addDays(t0, -1), addDays(t0, -1)]
+      : added === '7' ? [addDays(t0, -6), t0] : added === '30' ? [addDays(t0, -29), t0] : added === 'month' ? [t0.slice(0, 8) + '01', t0]
+      : added === 'custom' && addedFrom ? [addedFrom, addedTo || t0] : null;
+    if (range) x = x.gte('created_at', ist(range[0])).lt('created_at', ist(addDays(range[1], 1)));
     const today = todayIST();
     if (due === 'new') x = x.eq('bucket', 'active_contact').is('next_follow_up', null);
     if (due === 'overdue') x = x.lt('next_follow_up', today);
@@ -59,13 +72,16 @@ export default function Leads() {
       x = x.or(ors.join(','));
     }
     return x;
-  }, [product, source, due, q, me]);
+  }, [product, source, due, q, me, added, addedFrom, addedTo, scopeKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;
     setRows(null);
     let query = supabase.from('leads').select('*, lead_entries(count)', { count: 'exact' });
-    query = tab === 'open' ? query.in('bucket', WORKING) : query.eq('bucket', tab);
+    query = tab === 'open' ? query.in('bucket', WORKING)
+      : tab === 'new' ? query.eq('bucket', 'active_contact').is('next_follow_up', null)
+      : tab === 'active_contact' ? query.eq('bucket', 'active_contact').not('next_follow_up', 'is', null)
+      : query.eq('bucket', tab);
     query = applyFilters(query)
       .order('next_follow_up', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false })
@@ -77,13 +93,16 @@ export default function Leads() {
       setSel(new Set());
     });
     // tab counts
-    Promise.all([...WORKING, 'converting' as Bucket, 'client' as Bucket].map(async (b) => {
-      const { count } = await applyFilters(supabase.from('leads').select('id', { count: 'exact', head: true }).eq('bucket', b));
+    Promise.all([...WORKING, 'converting' as Bucket, 'client' as Bucket, 'new'].map(async (b) => {
+      let cq = supabase.from('leads').select('id', { count: 'exact', head: true });
+      cq = b === 'new' ? cq.eq('bucket', 'active_contact').is('next_follow_up', null)
+        : b === 'active_contact' ? cq.eq('bucket', 'active_contact').not('next_follow_up', 'is', null) : cq.eq('bucket', b);
+      const { count } = await applyFilters(cq);
       return [b, count ?? 0] as const;
     })).then((pairs) => {
       if (cancelled) return;
       const c: Record<string, number> = Object.fromEntries(pairs);
-      c.open = WORKING.reduce((s, b) => s + (c[b] ?? 0), 0);
+      c.open = WORKING.reduce((s, b) => s + (c[b] ?? 0), 0) + (c.new ?? 0);
       setCounts(c);
     });
     return () => { cancelled = true; };
@@ -91,16 +110,18 @@ export default function Leads() {
 
   const tabs: { key: string; label: string }[] = [
     { key: 'open', label: 'All open' },
+    { key: 'new', label: 'New' },
     ...BUCKETS.filter((b) => b.key !== 'out').map((b) => ({ key: b.key, label: b.label })),
   ];
   const strikeBucket = (b: Bucket) => ['active_contact', 'awaiting_meeting'].includes(b);
-  const filtersOn = product || source || due || q;
+  const filtersOn = product || source || due || q || added;
 
   return (
     <div className="main-inner">
       <div className="page-head">
-        <div><h1>Leads</h1><p>Your leads, most urgent follow-up first.</p></div>
+        <div><h1>Leads</h1><p>{isAdmin ? 'Your team\'s leads.' : 'Your leads: new ones to contact, then follow-ups, most urgent first.'}</p></div>
         <div className="row-gap">
+          <RmScopeSelect s={sc} />
           <button className="btn ghost" onClick={() => nav('/upload')}>Upload</button>
           <button className="btn" onClick={() => window.dispatchEvent(new Event('crm:add-lead'))}>Add lead</button>
         </div>
@@ -131,6 +152,20 @@ export default function Leads() {
               <option value="today">Due today</option>
               <option value="week">Due this week</option>
             </select>
+            <select className="filter" value={added} onChange={(e) => setParam('added', e.target.value)} aria-label="Added">
+              <option value="">Added any time</option>
+              <option value="today">Added today</option>
+              <option value="yesterday">Added yesterday</option>
+              <option value="7">Added last 7 days</option>
+              <option value="30">Added last 30 days</option>
+              <option value="month">Added this month</option>
+              <option value="custom">Added between…</option>
+            </select>
+            {added === 'custom' && <>
+              <input type="date" className="filter" value={addedFrom} max={addedTo || undefined} onChange={(e) => setParam('from', e.target.value)} aria-label="Added from" />
+              <span className="muted small">to</span>
+              <input type="date" className="filter" value={addedTo} min={addedFrom || undefined} onChange={(e) => setParam('to', e.target.value)} aria-label="Added to" />
+            </>}
             {filtersOn && <button className="linkbtn" onClick={() => { setSearch(''); setSp(tab === 'open' ? {} : { bucket: tab }, { replace: true }); }}>Clear filters</button>}
           </div>
           <span className="muted small">{total} lead{total === 1 ? '' : 's'}</span>
@@ -160,10 +195,10 @@ export default function Leads() {
               {isAdmin && <th className="chk"><input type="checkbox" aria-label="Select all on this page"
                 checked={!!rows?.length && sel.size === rows.length}
                 onChange={() => setSel(rows && sel.size !== rows.length ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
-              <th>Name</th><th>Source</th><th>Product</th><th>Bucket</th><th>Interactions</th><th>Strikes</th><th>Next follow-up</th>
+              <th>Name</th><th>Source</th><th>Product</th><th>Stage</th><th>Added</th><th>Interactions</th><th>Strikes</th><th>Next follow-up</th>
             </tr></thead>
             <tbody>
-              {rows === null && [0, 1, 2, 3, 4].map((i) => <tr key={i}><td colSpan={9}><Skeleton /></td></tr>)}
+              {rows === null && [0, 1, 2, 3, 4].map((i) => <tr key={i}><td colSpan={10}><Skeleton /></td></tr>)}
               {rows?.map((l) => {
                 const n = l.lead_entries?.[0]?.count ?? 0;
                 return (
@@ -179,13 +214,14 @@ export default function Leads() {
                     <td><span className="src">{l.source}</span>{l.campaign && <div className="lead-sub">{l.campaign}</div>}</td>
                     <td><ProductTag product={l.product} /></td>
                     <td>
-                      <BucketPill bucket={l.bucket} />
+                      <StagePill lead={l} />
                       {l.bucket === 'awaiting_meeting' && l.meeting_at && <div className="lead-sub">Meets {fmtDate(l.meeting_at)}</div>}
                       {l.bucket === 'deferred' && <div className="lead-sub">Until {fmtDate(l.deferred_until)}</div>}
                     </td>
+                    <td className="small nowrap" title={fmtDateTime(l.created_at)}>{fmtDate(l.created_at)}</td>
                     <td>{n}</td>
                     <td><Strikes n={l.strikes} show={strikeBucket(l.bucket)} /></td>
-                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : l.bucket === 'active_contact' && !l.next_follow_up ? <span className="tag-new">New · contact</span> : <FollowUp date={l.next_follow_up} />}</td>
+                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : l.bucket === 'active_contact' && !l.next_follow_up ? <span className="tag-new">To contact</span> : <><FollowUp date={l.next_follow_up} />{l.next_follow_up_at && <div className="lead-sub">{fmtTime(l.next_follow_up_at)}</div>}</>}</td>
                   </tr>
                 );
               })}

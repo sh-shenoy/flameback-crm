@@ -43,7 +43,7 @@ interface PRow { row: number; data: Record<string, string>; status: PreviewStatu
 interface Result { row: number; status: 'inserted' | 'merged' | 'skipped' | 'failed'; lead_id?: string; message?: string }
 
 export default function Upload() {
-  const { sources, isAdmin, team } = useApp();
+  const { sources, isAdmin, team, me } = useApp();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [fileName, setFileName] = useState('');
   const [header, setHeader] = useState<string[]>([]);
@@ -196,7 +196,7 @@ export default function Upload() {
       for (let i = 0; i < preview.length; i += CHUNK) {
         const part = preview.slice(i, i + CHUNK).map((r) => ({
           row: r.row, ...r.data,
-          ...(isAdmin && assignTo && !r.data.rm_email ? { rm_id: assignTo } : {}),
+          ...(assignTo && !r.data.rm_email ? { rm_id: assignTo } : {}),
           // never send an unparseable age; the row is reported as failed either way
           ...(clientNote.has(r.row) && r.data.age && !/^\d{2,3}$/.test(r.data.age) ? { age: '', name: '' } : {}),
         }));
@@ -230,7 +230,7 @@ export default function Upload() {
   return (
     <div className="main-inner">
       <div className="page-head">
-        <div><h1>Upload leads</h1><p>Bring in a list from an Excel or CSV file. New leads go to the right RM automatically (routing).</p></div>
+        <div><h1>Upload leads</h1><p>Bring in a list from an Excel or CSV file. Choose who gets the new leads: round-robin, you, or one RM.</p></div>
         <button className="btn ghost" onClick={downloadTemplate}>Download template</button>
       </div>
 
@@ -266,14 +266,13 @@ export default function Upload() {
                 <option value="merge">Merge: fill in their empty details</option>
               </select>
             </Field>
-            {isAdmin && (
-              <Field label="Who gets these leads" hint={assignTo ? 'An RM email column in the file still wins for its rows.' : 'Each lead goes to the next RM who fits (product, NRI, language, limits, leave).'}>
-                <select value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
-                  <option value="">Automatic (routing)</option>
-                  {team.filter((t) => t.is_active && t.role !== 'admin').map((t) => <option key={t.id} value={t.id}>All to {t.full_name}</option>)}
-                </select>
-              </Field>
-            )}
+            <Field label="Who gets these leads" hint={assignTo ? (isAdmin ? 'An RM email column in the file still wins for its rows.' : 'Every new lead in the file goes to this person.') : 'Round-robin: each lead goes to the next RM who fits (product, NRI, language, limits, leave).'}>
+              <select value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+                <option value="">Round-robin (automatic)</option>
+                {!isAdmin && me && <option value={me.id}>All to me</option>}
+                {team.filter((t) => t.is_active && t.role !== 'admin' && t.id !== me?.id).map((t) => <option key={t.id} value={t.id}>All to {t.full_name}</option>)}
+              </select>
+            </Field>
           </div>
           <label className={`dropzone ${!source || !product ? 'disabled' : ''}`}
             onDragOver={(e) => e.preventDefault()}

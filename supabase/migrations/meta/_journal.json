@@ -183,6 +183,20 @@
       "when": 1794987053133,
       "tag": "0026_new_leads_not_followups",
       "breakpoints": false
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794990411310,
+      "tag": "0027_follow_up_time",
+      "breakpoints": false
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1794990591379,
+      "tag": "0028_anyone_assigns",
+      "breakpoints": false
     }
   ]
 }

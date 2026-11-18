@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { Bucket } from '../lib/types';
-import { bucketLabel } from '../lib/types';
+import type { Bucket, Lead } from '../lib/types';
+import { bucketLabel, isNewLead } from '../lib/types';
 import { relativeDay, fmtDate } from '../lib/format';
 
 /* ── toasts ── */
@@ -44,6 +44,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 /* ── bits ── */
 export function BucketPill({ bucket }: { bucket: Bucket }) {
   return <span className={`bucket b-${bucket}`}>{bucketLabel(bucket)}</span>;
+}
+
+/** Stage of a lead, with "New" for leads nobody has contacted yet. */
+export function StagePill({ lead }: { lead: Pick<Lead, 'bucket' | 'next_follow_up'> }) {
+  return isNewLead(lead) ? <span className="bucket b-new">New</span> : <BucketPill bucket={lead.bucket} />;
 }
 
 export function ProductTag({ product }: { product: string }) {

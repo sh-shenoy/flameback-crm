@@ -93,3 +93,11 @@ export function fmtSize(n: number | null | undefined): string {
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
+
+/** "2026-11-19" + "15:30" (IST) → ISO timestamp. */
+export const istAt = (date: string, time: string) => new Date(`${date}T${time}:00+05:30`).toISOString();
+
+/** ISO timestamp → "15:30" in IST, for <input type="time">. */
+export function istHHMM(ts: string): string {
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' }).format(new Date(ts));
+}

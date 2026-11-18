@@ -91,7 +91,7 @@ export default function Dashboard() {
       for (const l of (f.data ?? []) as Lead[]) {
         // a lead with a meeting today shows once, as the meeting
         if (out.some((a) => a.kind === 'meeting' && a.lead.id === l.id)) continue;
-        out.push({ kind: 'follow', lead: l, when: l.next_follow_up!, sort: (l.next_follow_up! < today ? '0' : '2') + l.next_follow_up });
+        out.push({ kind: 'follow', lead: l, when: l.next_follow_up!, sort: (l.next_follow_up! < today ? '0' : '2') + l.next_follow_up + (l.next_follow_up_at ?? 'z') });
       }
       for (const l of (nw.data ?? []) as Lead[]) {
         if (out.some((a) => a.kind === 'meeting' && a.lead.id === l.id)) continue;
@@ -204,7 +204,7 @@ export default function Dashboard() {
                       <span className="muted small"> · <ProductTag product={a.lead.product} /> · {BUCKETS.find((b) => b.key === a.lead.bucket)?.label}</span>
                     </div>
                     <span className={`a-when ${r?.tone === 'overdue' ? 'red' : ''}`}>
-                      {a.kind === 'meeting' ? `Today, ${fmtTime(a.when)}` : r!.text}
+                      {a.kind === 'meeting' ? `Today, ${fmtTime(a.when)}` : `${r!.text}${a.lead.next_follow_up_at ? `, ${fmtTime(a.lead.next_follow_up_at)}` : ''}`}
                     </span>
                     <button className="btn ghost sm" onClick={(e) => { e.stopPropagation(); nav(`/leads/${a.lead.id}`); }}>
                       {a.kind === 'meeting' ? 'Open' : 'Log entry'}
