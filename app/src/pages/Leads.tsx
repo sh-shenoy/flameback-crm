@@ -20,7 +20,13 @@ export default function Leads() {
   const source = sp.get('source') ?? '';
   const due = sp.get('due') ?? '';
   const added = sp.get('added') ?? '';
-  const sort = sp.get('sort') ?? '';   // '' = most urgent, 'new' = newest added, 'old' = oldest added
+  const sort = sp.get('sort') ?? '';
+  const batch = sp.get('upload') ?? '';
+  const [batches, setBatches] = useState<{ id: string; file_name: string; created_at: string; inserted: number }[]>([]);
+  useEffect(() => {
+    supabase.from('import_batches').select('id, file_name, created_at, inserted').order('created_at', { ascending: false }).limit(50)
+      .then(({ data }) => setBatches((data as typeof batches) ?? []));
+  }, []);   // '' = most urgent, 'new' = newest added, 'old' = oldest added
   const addedFrom = sp.get('from') ?? '';
   const addedTo = sp.get('to') ?? '';
   const sc = useRmScope();
@@ -60,6 +66,7 @@ export default function Leads() {
       : added === '7' ? [addDays(t0, -6), t0] : added === '30' ? [addDays(t0, -29), t0] : added === 'month' ? [t0.slice(0, 8) + '01', t0]
       : added === 'custom' && addedFrom ? [addedFrom, addedTo || t0] : null;
     if (range) x = x.gte('created_at', ist(range[0])).lt('created_at', ist(addDays(range[1], 1)));
+    if (batch) x = x.eq('import_batch_id', batch);
     const today = todayIST();
     if (due === 'new') x = x.eq('bucket', 'active_contact').is('next_follow_up', null);
     if (due === 'overdue') x = x.lt('next_follow_up', today);
@@ -73,7 +80,7 @@ export default function Leads() {
       x = x.or(ors.join(','));
     }
     return x;
-  }, [product, source, due, q, me, added, addedFrom, addedTo, scopeKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [product, source, due, q, me, added, addedFrom, addedTo, scopeKey, batch]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +123,7 @@ export default function Leads() {
     ...BUCKETS.filter((b) => b.key !== 'out').map((b) => ({ key: b.key, label: b.label })),
   ];
   const strikeBucket = (b: Bucket) => ['active_contact', 'awaiting_meeting'].includes(b);
-  const filtersOn = product || source || due || q || added;
+  const filtersOn = product || source || due || q || added || batch;
 
   return (
     <div className="main-inner">
@@ -168,6 +175,12 @@ export default function Leads() {
               <option value="month">Added this month</option>
               <option value="custom">Added between…</option>
             </select>
+            {batches.length > 0 && (
+              <select className="filter" value={batch} onChange={(e) => setParam('upload', e.target.value)} aria-label="From upload">
+                <option value="">From any upload or added by hand</option>
+                {batches.map((b) => <option key={b.id} value={b.id}>{b.file_name} · {fmtDateTime(b.created_at)} ({b.inserted})</option>)}
+              </select>
+            )}
             {added === 'custom' && <>
               <input type="date" className="filter" value={addedFrom} max={addedTo || undefined} onChange={(e) => setParam('from', e.target.value)} aria-label="Added from" />
               <span className="muted small">to</span>
@@ -225,7 +238,7 @@ export default function Leads() {
                       {l.bucket === 'awaiting_meeting' && l.meeting_at && <div className="lead-sub">Meets {fmtDate(l.meeting_at)}</div>}
                       {l.bucket === 'deferred' && <div className="lead-sub">Until {fmtDate(l.deferred_until)}</div>}
                     </td>
-                    <td className="small nowrap" title={fmtDateTime(l.created_at)}>{fmtDate(l.created_at)}</td>
+                    <td className="small nowrap">{fmtDate(l.created_at)}<div className="lead-sub">{fmtTime(l.created_at)}</div></td>
                     <td>{n}</td>
                     <td><Strikes n={l.strikes} show={strikeBucket(l.bucket)} /></td>
                     <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : l.bucket === 'active_contact' && !l.next_follow_up ? <span className="tag-new">To contact</span> : <><FollowUp date={l.next_follow_up} />{l.next_follow_up_at && <div className="lead-sub">{fmtTime(l.next_follow_up_at)}</div>}</>}</td>
