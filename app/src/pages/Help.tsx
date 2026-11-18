@@ -105,7 +105,7 @@ const SECTIONS: Section[] = [
         <li><b>Will commit later</b>: Deferred until the date you pick.</li>
         <li><b>Spoke, no meeting fixed</b> (from Awaiting meeting): back to Active contact, no strike.</li>
       </ul> },
-      { q: 'They said they are not interested.', a: <p>Pick the outcome <b>Not interested</b> in Log activity, or press <b>Not interested</b> on the lead. It moves to the Out List with your note.</p> },
+      { q: 'They said they are not interested.', a: <p>In <b>Log activity</b>, pick the outcome <b>Not interested</b>. It moves to the Out List with your note. (Change stage → Out List works too.)</p> },
     ],
   },
   {
