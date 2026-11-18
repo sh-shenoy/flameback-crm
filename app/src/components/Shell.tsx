@@ -23,6 +23,7 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
       { to: '/clients', label: 'Clients' },
       { to: '/tasks', label: 'Tasks', badge: 'tasks' },
       { to: '/calendar', label: 'Calendar' },
+      { to: '/log', label: 'Daily log' },
       { to: '/reports', label: 'Reports' },
       { to: '/out', label: 'Out List' },
       { to: '/upload', label: 'Upload leads' },

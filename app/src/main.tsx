@@ -16,6 +16,7 @@ import Tasks from './pages/Tasks';
 import Connections from './pages/Connections';
 import Help from './pages/Help';
 import AdminHome from './pages/AdminHome';
+import DailyLog from './pages/DailyLog';
 import Prospects from './pages/Prospects';
 import Clients from './pages/Clients';
 import Admin from './pages/Admin';
@@ -52,6 +53,7 @@ function Routed() {
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/connections" element={<Connections />} />
         <Route path="/help" element={<Help />} />
+        <Route path="/log" element={<DailyLog />} />
         <Route path="/settings" element={<Navigate to="/connections" replace />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
