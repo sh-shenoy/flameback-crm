@@ -68,7 +68,7 @@ export default function Leads() {
       const like = `%${q.trim().replace(/[%,()]/g, '')}%`;
       const digits = q.replace(/\D/g, '');
       const ors = [`name.ilike.${like}`, `email.ilike.${like}`, `campaign.ilike.${like}`];
-      if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`);
+      if (digits.length >= 3) { ors.push(`phone.ilike.%${digits}%`); ors.push(`alt_phone.ilike.%${digits}%`); }
       x = x.or(ors.join(','));
     }
     return x;

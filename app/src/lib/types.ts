@@ -48,6 +48,7 @@ export interface Lead {
   unit: string;
   name: string;
   phone: string | null;
+  alt_phone?: string | null;
   email: string | null;
   city: string | null;
   age: number | null;

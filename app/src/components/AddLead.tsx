@@ -9,7 +9,7 @@ import { BucketPill, Field, Modal, useToast } from './ui';
 interface Dup { lead_id: string; name: string; rm_name: string; bucket: Bucket; matched_on: string; can_open: boolean }
 
 const blank = {
-  name: '', phone: '', email: '', product: '', source: '', campaign: '', referred_by: '',
+  name: '', phone: '', alt_phone: '', email: '', product: '', source: '', campaign: '', referred_by: '',
   city: '', age: '', marital_status: '', income_band: '', language: '', residency: '', requirement: '', budget: '',
   next_follow_up: '', rm_id: '',
 };
@@ -29,6 +29,7 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
     if (!f.name.trim()) return 'Name is required';
     if (!f.phone.trim() && !f.email.trim()) return 'Add a phone number or an email';
     if (normalizePhone(f.phone) === 'invalid') return 'That phone number doesn\'t look right';
+    if (normalizePhone(f.alt_phone) === 'invalid') return 'The secondary number doesn\'t look right';
     if (normalizeEmail(f.email) === 'invalid') return 'That email doesn\'t look right';
     if (!f.product) return 'Pick a product';
     if (!f.source) return 'Pick where the lead came from';
@@ -111,8 +112,9 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
       <Field label="Name" required><input autoFocus value={f.name} onChange={set('name')} /></Field>
       <div className="grid2">
         <Field label="Phone" hint="10-digit Indian mobile, or + country code"><input value={f.phone} onChange={set('phone')} inputMode="tel" /></Field>
-        <Field label="Email"><input value={f.email} onChange={set('email')} type="email" /></Field>
+        <Field label="Secondary phone" hint="Optional: another number they use"><input value={f.alt_phone} onChange={set('alt_phone')} inputMode="tel" /></Field>
       </div>
+      <Field label="Email"><input value={f.email} onChange={set('email')} type="email" /></Field>
       <div className="grid2">
         <Field label="Product" required>
           <select value={f.product} onChange={set('product')}>
