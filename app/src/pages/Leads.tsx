@@ -12,12 +12,13 @@ const PAGE = 100;
 const WORKING: Bucket[] = ['active_contact', 'awaiting_meeting', 'holding', 'deferred'];
 
 export default function Leads() {
-  const { me, sources, isAdmin, team } = useApp();
+  const { me, sources, statuses, isAdmin, team } = useApp();
   const [sp, setSp] = useSearchParams();
   const nav = useNavigate();
   const tab = (sp.get('bucket') as Bucket | 'open' | 'new' | 'not_picked' | null) ?? 'open';
   const product = sp.get('product') ?? '';
   const source = sp.get('source') ?? '';
+  const lstatus = sp.get('status') ?? '';
   const due = sp.get('due') ?? '';
   const added = sp.get('added') ?? '';
   const sort = sp.get('sort') ?? '';
@@ -58,6 +59,7 @@ export default function Leads() {
     let x = query;
     if (product) x = x.eq('product', product);
     if (source) x = x.eq('source', source);
+    if (lstatus) x = lstatus === '-' ? x.is('lead_status', null) : x.eq('lead_status', lstatus);
     x = scoped(x, sc.ids);
     // when the lead was added (IST days)
     const ist = (d: string) => `${d}T00:00:00+05:30`;
@@ -80,7 +82,7 @@ export default function Leads() {
       x = x.or(ors.join(','));
     }
     return x;
-  }, [product, source, due, q, me, added, addedFrom, addedTo, scopeKey, batch]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [product, source, lstatus, due, q, me, added, addedFrom, addedTo, scopeKey, batch]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;
@@ -125,7 +127,7 @@ export default function Leads() {
     ...BUCKETS.filter((b) => b.key !== 'out').map((b) => ({ key: b.key, label: b.label })),
   ];
   const strikeBucket = (b: Bucket) => ['active_contact', 'awaiting_meeting'].includes(b);
-  const filtersOn = product || source || due || q || added || batch;
+  const filtersOn = product || source || lstatus || due || q || added || batch;
 
   return (
     <div className="main-inner">
@@ -155,6 +157,11 @@ export default function Leads() {
             </select>
             <select className="filter" value={source} onChange={(e) => setParam('source', e.target.value)}>
               <option value="">All sources</option>{sources.map((s) => <option key={s.name}>{s.name}</option>)}
+            </select>
+            <select className="filter" value={lstatus} onChange={(e) => setParam('status', e.target.value)} aria-label="Lead status">
+              <option value="">Any lead status</option>
+              <option value="-">No status yet</option>
+              {statuses.map((x) => <option key={x.name}>{x.name}</option>)}
             </select>
             <select className="filter" value={due} onChange={(e) => setParam('due', e.target.value)}>
               <option value="">Any follow-up</option>
@@ -239,6 +246,7 @@ export default function Leads() {
                       <StagePill lead={l} />
                       {l.bucket === 'awaiting_meeting' && l.meeting_at && <div className="lead-sub">Meets {fmtDate(l.meeting_at)}</div>}
                       {l.bucket === 'deferred' && <div className="lead-sub">Until {fmtDate(l.deferred_until)}</div>}
+                      {l.lead_status && <div className="lead-sub lead-status" title="Lead status">{l.lead_status}</div>}
                     </td>
                     <td className="small nowrap">{fmtDate(l.created_at)}<div className="lead-sub">{fmtTime(l.created_at)}</div></td>
                     <td>{n}</td>

@@ -6,7 +6,7 @@ import {
   addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, fromISTInput, istAt, istHHMM, toISTInput, todayIST,
 } from '../lib/format';
 import {
-  BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, MESSAGE_PLATFORMS, PLATFORM_LABEL, VIDEO_PLATFORMS, entryLabel, type Platform, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
+  BUCKETS, CALL_OUTCOMES, CONTACT_LABEL, ENTRY_KINDS, STATUS_GROUPS, MESSAGE_PLATFORMS, PLATFORM_LABEL, VIDEO_PLATFORMS, entryLabel, type Platform, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
   RESIDENCY_LABEL, bucketLabel, contactState, holdingGap, isNewLead, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
 import { Drawer, StagePill, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
@@ -29,7 +29,7 @@ type Dialog = null | 'email' | 'schedule' | 'cal_reschedule' | 'cal_cancel' | 'b
 
 export default function LeadPage() {
   const { id } = useParams();
-  const { isAdmin, team, teamName, me } = useApp();
+  const { isAdmin, team, teamName, me, statuses } = useApp();
   const toast = useToast();
   const [lead, setLead] = useState<Lead | null>(null);
   const [entries, setEntries] = useState<LeadEntry[]>([]);
@@ -168,6 +168,15 @@ export default function LeadPage() {
           </div>
           <div><div className="k">Added</div>{fmtDate(lead.created_at)}</div>
           <div><div className="k">Last contact</div>{fmtDate(lead.last_contact_at)}</div>
+          <div><div className="k">Lead status</div>
+            {isAdmin ? (lead.lead_status ?? '—') : (
+              <select className="inline-select" value={lead.lead_status ?? ''} title={lead.lead_status_at ? `Set ${fmtDateTime(lead.lead_status_at)}` : 'Usually set when you log a call'}
+                onChange={(e) => act('set_lead_status', { p_status: e.target.value || null }, e.target.value ? `Lead status: ${e.target.value}` : 'Lead status cleared')}>
+                <option value="">—</option>
+                {STATUS_GROUPS.map((g) => <optgroup key={g.label} label={g.label}>{statuses.filter(g.test).map((x) => <option key={x.name}>{x.name}</option>)}</optgroup>)}
+              </select>
+            )}
+          </div>
         </div>
 
         {lead.bucket === 'converting' && (
@@ -374,7 +383,7 @@ function Timeline({ entries, events, teamName, onChanged, readOnly }: {
             <li key={e.id} className="tl-entry">
               <div className="tl-row">
                 <b>{entryLabel(e.kind, e.platform)}</b>
-                {e.outcome && <span className={`outcome o-${e.outcome}`}>{OUTCOME_LABEL[e.outcome]}</span>}
+                {e.lead_status ? <span className={`outcome o-${e.outcome ?? 'none'}`}>{e.lead_status}</span> : e.outcome && <span className={`outcome o-${e.outcome}`}>{OUTCOME_LABEL[e.outcome]}</span>}
                 {e.strike_state === 'counted' && <span className="strike-tag">Strike</span>}
                 {e.strike_state === 'pending' && <>
                   <span className="strike-tag pending">Strike in 48h if no reply</span>
@@ -410,6 +419,7 @@ function describeEvent(ev: LeadEvent, teamName: (id: string | null) => string): 
     case 'meeting': return ev.from_value && ev.from_value !== '' ? `Meeting moved to ${fmtDateTime(ev.to_value)}` : `Meeting booked for ${fmtDateTime(ev.to_value)}`;
     case 'merged': return 'Duplicate details merged in';
     case 'edited': return `Product changed from ${ev.from_value} to ${ev.to_value}`;
+    case 'status': return ev.to_value ? `Lead status set to ${ev.to_value}` : 'Lead status cleared';
     default: return ev.kind;
   }
 }
@@ -422,6 +432,9 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const [kind, setKind] = useState<EntryKind>('phone_call');
   const [when, setWhen] = useState(toISTInput(new Date().toISOString()));
   const [outcome, setOutcome] = useState<Outcome | ''>('');
+  const { statuses } = useApp();
+  const [status, setStatus] = useState('');
+  const st = statuses.find((x) => x.name === status) ?? null;
   const videoDefault: Platform = lead.meeting_pref === 'zoom' ? 'zoom' : 'google-meet';
   const [platform, setPlatform] = useState<Platform | ''>('');
   const [result, setResult] = useState<Result>('');
@@ -435,7 +448,16 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
 
   const isCall = kind === 'phone_call' || kind === 'meet_call';
   const isMsg = kind === 'message' || kind === 'email';
-  const outcomes = isCall ? CALL_OUTCOMES : isMsg ? MESSAGE_OUTCOMES : [];
+  // calls: the lead status decides the outcome; messages keep Sent / Replied
+  const outcomes = isCall && statuses.length ? [] : isCall ? CALL_OUTCOMES : isMsg ? MESSAGE_OUTCOMES : [];
+  function pickStatus(name: string) {
+    const x = statuses.find((y) => y.name === name);
+    setStatus(name);
+    if (!x) return;
+    if (isCall) setOutcome(x.outcome);
+    else if (x.outcome === 'not_interested') setOutcome('not_interested');
+    setResult(x.name === 'Interested' && lead.bucket === 'active_contact' ? 'interested' : '');
+  }
   // did they actually talk / reply? then ask where it left things (any open stage)
   const reached = kind === 'in_person' || (isCall && outcome === 'connected') || (isMsg && outcome === 'replied');
   const asksResult = reached && ['active_contact', 'awaiting_meeting', 'holding', 'deferred'].includes(lead.bucket);
@@ -478,6 +500,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
       ];
 
   const effect = (() => {
+    if (st?.out_reason) return { tone: 'red', text: `Moves the lead to the Out List (${st.out_reason}).` };
     if (outcome === 'not_interested') return { tone: 'red', text: 'Moves the lead to the Out List.' };
     if (asksResult && result === 'met') return { tone: 'green', text: `Moves to Holding period. No strikes there: first follow-up in 7 days, then 14, 28…` };
     if (asksResult && result === 'interested') return { tone: 'green', text: 'Moves to Awaiting meeting; strikes reset. Book the time later with Schedule meeting.' };
@@ -507,6 +530,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
 
   async function save() {
     if (kind === 'message' && !platform) { setErr('Pick where you messaged them'); return; }
+    if (isCall && statuses.length && !status) { setErr('Pick the lead status'); return; }
     if ((isCall || isMsg) && !outcome) { setErr('Pick an outcome'); return; }
     if (notesRequired && !notes.trim()) { setErr('Notes are required for this entry'); return; }
     if (asksResult && result === 'later' && !later) { setErr('Pick the date they will come back'); return; }
@@ -520,6 +544,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         p_deferred_until: asksResult && result === 'later' ? later : null,
         p_product: asksResult && result === 'commits' ? product : null,
         p_platform: kind === 'meet_call' || kind === 'message' ? platform || null : null,
+        p_status: kind !== 'note' && status ? status : null,
       });
       // a follow-up time puts it on the calendar
       if (next && nextTime && outcome !== 'not_interested' && result !== 'commits' && result !== 'later') {
@@ -536,12 +561,12 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   }
 
   return (
-    <Drawer title="Log activity" sub={`${lead.name} · ${bucketLabel(lead.bucket)}`} onClose={onClose}
+    <Drawer title="Log activity" sub={`${lead.name} · ${contactState(lead) ? CONTACT_LABEL[contactState(lead)!] : bucketLabel(lead.bucket)}`} onClose={onClose}
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button></>}>
       <Field label="What happened" required>
         <div className="chips">
           {ENTRY_KINDS.map((k) => (
-            <button key={k.key} className={`chip ${kind === k.key ? 'on' : ''}`} onClick={() => { setKind(k.key); setOutcome(''); setResult(''); setPlatform(k.key === 'meet_call' ? videoDefault : k.key === 'message' ? 'whatsapp' : ''); }}>
+            <button key={k.key} className={`chip ${kind === k.key ? 'on' : ''}`} onClick={() => { setKind(k.key); setOutcome(''); setResult(''); setPlatform(k.key === 'meet_call' ? videoDefault : k.key === 'message' ? 'whatsapp' : ''); setStatus(''); }}>
               {k.label}
             </button>
           ))}
@@ -557,6 +582,30 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         </Field>
       )}
       <Field label="Date and time (IST)" required><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></Field>
+      {kind !== 'note' && statuses.length > 0 && (isCall ? (
+        <Field label="Lead status" required>
+          {STATUS_GROUPS.map((g) => {
+            const list = statuses.filter(g.test);
+            return list.length ? (
+              <div key={g.label} className="status-group">
+                <span className="status-group-label">{g.label}</span>
+                <div className="chips">
+                  {list.map((x) => (
+                    <button key={x.name} className={`chip ${status === x.name ? 'on' : ''} ${x.outcome === 'not_interested' || x.out_reason ? 'chip-red' : ''}`} onClick={() => pickStatus(x.name)}>{x.name}</button>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+          })}
+        </Field>
+      ) : (
+        <Field label="Lead status (optional)">
+          <select value={status} onChange={(e) => pickStatus(e.target.value)}>
+            <option value="">—</option>
+            {STATUS_GROUPS.map((g) => <optgroup key={g.label} label={g.label}>{statuses.filter(g.test).map((x) => <option key={x.name}>{x.name}</option>)}</optgroup>)}
+          </select>
+        </Field>
+      ))}
       {outcomes.length > 0 && (
         <Field label="Outcome" required>
           <div className="chips">
