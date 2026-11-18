@@ -102,7 +102,22 @@ export interface LeadEntry {
   strike_state: 'none' | 'counted' | 'pending';
   created_by: string | null;
   created_at: string;
+  platform?: Platform | null;
 }
+
+/** Where a video call or message happened. */
+export type Platform = 'google-meet' | 'zoom' | 'whatsapp' | 'sms' | 'linkedin' | 'other';
+export const PLATFORM_LABEL: Record<string, string> = {
+  'google-meet': 'Google Meet', zoom: 'Zoom', whatsapp: 'WhatsApp', sms: 'SMS', linkedin: 'LinkedIn', other: 'Other',
+  phone: 'Phone call', 'in-person': 'In person', email: 'Email (logged)', gmail: 'Gmail',
+};
+export const VIDEO_PLATFORMS: Platform[] = ['google-meet', 'zoom'];
+export const MESSAGE_PLATFORMS: Platform[] = ['whatsapp', 'sms', 'linkedin', 'other'];
+/** "Video call · Zoom", "Message · WhatsApp" */
+export const entryLabel = (kind: string, platform?: string | null) => {
+  const base = ENTRY_KINDS.find((k) => k.key === kind)?.label ?? kind;
+  return platform ? `${base} · ${PLATFORM_LABEL[platform] ?? platform}` : base;
+};
 
 export interface LeadEvent {
   id: number;
@@ -154,7 +169,7 @@ export const bucketLabel = (b: Bucket) => BUCKETS.find((x) => x.key === b)?.labe
 
 export const ENTRY_KINDS: { key: EntryKind; label: string }[] = [
   { key: 'phone_call', label: 'Phone call' },
-  { key: 'meet_call', label: 'Google Meet call' },
+  { key: 'meet_call', label: 'Video call' },
   { key: 'in_person', label: 'In-person' },
   { key: 'message', label: 'Message' },
   { key: 'email', label: 'Email' },

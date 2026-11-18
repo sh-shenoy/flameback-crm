@@ -127,6 +127,7 @@ export const leadEntries = pgTable("lead_entries", {
 	strikeState: text("strike_state").default('none').notNull(),
 	createdBy: uuid("created_by"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	platform: text(),
 }, (table) => [
 	index("lead_entries_lead_idx").using("btree", table.leadId.asc().nullsLast().op("timestamptz_ops"), table.occurredAt.desc().nullsFirst().op("timestamptz_ops")),
 	index("lead_entries_pending_idx").using("btree", table.occurredAt.asc().nullsLast().op("timestamptz_ops")).where(sql`(strike_state = 'pending'::text)`),

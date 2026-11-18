@@ -7,7 +7,7 @@ import { Empty, Skeleton } from '../components/ui';
 import { fmtINR } from '../components/OnboardingCard';
 
 type Group = 'source' | 'campaign' | 'referrer' | 'product' | 'rm';
-export interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; interested: number; met: number; committed: number; clients: number; funded_amount: number; out_list: number; still_open: number }
+export interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; spoke: number; interested: number; met: number; committed: number; clients: number; funded_amount: number; out_list: number; still_open: number; new_now: number; follow_up_now: number }
 export type Counts = Omit<Row, 'grp' | 'source_kind'>;
 
 const GROUPS: { key: Group; label: string; admin?: boolean }[] = [
@@ -29,6 +29,18 @@ const PERIODS: { key: string; label: string; range: () => [string, string] }[] =
   { key: 'year', label: 'This year', range: () => [todayIST().slice(0, 4) + '-01-01', todayIST()] },
   { key: 'all', label: 'All time', range: () => ['2020-01-01', todayIST()] },
 ];
+/** Postgres bigints arrive as strings. */
+export const numRow = (r: Row): Row => {
+  const o = { ...r } as Record<string, unknown>;
+  for (const k of Object.keys(o)) if (k !== 'grp' && k !== 'source_kind') o[k] = +(o[k] as number) || 0;
+  return o as unknown as Row;
+};
+export const EMPTY_COUNTS: Counts = { leads: 0, contacted: 0, spoke: 0, interested: 0, met: 0, committed: 0, clients: 0, funded_amount: 0, out_list: 0, still_open: 0, new_now: 0, follow_up_now: 0 };
+export const sumCounts = (rows: Counts[]): Counts => rows.reduce<Counts>((t, r) => {
+  const o = { ...t };
+  for (const k of Object.keys(EMPTY_COUNTS) as (keyof Counts)[]) o[k] = t[k] + (r[k] ?? 0);
+  return o;
+}, { ...EMPTY_COUNTS });
 export const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
 /** Percentage for display: one decimal below 1% so 3 of 1,337 reads 0.2%, not 0%. */
 export const fmtPct = (n: number, d: number) => {
@@ -55,25 +67,21 @@ export default function Reports() {
     supabase.rpc('report_conversion', { p_from: from, p_to: to, p_group: group, p_rm: rm || null })
       .then(({ data, error }) => {
         if (error) { setErr(error.message); setRows([]); return; }
-        setRows(((data as Row[]) ?? []).map((r) => ({ ...r, leads: +r.leads, contacted: +r.contacted, interested: +r.interested, met: +r.met, committed: +r.committed, clients: +r.clients, funded_amount: +r.funded_amount, out_list: +r.out_list, still_open: +r.still_open })));
+        setRows(((data as Row[]) ?? []).map(numRow));
       });
   }, [group, from, to, rm]);
 
   const sorted = useMemo(() => [...(rows ?? [])].sort((a, b) =>
     sort === 'grp' ? a.grp.localeCompare(b.grp) : (b[sort] as number) - (a[sort] as number) || b.leads - a.leads), [rows, sort]);
-  const total: Counts = (rows ?? []).reduce((t, r) => ({
-    leads: t.leads + r.leads, contacted: t.contacted + r.contacted, interested: t.interested + r.interested, met: t.met + r.met,
-    committed: t.committed + r.committed, clients: t.clients + r.clients, funded_amount: t.funded_amount + r.funded_amount,
-    out_list: t.out_list + r.out_list, still_open: t.still_open + r.still_open,
-  }), { leads: 0, contacted: 0, interested: 0, met: 0, committed: 0, clients: 0, funded_amount: 0, out_list: 0, still_open: 0 });
+  const total = sumCounts(rows ?? []);
   const selRow = sel ? rows?.find((r) => r.grp === sel) ?? null : null;
   const best = Math.max(1, ...(rows ?? []).filter((r) => r.leads >= 5).map((r) => pct(r.committed, r.leads)));
   const groupLabel = GROUPS.find((g) => g.key === group)!.label;
 
   function exportCsv() {
     const csv = Papa.unparse([
-      [groupLabel, ...(group === 'source' ? ['Type'] : []), 'Leads', 'Contacted', 'Wants to meet', 'Met', 'Prospect', 'Client', 'Funded (₹)', 'Prospect %', 'Out List', 'Still open'],
-      ...sorted.map((r) => [r.grp, ...(group === 'source' ? [r.source_kind ?? ''] : []), r.leads, r.contacted, r.interested, r.met, r.committed, r.clients, r.funded_amount, pct(r.committed, r.leads), r.out_list, r.still_open]),
+      [groupLabel, ...(group === 'source' ? ['Type'] : []), 'Leads', 'Reached out', 'Spoke', 'Wants to meet', 'Met', 'Prospect', 'Client', 'Funded (₹)', 'Prospect %', 'Out List', 'Still open'],
+      ...sorted.map((r) => [r.grp, ...(group === 'source' ? [r.source_kind ?? ''] : []), r.leads, r.contacted, r.spoke, r.interested, r.met, r.committed, r.clients, r.funded_amount, pct(r.committed, r.leads), r.out_list, r.still_open]),
     ]);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
@@ -118,7 +126,7 @@ export default function Reports() {
 
       <div className="cards">
         <div className="card"><div className="k">Leads</div><div className="v">{rows ? total.leads : '·'}</div></div>
-        <div className="card"><div className="k">Contacted</div><div className="v">{rows ? `${fmtPct(total.contacted, total.leads)}` : '·'}</div><div className="meta">{total.contacted} lead{total.contacted === 1 ? '' : 's'}</div></div>
+        <div className="card"><div className="k">Reached out</div><div className="v">{rows ? `${fmtPct(total.contacted, total.leads)}` : '·'}</div><div className="meta">{total.contacted} lead{total.contacted === 1 ? '' : 's'}</div></div>
         <div className="card"><div className="k">Met</div><div className="v">{rows ? `${fmtPct(total.met, total.leads)}` : '·'}</div><div className="meta">{total.met} lead{total.met === 1 ? '' : 's'}</div></div>
         <div className="card"><div className="k">Became prospect</div><div className="v">{rows ? `${fmtPct(total.committed, total.leads)}` : '·'}</div><div className="meta">{total.committed} lead{total.committed === 1 ? '' : 's'}</div></div>
       </div>
@@ -140,11 +148,11 @@ export default function Reports() {
           <table className="report">
             <thead><tr>
               <Th k="grp">{groupLabel}</Th>
-              <Th k="leads">Leads</Th><Th k="contacted">Contacted</Th><Th k="interested">Wants to meet</Th><Th k="met">Met</Th><Th k="committed">Prospect</Th><Th k="clients">Client</Th>
+              <Th k="leads">Leads</Th><Th k="contacted">Reached out</Th><Th k="spoke">Spoke</Th><Th k="interested">Wants to meet</Th><Th k="met">Met</Th><Th k="committed">Prospect</Th><Th k="clients">Client</Th>
               <th>Became prospect</th><Th k="out_list">Out List</Th><Th k="still_open">Still open</Th>
             </tr></thead>
             <tbody>
-              {rows === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={10}><Skeleton /></td></tr>)}
+              {rows === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={11}><Skeleton /></td></tr>)}
               {sorted.map((r) => {
                 const c = pct(r.committed, r.leads);
                 return (
@@ -153,6 +161,7 @@ export default function Reports() {
                     <td><b>{r.grp}</b>{r.source_kind && <span className={`kind k-${r.source_kind}`}>{r.source_kind}</span>}</td>
                     <td>{r.leads}</td>
                     <td>{r.contacted} <span className="muted small">{fmtPct(r.contacted, r.leads)}</span></td>
+                    <td>{r.spoke} <span className="muted small">{fmtPct(r.spoke, r.leads)}</span></td>
                     <td>{r.interested} <span className="muted small">{fmtPct(r.interested, r.leads)}</span></td>
                     <td>{r.met} <span className="muted small">{fmtPct(r.met, r.leads)}</span></td>
                     <td><b>{r.committed}</b></td>
@@ -168,7 +177,7 @@ export default function Reports() {
               })}
               {rows && rows.length > 0 && (
                 <tr className="total-row">
-                  <td>Total</td><td>{total.leads}</td><td>{total.contacted}</td><td>{total.interested}</td><td>{total.met}</td><td>{total.committed}</td><td>{total.clients}</td>
+                  <td>Total</td><td>{total.leads}</td><td>{total.contacted}</td><td>{total.spoke}</td><td>{total.interested}</td><td>{total.met}</td><td>{total.committed}</td><td>{total.clients}</td>
                   <td><b>{fmtPct(total.committed, total.leads)}</b></td><td>{total.out_list}</td><td>{total.still_open}</td>
                 </tr>
               )}
@@ -178,7 +187,7 @@ export default function Reports() {
         </div>
       </div>
       <p className="hint" style={{ marginTop: 10 }}>
-        <b>Contacted</b>: anything logged, or moved past Active contact. <b>Wants to meet</b>: reached Awaiting meeting or further. <b>Met</b>: reached Holding, Deferred or Converting.
+        <b>Reached out</b>: called, messaged or anything logged. <b>Spoke</b>: picked up, replied or met in person. <b>Wants to meet</b>: reached Awaiting meeting or further. <b>Met</b>: reached Holding, Deferred or Converting.
         <b> Prospect</b>: agreed to join. <b>Client</b>: funded. <b>Became prospect</b> = prospects ÷ leads; bars compare groups with 5+ leads.
       </p>
     </div>
@@ -187,7 +196,8 @@ export default function Reports() {
 
 const STAGES: { key: keyof Counts; label: string }[] = [
   { key: 'leads', label: 'Leads' },
-  { key: 'contacted', label: 'Contacted' },
+  { key: 'contacted', label: 'Reached out' },
+  { key: 'spoke', label: 'Spoke' },
   { key: 'interested', label: 'Wants to meet' },
   { key: 'met', label: 'Met' },
   { key: 'committed', label: 'Prospect' },
@@ -195,12 +205,12 @@ const STAGES: { key: keyof Counts; label: string }[] = [
 ];
 
 /**
- * Leads → Contacted → Wants to meet → Met → Prospect → Client. Each bar sits on a track that stands for all
+ * Leads → Reached out → Spoke → Wants to meet → Met → Prospect → Client. Each bar sits on a track that stands for all
  * leads, so every bar is a share of the same whole. Between stages: how many of the previous stage
  * moved on, in counts (percentages of a tiny base mislead). Stages are cumulative: a lead that
  * became a client also counts as contacted, wanted to meet, met and prospect.
  */
-export function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
+export function Funnel({ c, compare, compareLabel = 'all leads in this report', showNow = true }: { c: Counts; compare: Counts | null; compareLabel?: string; showNow?: boolean }) {
   const fmt = (n: number) => n.toLocaleString('en-IN');
   return (
     <div className="pad">
@@ -222,7 +232,7 @@ export function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
                 <div className="fn-label" role="rowheader">{st.label}</div>
                 <div className="fn-track" title={`${st.label}: ${fmt(n)} of ${fmt(c.leads)} leads (${fmtPct(n, c.leads)})`}>
                   {n > 0 && <div className="fn-bar" style={{ width: `${share}%` }} />}
-                  {overall !== null && <i className="fn-mark" style={{ left: `${overall}%` }} title={`All leads in this report: ${fmtPct(compare![st.key], compare!.leads)}`} />}
+                  {overall !== null && <i className="fn-mark" style={{ left: `${overall}%` }} title={`${compareLabel[0].toUpperCase() + compareLabel.slice(1)}: ${fmtPct(compare![st.key], compare!.leads)}`} />}
                 </div>
                 <div className="fn-num" role="cell">
                   <b>{fmt(n)}</b><span>{fmtPct(n, c.leads)} of leads</span>
@@ -236,7 +246,9 @@ export function Funnel({ c, compare }: { c: Counts; compare: Counts | null }) {
         {c.funded_amount > 0 && <span><b>{fmtINR(c.funded_amount)}</b> funded</span>}
         <span><b>{c.out_list.toLocaleString('en-IN')}</b> on the Out List</span>
         <span><b>{c.still_open.toLocaleString('en-IN')}</b> still open</span>
-        {compare && <span className="fn-key"><i className="fn-mark-key" /> all leads in this report</span>}
+        {showNow && <span><b>{c.new_now.toLocaleString('en-IN')}</b> new, not contacted yet</span>}
+        {showNow && <span><b>{c.follow_up_now.toLocaleString('en-IN')}</b> in follow-up</span>}
+        {compare && <span className="fn-key"><i className="fn-mark-key" /> {compareLabel}</span>}
         {c.leads > 0 && c.leads < 5 && <span className="muted">Fewer than 5 leads, so percentages are rough</span>}
       </div>
     </div>

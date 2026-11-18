@@ -5,7 +5,7 @@ import { rpc, supabase } from '../lib/supabase';
 import { addDays, initials, timeAgo, todayIST } from '../lib/format';
 import { Skeleton } from '../components/ui';
 import { fmtINR } from '../components/OnboardingCard';
-import { Funnel, fmtPct, type Counts } from './Reports';
+import { Funnel, fmtPct, numRow, sumCounts, type Counts, type Row } from './Reports';
 
 /* Admin home: the team an admin manages, at a glance. Admins don't own leads. */
 
@@ -50,19 +50,12 @@ export default function AdminHome() {
       .then((d) => setRows(d.map((r) => ({ ...r, ...Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v])) }) as Rm)))
       .catch((e) => { setErr((e as Error).message); setRows([]); });
     supabase.rpc('report_conversion', { p_from: from, p_to: to, p_group: 'rm', p_rm: null })
-      .then(({ data }) => setReport(((data as ReportRow[]) ?? []).map((r) => ({
-        grp: r.grp, leads: num(r.leads), contacted: num(r.contacted), interested: num(r.interested), met: num(r.met),
-        committed: num(r.committed), clients: num(r.clients), funded_amount: num(r.funded_amount), out_list: num(r.out_list), still_open: num(r.still_open),
-      }))));
+      .then(({ data }) => setReport(((data as Row[]) ?? []).map(numRow)));
   }, [from, to, scope]);
 
   const names = useMemo(() => new Set((rows ?? []).map((r) => r.full_name)), [rows]);
   const teamRows = useMemo(() => (report ?? []).filter((r) => names.has(r.grp)), [report, names]);
-  const teamTotal: Counts = useMemo(() => teamRows.reduce((t, r) => ({
-    leads: t.leads + r.leads, contacted: t.contacted + r.contacted, interested: t.interested + r.interested, met: t.met + r.met,
-    committed: t.committed + r.committed, clients: t.clients + r.clients, funded_amount: t.funded_amount + r.funded_amount,
-    out_list: t.out_list + r.out_list, still_open: t.still_open + r.still_open,
-  }), { leads: 0, contacted: 0, interested: 0, met: 0, committed: 0, clients: 0, funded_amount: 0, out_list: 0, still_open: 0 }), [teamRows]);
+  const teamTotal: Counts = useMemo(() => sumCounts(teamRows), [teamRows]);
   const focused = focus ? teamRows.find((r) => r.grp === focus) ?? null : null;
 
   const sum = (k: keyof Rm) => (rows ?? []).reduce((s, r) => s + num(r[k]), 0);
