@@ -64,7 +64,7 @@ export default function LeadPage() {
   // arriving from the calendar's "Schedule meeting"
   const [sp, setSp] = useSearchParams();
   useEffect(() => {
-    if (sp.get('schedule') === '1' && lead) { setDialog('schedule'); sp.delete('schedule'); setSp(sp, { replace: true }); }
+    if (sp.get('schedule') === '1' && lead) { if (!isAdmin) setDialog('schedule'); sp.delete('schedule'); setSp(sp, { replace: true }); }
   }, [sp, lead?.id]);
 
   // pull this lead's emails from Gmail when the page opens
@@ -118,24 +118,24 @@ export default function LeadPage() {
         <div className="lh-grid">
           <div>
             <div className="k">Product</div>
-            <select className="inline-select" value={lead.product}
+            <select className="inline-select" value={lead.product} disabled={isAdmin}
               onChange={(e) => act('update_lead', { p: { product: e.target.value } }, `Product changed to ${e.target.value}`)}>
               {PRODUCTS.map((p) => <option key={p}>{p}</option>)}
             </select>
           </div>
           <div>
             <div className="k">Residency</div>
-            <select className="inline-select" value={lead.residency ?? ''}
+            <select className="inline-select" value={lead.residency ?? ''} disabled={isAdmin}
               onChange={(e) => act('set_residency', { p_residency: e.target.value || null }, e.target.value ? `Marked as ${RESIDENCY_LABEL[e.target.value]}` : 'Residency cleared')}>
               <option value="">Not set</option><option value="resident">Resident</option><option value="nri">NRI</option>
             </select>
           </div>
           <div>
             <div className="k">Next follow-up</div>
-            {open ? (
+            {open && !isAdmin ? (
               <input type="date" className="inline-select" value={lead.next_follow_up ?? ''}
                 onChange={(e) => act('update_lead', { p: { next_follow_up: e.target.value } }, 'Follow-up date updated')} />
-            ) : <span className="muted">—</span>}
+            ) : <span className={open ? '' : 'muted'}>{open ? fmtDate(lead.next_follow_up) : '—'}</span>}
           </div>
           {lead.bucket === 'awaiting_meeting' && (
             <div><div className="k">Meeting</div>{lead.meeting_at ? fmtDateTime(lead.meeting_at) : <span className="amber">Not booked yet</span>}
@@ -151,7 +151,7 @@ export default function LeadPage() {
             {isAdmin ? (
               <select className="inline-select" value={lead.rm_id}
                 onChange={(e) => act('reassign_lead', { p_rm: e.target.value }, `Reassigned to ${teamName(e.target.value)}`)}>
-                {team.filter((t) => t.is_active || t.id === lead.rm_id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                {team.filter((t) => (t.is_active && t.role !== 'admin') || t.id === lead.rm_id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
               </select>
             ) : teamName(lead.rm_id)}
           </div>
@@ -162,13 +162,13 @@ export default function LeadPage() {
         {lead.bucket === 'converting' && (
           <div className="banner ok">
             <b>Prospect since {fmtDate(lead.converted_at)}.</b> They agreed to join; work through the onboarding checklist below. {lead.product} accounts are opened in {ONBOARDING_ROUTE[lead.product] ?? 'the product platform'}.
-            <button className="linkbtn" onClick={() => act('undo_converting', {}, 'Moved back to Holding period')}>Not joining after all?</button>
+            {!isAdmin && <button className="linkbtn" onClick={() => act('undo_converting', {}, 'Moved back to Holding period')}>Not joining after all?</button>}
           </div>
         )}
         {lead.bucket === 'client' && (
           <div className="banner ok">
             <b>Client since {fmtDate(lead.funded_at ?? null)}</b>{lead.funded_amount != null && <> · funded {fmtINR(lead.funded_amount)}</>}.
-            <button className="linkbtn" onClick={() => act('undo_funded', {}, 'Moved back to Prospect')}>Undo</button>
+            {!isAdmin && <button className="linkbtn" onClick={() => act('undo_funded', {}, 'Moved back to Prospect')}>Undo</button>}
           </div>
         )}
         {lead.bucket === 'out' && (
@@ -177,7 +177,13 @@ export default function LeadPage() {
           </div>
         )}
 
-        <div className="actions">
+        {isAdmin ? (
+          <div className="actions">
+            <span className="muted small admin-note">You're viewing as an admin: reassign the lead (RM above) or raise a task. Calls, notes and stage changes are made by {teamName(lead.rm_id)}.</span>
+            <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={() => setDialog('task')}>Raise task</button>
+          </div>
+        ) : (
+          <div className="actions">
           {lead.bucket !== 'out' && <button className="btn" onClick={() => setDialog('entry')}>Log activity</button>}
           {lead.bucket === 'active_contact' && <>
             <button className="btn gold" onClick={() => setDialog('schedule')}>Schedule meeting</button>
@@ -203,7 +209,8 @@ export default function LeadPage() {
           {lead.bucket !== 'out' && <button className="btn ghost" onClick={() => setDialog('booking')}>Send booking link</button>}
           <button className="btn ghost" onClick={() => setDialog('task')}>Raise task</button>
         </div>
-        {bucketHelp && open && <div className="stage-help">{bucketHelp}</div>}
+        )}
+        {bucketHelp && open && !isAdmin && <div className="stage-help">{bucketHelp}</div>}
       </div>
 
       <SummaryBox leadId={lead.id} version={`${lead.updated_at}:${entries.length}:${tasks.length}`} />
@@ -229,10 +236,10 @@ export default function LeadPage() {
               ))}
             </div>
             <div className="lead-tab-body" role="tabpanel">
-              {cur === 'onboarding' && <OnboardingCard lead={lead} onChanged={load} />}
-              {cur === 'timeline' && <Timeline entries={entries} events={events} teamName={teamName} onChanged={load} />}
-              {cur === 'notes' && <NotesCard lead={lead} onSaved={load} />}
-              {cur === 'profile' && <ProfileCard lead={lead} onSaved={load} />}
+              {cur === 'onboarding' && <OnboardingCard lead={lead} onChanged={load} readOnly={isAdmin} />}
+              {cur === 'timeline' && <Timeline entries={entries} events={events} teamName={teamName} onChanged={load} readOnly={isAdmin} />}
+              {cur === 'notes' && <NotesCard lead={lead} onSaved={load} readOnly={isAdmin} />}
+              {cur === 'profile' && <ProfileCard lead={lead} onSaved={load} readOnly={isAdmin} />}
               {cur === 'tasks' && (
                 <div className="panel">
                   <div className="panel-head"><h2>Tasks</h2>
@@ -278,7 +285,7 @@ export default function LeadPage() {
 type Act = (fn: string, args: Record<string, unknown>, msg: string) => Promise<void>;
 
 /* ───────── profile ───────── */
-function ProfileCard({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
+function ProfileCard({ lead, onSaved, readOnly }: { lead: Lead; onSaved: () => void; readOnly?: boolean }) {
   const toast = useToast();
   const init = () => ({
     name: lead.name, phone: lead.phone ?? '', email: lead.email ?? '', city: lead.city ?? '',
@@ -308,6 +315,7 @@ function ProfileCard({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
         {missing.length > 0 && <span className="muted small">{missing.length} profile field{missing.length > 1 ? 's' : ''} to fill</span>}
       </div>
       <div className="pad">
+        <fieldset className="plain-fs" disabled={readOnly}>
         <Field label="Name"><input value={f.name} onChange={set('name')} /></Field>
         <div className="grid2">
           <Field label="Phone"><input value={f.phone} onChange={set('phone')} /></Field>
@@ -322,18 +330,19 @@ function ProfileCard({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
         </div>
         <Field label="Languages"><LanguagePicker value={f.language} onChange={(v) => setF({ ...f, language: v })} /></Field>
         <Field label="What they want"><textarea value={f.requirement} onChange={set('requirement')} /></Field>
-        <div className="row-gap" style={{ justifyContent: 'flex-end' }}>
+        </fieldset>
+        {!readOnly && <div className="row-gap" style={{ justifyContent: 'flex-end' }}>
           {dirty && <button className="btn ghost sm" onClick={() => setF(init())}>Discard</button>}
           <button className="btn sm" disabled={!dirty || busy} onClick={save}>Save profile</button>
-        </div>
+        </div>}
       </div>
     </div>
   );
 }
 
 /* ───────── timeline ───────── */
-function Timeline({ entries, events, teamName, onChanged }: {
-  entries: LeadEntry[]; events: LeadEvent[]; teamName: (id: string | null) => string; onChanged: () => void;
+function Timeline({ entries, events, teamName, onChanged, readOnly }: {
+  entries: LeadEntry[]; events: LeadEvent[]; teamName: (id: string | null) => string; onChanged: () => void; readOnly?: boolean;
 }) {
   const toast = useToast();
   const items = useMemo(() => {
@@ -361,7 +370,7 @@ function Timeline({ entries, events, teamName, onChanged }: {
                 {e.strike_state === 'counted' && <span className="strike-tag">Strike</span>}
                 {e.strike_state === 'pending' && <>
                   <span className="strike-tag pending">Strike in 48h if no reply</span>
-                  <button className="linkbtn small" onClick={() => markReplied(e.id)}>They replied</button>
+                  {!readOnly && <button className="linkbtn small" onClick={() => markReplied(e.id)}>They replied</button>}
                 </>}
               </div>
               {e.notes && <div className="tl-notes">{e.notes}</div>}

@@ -11,7 +11,7 @@ interface Dup { lead_id: string; name: string; rm_name: string; bucket: Bucket; 
 
 const blank = {
   name: '', phone: '', email: '', product: '', source: '', campaign: '', referred_by: '',
-  city: '', age: '', marital_status: '', income_band: '', language: '', requirement: '', budget: '',
+  city: '', age: '', marital_status: '', income_band: '', language: '', residency: '', requirement: '', budget: '',
   next_follow_up: todayIST(), rm_id: '',
 };
 
@@ -104,7 +104,7 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
     <Modal title="New lead" onClose={onClose}
       footer={<>
         <span className="muted small" style={{ marginRight: 'auto' }}>
-          {isAdmin && f.rm_id ? `Assigned to ${teamName(f.rm_id)}` : 'Assigned by round-robin'}
+          {isAdmin && f.rm_id ? `Assigned to ${teamName(f.rm_id)}` : 'Assigned automatically by routing (language, product, NRI)'}
         </span>
         <button className="btn ghost" onClick={onClose}>Cancel</button>
         <button className="btn" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Add lead'}</button>
@@ -140,8 +140,8 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
         {isAdmin && (
           <Field label="Assign to">
             <select value={f.rm_id} onChange={set('rm_id')}>
-              <option value="">Round-robin</option>
-              {team.filter((t) => t.is_active).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+              <option value="">Automatic (routing)</option>
+              {team.filter((t) => t.is_active && t.role !== 'admin').map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
             </select>
           </Field>
         )}
@@ -156,6 +156,7 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
             <Field label="Marital status"><Select v={f.marital_status} on={set('marital_status')} opts={MARITAL} /></Field>
             <Field label="Income level"><Select v={f.income_band} on={set('income_band')} opts={INCOME_BANDS} /></Field>
             <Field label="Budget"><input value={f.budget} onChange={set('budget')} placeholder="e.g. ₹50L" /></Field>
+            <Field label="Residency"><select value={f.residency} onChange={set('residency')}><option value="">—</option><option value="resident">Resident</option><option value="nri">NRI</option></select></Field>
           </div>
           <Field label="Languages"><LanguagePicker value={f.language} onChange={(v) => setF({ ...f, language: v })} /></Field>
           <Field label="What they want"><textarea value={f.requirement} onChange={set('requirement')} /></Field>

@@ -1,5 +1,6 @@
 -- Behavioural tests for Calendly bookings. Run after supabase_stub.sql + all migrations.
 \set ON_ERROR_STOP 1
+insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000ff','boss@flamebackcapital.com','{"full_name":"Boss"}');  -- first sign-in = admin (admins don't own leads)
 insert into auth.users (id,email,raw_user_meta_data) values
  ('00000000-0000-0000-0000-00000000000a','shashank@flamebackcapital.com','{"full_name":"Shashank"}'),
  ('00000000-0000-0000-0000-00000000000b','priya@flamebackcapital.com','{"full_name":"Priya"}');
@@ -9,9 +10,10 @@ update profiles set in_rotation = true;
 
 -- an existing lead owned by Shashank, in Active contact with 2 strikes
 set role authenticated;
-select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000ff',false);  -- admin adds the lead for Shashank
 create temp table k(n text, id uuid);
 insert into k select 'asha', create_lead('{"name":"Asha Rao","email":"asha@x.com","product":"PMS","source":"Meta","rm_id":"00000000-0000-0000-0000-00000000000a"}');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
 select log_entry((select id from k where n='asha'),'phone_call','no_answer');
 select log_entry((select id from k where n='asha'),'phone_call','no_answer');
 reset role;

@@ -10,7 +10,7 @@ The original clickable demo (`../index.html`) is untouched and remains the visua
 |---|---|
 | Sign-in | Google, `@flamebackcapital.com` accounts only. The first person to sign in becomes admin. |
 | Leads in | Manual add, or upload a `.xlsx` / `.csv` (column matching, preview, duplicate check, undo, download of skipped/failed rows). No integrations yet. |
-| Assignment | Round-robin across RMs who are "in rotation" (Team & rotation page). Admins can assign by hand. |
+| Assignment | Routing: the next RM in rotation who fits (not on leave → under their open-lead limit → handles the product → takes NRI → speaks the language; rules relax if nobody fits). Set per RM under Admin → Team & rotation → Routing. Admins never own leads; they view, reassign and raise tasks only. Each RM has one manager (an admin). |
 | Product | RIA or PMS on every lead; set when added (per lead, per upload, or per row), changeable any time. |
 | Pipeline | Lead: Active contact → Awaiting meeting → Holding period / Deferred. Then Prospect (agreed to join, onboarding) → Client (funded). |
 | Five strikes | Active contact: unanswered attempts (call "No answer", or a message "Sent" with no reply in 48h; Connected/Replied resets). Awaiting meeting: every reminder. Fifth strike → Out List. Counter resets on every bucket change. |

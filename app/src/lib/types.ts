@@ -35,6 +35,12 @@ export interface Profile {
   gmail_address: string | null;
   gmail_connected_at: string | null;
   created_at: string;
+  manager_id?: string | null;
+  route_languages?: string[];
+  route_products?: string[];
+  takes_nri?: boolean;
+  max_open_leads?: number | null;
+  on_leave?: boolean;
 }
 
 export interface Lead {

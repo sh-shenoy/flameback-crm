@@ -151,7 +151,8 @@ const SECTIONS: Section[] = [
     id: 'admin', title: 'For admins', admin: true,
     items: [
       { q: 'Approving new people', a: <p>Admin → <b>Access requests</b>: approve as RM or Admin, or reject. New people start out of the round-robin.</p> },
-      { q: 'Round-robin and teams', a: <p>Admin → <b>Team &amp; rotation</b>: set each person's team, role and whether they receive new leads.</p> },
+      { q: 'Round-robin, routing and teams', a: <p>Admin → <b>Team &amp; rotation</b>: set each person's team, manager and whether they receive new leads. Click an RM's <b>Routing</b> to set the products they handle, languages they speak, whether they take NRI leads and a maximum of open leads; switch on <b>On leave</b> to pause new leads. A new lead goes to the next RM in rotation who fits; if nobody fits a rule, it is relaxed.</p> },
+      { q: 'Can admins work leads?', a: <p>No. Admins manage: they can view every lead, reassign it and raise tasks, but calls, notes, meetings and stage changes are made by the lead's RM. Admins never get leads; if an admin still holds some, use <b>Hand over</b> on Team &amp; rotation.</p> },
       { q: 'Someone is leaving', a: <p>Team &amp; rotation → <b>Remove access</b> → share their leads across the RMs in rotation or give them all to one person. Every lead moves with its history; reassign their open tasks from Tasks.</p> },
       { q: 'Keeping an eye on the team', a: <p>Admin → <b>Team overview</b>: each person's follow-ups due and overdue, meetings without an outcome, untouched leads and conversions. Send a <b>nudge</b> in one click; open a person to reassign or delete their leads.</p> },
       { q: 'Meeting types', a: <p>Admin → <b>Meeting types</b> sets the standard Cal.com types pushed to every RM's account.</p> },

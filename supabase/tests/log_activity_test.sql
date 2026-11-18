@@ -1,6 +1,8 @@
 -- Tests for 0008: log_activity + Gmail follow-ups.
 \set ON_ERROR_STOP 1
+insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000ff','boss@flamebackcapital.com','{"full_name":"Boss"}');  -- first sign-in = admin (admins don't own leads)
 insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000a','shashank@flamebackcapital.com','{"full_name":"Shashank"}');
+update profiles set is_active = true, approved_at = now(), in_rotation = true;
 set role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
 create temp table k(n int, id uuid);
