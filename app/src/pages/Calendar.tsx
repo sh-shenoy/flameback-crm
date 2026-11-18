@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
+import { RmScopeSelect, scoped, useRmScope } from '../components/RmScope';
 import { supabase } from '../lib/supabase';
 import { fmtPhone, todayIST } from '../lib/format';
 import type { Lead, Task } from '../lib/types';
@@ -23,7 +24,10 @@ interface Ev { id: string; title: string; sub?: string; start: string; end: stri
 const START_H = 7, END_H = 22, HOUR_PX = 48;
 
 export default function CalendarPage() {
-  const { me } = useApp();
+  const { me, isAdmin, teamName } = useApp();
+  const sc = useRmScope();
+  const scopeKey = sc.ids === null ? 'all' : sc.ids.join(',');
+  const who = (id: string | null | undefined) => (isAdmin ? (teamName(id).split(' ')[0] + ' · ') : '');
   const nav = useNavigate();
   const [view, setView] = useState<View>(() => { try { return (localStorage.getItem('crm.cal.view') as View) || 'week'; } catch { return 'week'; } });
   const [anchor, setAnchor] = useState(todayIST());
@@ -46,10 +50,10 @@ export default function CalendarPage() {
     const from = dayStartUTC(days[0]!).toISOString();
     const to = dayStartUTC(shift(days[days.length - 1]!, 1)).toISOString();
     Promise.all([
-      supabase.from('meetings').select('*').eq('rm_id', me!.id).eq('status', 'active').gte('start_time', from).lt('start_time', to),
-      supabase.from('leads').select('id, name, phone, product, meeting_at, meeting_url').eq('rm_id', me!.id).eq('bucket', 'awaiting_meeting')
+      scoped(supabase.from('meetings').select('*'), sc.ids).eq('status', 'active').gte('start_time', from).lt('start_time', to),
+      scoped(supabase.from('leads').select('id, name, phone, product, meeting_at, meeting_url, rm_id'), sc.ids).eq('bucket', 'awaiting_meeting')
         .gte('meeting_at', from).lt('meeting_at', to),
-      showTasks
+      showTasks && !isAdmin
         ? supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team}),created_by.eq.${me!.id}`)
             .neq('status', 'done').gte('due_date', days[0]!).lte('due_date', days[days.length - 1]!)
         : Promise.resolve({ data: [] }),
@@ -64,13 +68,13 @@ export default function CalendarPage() {
       const seen = new Set<string>();
       for (const e of ce.data ?? []) {
         const end = e.end_time ?? new Date(new Date(e.start_time).getTime() + 30 * 60_000).toISOString();
-        out.push({ id: 'c' + e.booking_uid, title: (e.lead_id && names[e.lead_id]) || e.name || 'Booking', sub: e.event_name ?? (e.provider === 'calcom' ? 'Cal.com' : 'Calendly'),
+        out.push({ id: 'c' + e.booking_uid, title: who(e.rm_id) + ((e.lead_id && names[e.lead_id]) || e.name || 'Booking'), sub: e.event_name ?? (e.provider === 'calcom' ? 'Cal.com' : 'Calendly'),
           start: e.start_time, end, kind: 'meeting', link: e.lead_id ? `/leads/${e.lead_id}` : '/calendar', join: e.join_url, day: istDate(e.start_time) });
         if (e.lead_id) seen.add(e.lead_id + new Date(e.start_time).getTime());
       }
-      for (const l of (ld.data ?? []) as Pick<Lead, 'id' | 'name' | 'phone' | 'product' | 'meeting_at' | 'meeting_url'>[]) {
+      for (const l of (ld.data ?? []) as Pick<Lead, 'id' | 'name' | 'phone' | 'product' | 'meeting_at' | 'meeting_url' | 'rm_id'>[]) {
         if (seen.has(l.id + new Date(l.meeting_at!).getTime())) continue;
-        out.push({ id: 'l' + l.id, title: l.name, sub: `${l.product}${l.phone ? ' · ' + fmtPhone(l.phone) : ''}`, start: l.meeting_at!,
+        out.push({ id: 'l' + l.id, title: who(l.rm_id) + l.name, sub: `${l.product}${l.phone ? ' · ' + fmtPhone(l.phone) : ''}`, start: l.meeting_at!,
           end: new Date(new Date(l.meeting_at!).getTime() + 30 * 60_000).toISOString(), kind: 'meeting', link: `/leads/${l.id}`, join: l.meeting_url, day: istDate(l.meeting_at!) });
       }
       for (const t of (tk.data ?? []) as Task[]) {
@@ -79,7 +83,7 @@ export default function CalendarPage() {
       out.sort((a, b) => a.start.localeCompare(b.start));
       setEvents(out);
     });
-  }, [days, showTasks, me]);
+  }, [days, showTasks, me, scopeKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const byDay = useMemo(() => {
     const m: Record<string, Ev[]> = {};
@@ -101,8 +105,8 @@ export default function CalendarPage() {
   return (
     <div className="main-inner wide">
       <div className="page-head">
-        <div><h1>Calendar</h1><p>Your meetings with leads (Cal.com and booked by hand){showTasks ? ' and tasks due' : ''}. Times in IST.</p></div>
-        <button className="btn" onClick={() => setPicking(true)}>Schedule meeting</button>
+        <div><h1>Calendar</h1><p>{isAdmin ? 'Your team\'s meetings with leads, labelled with the RM.' : `Your meetings with leads (Cal.com and booked by hand)${showTasks ? ' and tasks due' : ''}.`} Times in IST.</p></div>
+        {isAdmin ? <RmScopeSelect s={sc} /> : <button className="btn" onClick={() => setPicking(true)}>Schedule meeting</button>}
       </div>
       <div className="cal-bar">
         <div className="row-gap">
@@ -113,7 +117,7 @@ export default function CalendarPage() {
           {events && <span className="muted small">{meetings} meeting{meetings === 1 ? '' : 's'}</span>}
         </div>
         <div className="row-gap">
-          <label className="check"><input type="checkbox" checked={showTasks} onChange={(e) => setShowTasks(e.target.checked)} /> Tasks due</label>
+          {!isAdmin && <label className="check"><input type="checkbox" checked={showTasks} onChange={(e) => setShowTasks(e.target.checked)} /> Tasks due</label>}
           <div className="seg">
             {(['day', 'week', 'month'] as View[]).map((v) => <button key={v} className={view === v ? 'on' : ''} onClick={() => setView(v)}>{v[0]!.toUpperCase() + v.slice(1)}</button>)}
           </div>
