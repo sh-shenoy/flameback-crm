@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [actions, setActions] = useState<Action[] | null>(null);
   const [actFilter, setActFilter] = useState<'all' | Kind>('all');
+  const [actDay, setActDay] = useState<'today' | 'tomorrow'>('today');
   const [openTask, setOpenTask] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [pipeline, setPipeline] = useState<Record<string, number> | null>(null);
@@ -71,18 +72,25 @@ export default function Dashboard() {
       setStats({ active, newToday, dueToday, overdue, meetingsWeek, meetingsToday, committedMonth, committedLastMonth, tasksOverdue, tasksToday }),
     ).catch((e) => setErr(e.message));
 
-    // today's actions: follow-ups due/overdue + meetings today
+    // actions for today (follow-ups due or overdue, meetings, tasks, new leads) or for tomorrow
+    const tmr = addDays(today, 1);
+    const dayAfterStart = new Date(addDays(today, 2) + 'T00:00:00+05:30').toISOString();
+    const isToday = actDay === 'today';
+    setActions(null);
     Promise.all([
-      scoped(supabase.from('leads').select('*').in('bucket', WORKING).lte('next_follow_up', today)
-        .order('next_follow_up', { ascending: true }).limit(100)),
+      scoped(isToday
+        ? supabase.from('leads').select('*').in('bucket', WORKING).lte('next_follow_up', today)
+        : supabase.from('leads').select('*').in('bucket', WORKING).eq('next_follow_up', tmr))
+        .order('next_follow_up', { ascending: true }).order('next_follow_up_at', { ascending: true, nullsFirst: false }).limit(100),
       scoped(supabase.from('leads').select('*').eq('bucket', 'awaiting_meeting')
-        .gte('meeting_at', todayStart).lt('meeting_at', tomorrowStart)),
+        .gte('meeting_at', isToday ? todayStart : tomorrowStart).lt('meeting_at', isToday ? tomorrowStart : dayAfterStart)),
       // tasks I own (assigned to me, or to my team with nobody assigned) due today or overdue
-      supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`)
-        .neq('status', 'done').lte('due_date', today).limit(100),
-      // new leads nobody has reached out to yet (oldest first)
+      isToday
+        ? supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`).neq('status', 'done').lte('due_date', today).limit(100)
+        : supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`).neq('status', 'done').eq('due_date', tmr).limit(100),
+      // new leads nobody has reached out to yet (oldest first) — today's list only
       scoped(supabase.from('leads').select('*', { count: 'exact' }).eq('bucket', 'active_contact').is('next_follow_up', null)
-        .order('created_at', { ascending: true }).limit(100)),
+        .order('created_at', { ascending: true }).limit(isToday ? 100 : 1)),
     ]).then(([f, m, tk, nw]: any[]) => {
       setStats((s) => (s ? { ...s, fresh: nw.count ?? (nw.data ?? []).length } : s));
       const out: Action[] = [];
@@ -93,7 +101,7 @@ export default function Dashboard() {
         if (out.some((a) => a.kind === 'meeting' && a.lead.id === l.id)) continue;
         out.push({ kind: 'follow', lead: l, when: l.next_follow_up!, sort: (l.next_follow_up! < today ? '0' : '2') + l.next_follow_up + (l.next_follow_up_at ?? 'z') });
       }
-      for (const l of (nw.data ?? []) as Lead[]) {
+      for (const l of (isToday ? nw.data ?? [] : []) as Lead[]) {
         if (out.some((a) => a.kind === 'meeting' && a.lead.id === l.id)) continue;
         out.push({ kind: 'new', lead: l, when: l.created_at, sort: '1z' + l.created_at });
       }
@@ -104,7 +112,7 @@ export default function Dashboard() {
     Promise.all(BUCKETS.map(async (b) => [b.key, await count((q) => q.eq('bucket', b.key))] as const))
       .then((pairs) => setPipeline(Object.fromEntries(pairs)))
       .catch(() => undefined);
-  }, [me, reload]);
+  }, [me, reload, actDay]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setFunnel(null);
@@ -147,7 +155,13 @@ export default function Dashboard() {
       <div className="dash-cols">
         <div className="panel" id="todays-actions">
           <div className="panel-head">
-            <h2>Today's actions {actions && <span className="muted">· {actions.length}</span>}</h2>
+            <h2 className="row-gap">
+              <span className="seg sm">
+                <button className={actDay === 'today' ? 'on' : ''} onClick={() => setActDay('today')}>Today</button>
+                <button className={actDay === 'tomorrow' ? 'on' : ''} onClick={() => setActDay('tomorrow')}>Tomorrow</button>
+              </span>
+              <span>Actions {actions && <span className="muted">· {actions.length}</span>}</span>
+            </h2>
             <div className="chips">
               {(['all', 'new', 'follow', 'meeting', 'task'] as const).map((k) => (
                 <button key={k} className={`chip ${actFilter === k ? 'on' : ''}`} onClick={() => setActFilter(k)}>
@@ -162,7 +176,7 @@ export default function Dashboard() {
             stats?.active === 0
               ? <Empty>You're all caught up. New leads and follow-ups will show here.<br /><br />
                   <button className="btn" onClick={() => window.dispatchEvent(new Event('crm:add-lead'))}>Add lead</button></Empty>
-              : <Empty>Nothing due today. <Link to="/leads">See all leads →</Link></Empty>
+              : <Empty>Nothing due {actDay}. <Link to="/leads">See all leads →</Link></Empty>
           )}
           {shown.length > 0 && (
             <div className="actions-list">
@@ -204,7 +218,7 @@ export default function Dashboard() {
                       <span className="muted small"> · <ProductTag product={a.lead.product} /> · {BUCKETS.find((b) => b.key === a.lead.bucket)?.label}</span>
                     </div>
                     <span className={`a-when ${r?.tone === 'overdue' ? 'red' : ''}`}>
-                      {a.kind === 'meeting' ? `Today, ${fmtTime(a.when)}` : `${r!.text}${a.lead.next_follow_up_at ? `, ${fmtTime(a.lead.next_follow_up_at)}` : ''}`}
+                      {a.kind === 'meeting' ? `${actDay === 'today' ? 'Today' : 'Tomorrow'}, ${fmtTime(a.when)}` : `${r!.text}${a.lead.next_follow_up_at ? `, ${fmtTime(a.lead.next_follow_up_at)}` : ''}`}
                     </span>
                     <button className="btn ghost sm" onClick={(e) => { e.stopPropagation(); nav(`/leads/${a.lead.id}`); }}>
                       {a.kind === 'meeting' ? 'Open' : 'Log entry'}

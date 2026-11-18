@@ -103,6 +103,7 @@ export default function LeadPage() {
             <h1>{lead.name} {entries.length === 0 && open && <span className="new-badge">New</span>}</h1>
             <div className="lh-contact">
               {lead.phone && <a href={`tel:${lead.phone}`}>{fmtPhone(lead.phone)}</a>}
+              {lead.alt_phone && <a href={`tel:${lead.alt_phone}`} title="Secondary number">{fmtPhone(lead.alt_phone)} <span className="muted small">(2nd)</span></a>}
               {lead.email && <a href={`mailto:${lead.email}`}>{lead.email}</a>}
               <span className="src">{lead.source}</span>
               {lead.campaign && <span className="muted small">Campaign: {lead.campaign}</span>}
@@ -293,7 +294,7 @@ type Act = (fn: string, args: Record<string, unknown>, msg: string) => Promise<v
 function ProfileCard({ lead, onSaved, readOnly }: { lead: Lead; onSaved: () => void; readOnly?: boolean }) {
   const toast = useToast();
   const init = () => ({
-    name: lead.name, phone: lead.phone ?? '', email: lead.email ?? '', city: lead.city ?? '',
+    name: lead.name, phone: lead.phone ?? '', alt_phone: lead.alt_phone ?? '', email: lead.email ?? '', city: lead.city ?? '',
     age: lead.age?.toString() ?? '', marital_status: lead.marital_status ?? '', income_band: lead.income_band ?? '',
     language: lead.language ?? '', requirement: lead.requirement ?? '', budget: lead.budget ?? '',
     campaign: lead.campaign ?? '', referred_by: lead.referred_by ?? '',
@@ -323,7 +324,8 @@ function ProfileCard({ lead, onSaved, readOnly }: { lead: Lead; onSaved: () => v
         <fieldset className="plain-fs" disabled={readOnly}>
         <Field label="Name"><input value={f.name} onChange={set('name')} /></Field>
         <div className="grid2">
-          <Field label="Phone"><input value={f.phone} onChange={set('phone')} /></Field>
+          <Field label="Phone"><input value={f.phone} onChange={set('phone')} inputMode="tel" /></Field>
+          <Field label="Secondary phone"><input value={f.alt_phone} onChange={set('alt_phone')} inputMode="tel" placeholder="Optional" /></Field>
           <Field label="Email"><input value={f.email} onChange={set('email')} /></Field>
           <Field label="City / region"><input value={f.city} onChange={set('city')} /></Field>
           <Field label="Age"><input type="number" value={f.age} onChange={set('age')} /></Field>

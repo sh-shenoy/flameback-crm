@@ -230,7 +230,7 @@ function Bell({ unread, onOpen }: { unread: number; onOpen: (n: AppNotification)
 }
 
 function GlobalSearch() {
-  const { me } = useApp();
+  const { me, isAdmin } = useApp();
   const [q, setQ] = useState('');
   const [res, setRes] = useState<Lead[]>([]);
   const [open, setOpen] = useState(false);
@@ -245,8 +245,10 @@ function GlobalSearch() {
       const like = `%${term.replace(/[%,()]/g, '')}%`;
       const digits = term.replace(/\D/g, '');
       const ors = [`name.ilike.${like}`, `email.ilike.${like}`];
-      if (digits.length >= 3) ors.push(`phone.ilike.%${digits}%`);
-      const { data } = await supabase.from('leads').select('*').eq('rm_id', me!.id).or(ors.join(',')).limit(8);
+      if (digits.length >= 3) { ors.push(`phone.ilike.%${digits}%`); ors.push(`alt_phone.ilike.%${digits}%`); }
+      let sq = supabase.from('leads').select('*').or(ors.join(','));
+      if (!isAdmin) sq = sq.eq('rm_id', me!.id);
+      const { data } = await sq.limit(8);
       setRes((data as Lead[]) ?? []);
     }, 200);
   }, [q]);
@@ -256,7 +258,7 @@ function GlobalSearch() {
   return (
     <div className="gsearch">
       <input
-        placeholder="Search your leads by name, phone or email"
+        placeholder="Search leads by name, phone (either number) or email"
         value={q}
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}

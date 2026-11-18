@@ -12,7 +12,7 @@ const MAX_ROWS = 10000;
 const CHUNK = 200;
 
 type FieldKey =
-  | 'name' | 'first_name' | 'last_name' | 'phone' | 'email' | 'product' | 'source' | 'campaign'
+  | 'name' | 'first_name' | 'last_name' | 'phone' | 'alt_phone' | 'email' | 'product' | 'source' | 'campaign'
   | 'city' | 'age' | 'marital_status' | 'income_band' | 'language' | 'residency' | 'requirement' | 'budget' | 'referred_by' | 'rm_email';
 
 const FIELDS: { key: FieldKey; label: string; syn: string[]; admin?: boolean }[] = [
@@ -20,6 +20,7 @@ const FIELDS: { key: FieldKey; label: string; syn: string[]; admin?: boolean }[]
   { key: 'first_name', label: 'First name', syn: ['first name', 'firstname', 'first', 'given name'] },
   { key: 'last_name', label: 'Last name', syn: ['last name', 'lastname', 'surname', 'last', 'family name'] },
   { key: 'phone', label: 'Phone', syn: ['phone', 'mobile', 'mobile no', 'mobile number', 'phone number', 'contact', 'contact number', 'whatsapp', 'cell', 'phone no', 'mob'] },
+  { key: 'alt_phone', label: 'Secondary phone', syn: ['secondary phone', 'alternate phone', 'alternate number', 'alternative number', 'alt phone', 'phone 2', 'mobile 2', 'other phone', 'second number', 'landline'] },
   { key: 'email', label: 'Email', syn: ['email', 'e-mail', 'email id', 'email address', 'mail'] },
   { key: 'product', label: 'Product (RIA / PMS / US RIA)', syn: ['product', 'interest', 'product interest'] },
   { key: 'source', label: 'Source', syn: ['source', 'lead source', 'channel'] },
@@ -139,6 +140,7 @@ export default function Upload() {
       let status: PreviewStatus = 'ok'; let note = '';
       if (!d.name) { status = 'invalid'; note = 'Name is missing'; }
       else if (phone === 'invalid') { status = 'invalid'; note = `Phone "${d.phone}" is not valid`; }
+      else if (d.alt_phone && normalizePhone(d.alt_phone) === 'invalid') { status = 'invalid'; note = `Secondary number "${d.alt_phone}" is not valid`; }
       else if (email === 'invalid') { status = 'invalid'; note = `Email "${d.email}" is not valid`; }
       else if (!phone && !email) { status = 'invalid'; note = 'No phone or email'; }
       else if ((d.product || product) && !PRODUCTS.includes((d.product || product) as never)) { status = 'invalid'; note = `Product "${d.product}" must be RIA, PMS or US RIA`; }
