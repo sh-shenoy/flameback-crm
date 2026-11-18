@@ -47,6 +47,7 @@ export default function Leads() {
     if (source) x = x.eq('source', source);
     x = x.eq('rm_id', me!.id);
     const today = todayIST();
+    if (due === 'new') x = x.eq('bucket', 'active_contact').is('next_follow_up', null);
     if (due === 'overdue') x = x.lt('next_follow_up', today);
     if (due === 'today') x = x.eq('next_follow_up', today);
     if (due === 'week') x = x.lte('next_follow_up', addDays(today, 7));
@@ -125,6 +126,7 @@ export default function Leads() {
             </select>
             <select className="filter" value={due} onChange={(e) => setParam('due', e.target.value)}>
               <option value="">Any follow-up</option>
+              <option value="new">New (not contacted yet)</option>
               <option value="overdue">Overdue</option>
               <option value="today">Due today</option>
               <option value="week">Due this week</option>
@@ -183,7 +185,7 @@ export default function Leads() {
                     </td>
                     <td>{n}</td>
                     <td><Strikes n={l.strikes} show={strikeBucket(l.bucket)} /></td>
-                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : <FollowUp date={l.next_follow_up} />}</td>
+                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : l.bucket === 'active_contact' && !l.next_follow_up ? <span className="tag-new">New · contact</span> : <FollowUp date={l.next_follow_up} />}</td>
                   </tr>
                 );
               })}

@@ -705,3 +705,4 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
 @media (max-width: 1100px) { .ah-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ah-cols { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .ah-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ah-list li { grid-template-columns: 1fr; gap: 2px; } }
 .rm-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 18px; padding: 0 4px; border-radius: 9px; background: #e8eef6; color: #344054; font-size: 10.5px; font-weight: 700; margin-right: 4px; vertical-align: middle; }
+.tag-new { font-size: 11.5px; font-weight: 600; color: #1d6b52; background: #e8f6f1; border-radius: 4px; padding: 2px 7px; white-space: nowrap; } .a-type.t-new { background: #e8f6f1; color: #1d6b52; }

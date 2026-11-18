@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc } from '../lib/supabase';
 import { normalizeEmail, normalizePhone } from '../lib/phone';
-import { todayIST } from '../lib/format';
 import { INCOME_BANDS, LANGUAGES, MARITAL, PRODUCTS, type Bucket } from '../lib/types';
 import { BucketPill, Field, Modal, useToast } from './ui';
 
@@ -12,7 +11,7 @@ interface Dup { lead_id: string; name: string; rm_name: string; bucket: Bucket; 
 const blank = {
   name: '', phone: '', email: '', product: '', source: '', campaign: '', referred_by: '',
   city: '', age: '', marital_status: '', income_band: '', language: '', residency: '', requirement: '', budget: '',
-  next_follow_up: todayIST(), rm_id: '',
+  next_follow_up: '', rm_id: '',
 };
 
 export default function AddLead({ onClose }: { onClose: () => void }) {
@@ -136,7 +135,7 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
           : <Field label="City"><input value={f.city} onChange={set('city')} /></Field>}
       </div>
       <div className="grid2">
-        <Field label="First follow-up"><input type="date" value={f.next_follow_up} onChange={set('next_follow_up')} /></Field>
+        <Field label="Follow-up date (optional)" hint="Leave empty: it's a new lead until the first call or message."><input type="date" value={f.next_follow_up} onChange={set('next_follow_up')} /></Field>
         {isAdmin && (
           <Field label="Assign to">
             <select value={f.rm_id} onChange={set('rm_id')}>
