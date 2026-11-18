@@ -90,7 +90,9 @@ export default function LeadPage() {
 
   const open = lead.bucket !== 'out' && lead.bucket !== 'converting' && lead.bucket !== 'client';
   const countsStrikes = ['active_contact', 'awaiting_meeting'].includes(lead.bucket);
-  const bucketHelp = BUCKETS.find((b) => b.key === lead.bucket)?.help;
+  const bucketHelp = isNewLead(lead)
+    ? 'New lead: not in Follow-up yet. When you call or message, log it and pick the follow-up date; that moves it to Follow-up.'
+    : BUCKETS.find((b) => b.key === lead.bucket)?.help;
 
   return (
     <div className="main-inner">
@@ -439,6 +441,9 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const reached = kind === 'in_person' || (isCall && outcome === 'connected') || (isMsg && outcome === 'replied');
   const asksResult = reached && ['active_contact', 'awaiting_meeting', 'holding', 'deferred'].includes(lead.bucket);
   const notesRequired = outcome === 'connected' || kind === 'in_person' || kind === 'note' || !!result;
+  // only the RM puts a lead into Follow-up: if this leaves it in New / Follow-up, ask for the date
+  const staysInFollowUp = (lead.bucket === 'active_contact' && !result) || (asksResult && result === 'contact');
+  const needsDate = staysInFollowUp && kind !== 'note' && outcome !== 'not_interested' && (kind === 'in_person' || !!outcome);
 
   const resultOptions: { key: Result; label: string; sub: string }[] = lead.bucket === 'deferred'
     ? [
@@ -502,6 +507,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
     if ((isCall || isMsg) && !outcome) { setErr('Pick an outcome'); return; }
     if (notesRequired && !notes.trim()) { setErr('Notes are required for this entry'); return; }
     if (asksResult && result === 'later' && !later) { setErr('Pick the date they will come back'); return; }
+    if (needsDate && !next) { setErr('Pick the next follow-up date'); return; }
     setBusy(true); setErr(null);
     try {
       await rpc('log_activity', {
@@ -584,7 +590,11 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         <textarea rows={7} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What was discussed, concerns, decisions, next steps" />
       </Field>
       {outcome !== 'not_interested' && result !== 'commits' && result !== 'later' && (
-        <Field label="Next follow-up (date and time)" hint={lead.bucket === 'holding' || result === 'met' ? 'Leave blank to space it out automatically' : next ? 'With a time it goes on your calendar, with a reminder 5 minutes before.' : lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}. Leave blank to keep it.` : 'Leave blank: tomorrow (2 days after a message), without a time.'}>
+        <Field label="Next follow-up (date and time)" required={needsDate}
+          hint={lead.bucket === 'holding' || result === 'met' ? 'Leave blank to space it out automatically'
+            : next ? 'With a time it goes on your calendar, with a reminder 5 minutes before.'
+            : needsDate ? 'Required: the lead goes to Follow-up on this date.'
+            : lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}. Leave blank to keep it.` : 'Optional.'}>
           <div className="row-gap">
             <input type="date" min={todayIST()} value={next} onChange={(e) => { setNext(e.target.value); if (e.target.value && !nextTime) setNextTime('11:00'); }} />
             <input type="time" value={nextTime} disabled={!next} onChange={(e) => setNextTime(e.target.value)} aria-label="Follow-up time" />
@@ -660,7 +670,7 @@ export function BringBackDialog({ lead, onClose, act }: { lead: Lead; onClose: (
 
 
 const STAGE_EFFECT: Record<Bucket, string> = {
-  active_contact: 'Strikes reset. Follow up from here as with a new conversation.',
+  active_contact: 'Strikes reset. Goes to Follow-up on the date you pick.',
   awaiting_meeting: 'Strikes reset. Use this when they agreed to meet but the time isn\'t fixed; book it later with Schedule meeting.',
   holding: 'Met, still thinking. No strikes; follow-ups spaced out automatically (first in 7 days).',
   deferred: 'Comes back to Holding period on the date you pick.',
@@ -677,7 +687,7 @@ function ChangeStageDialog({ lead, onClose, act }: { lead: Lead; onClose: () => 
   const [product, setProduct] = useState(lead.product);
   const { busy, run } = useBusy();
   const choices = BUCKETS.filter((b) => b.key !== lead.bucket && b.key !== 'client');
-  const ok = !!to && (to !== 'deferred' || !!until);
+  const ok = !!to && (to !== 'deferred' || !!until) && (to !== 'active_contact' || !!next);
   return (
     <Modal title={`Change stage · ${lead.name}`} onClose={onClose}
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button>
@@ -698,8 +708,11 @@ function ChangeStageDialog({ lead, onClose, act }: { lead: Lead; onClose: () => 
         </div>
       </Field>
       {(to === 'active_contact' || to === 'awaiting_meeting' || to === 'holding') && (
-        <Field label="Next follow-up" hint={to === 'holding' ? 'Leave blank for 7 days' : 'Leave blank for tomorrow'}>
-          <input type="date" min={todayIST()} value={next} onChange={(e) => setNext(e.target.value)} />
+        <Field label="Next follow-up" required={to === 'active_contact'} hint={to === 'holding' ? 'Leave blank for 7 days' : to === 'awaiting_meeting' ? 'Leave blank for tomorrow' : 'Pick when to follow up'}>
+          <div className="row-gap">
+            <input type="date" min={todayIST()} value={next} onChange={(e) => setNext(e.target.value)} />
+            {[1, 2, 7].map((d) => <button key={d} className="chip" onClick={() => setNext(addDays(todayIST(), d))}>+{d}d</button>)}
+          </div>
         </Field>
       )}
       {to === 'deferred' && (

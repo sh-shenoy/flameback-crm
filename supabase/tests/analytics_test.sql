@@ -11,7 +11,7 @@ insert into k select 3, create_lead('{"name":"C","phone":"9811500003","product":
 do $$ declare a uuid := (select id from k where n=1); b uuid := (select id from k where n=2); begin
   perform log_activity(a, 'meet_call', 'connected', 'Talked plans', null, null, null, null, null, 'zoom');
   assert (select platform from lead_entries where lead_id=a) = 'zoom', 'zoom saved';
-  perform log_activity(a, 'message', 'sent', null, null, null, null, null, null, 'whatsapp');
+  perform log_activity(a, 'message', 'sent', null, null, ist_today()+2, null, null, null, 'whatsapp');
   assert (select platform from lead_entries where lead_id=a and kind='message') = 'whatsapp', 'whatsapp saved';
   assert (select platform from lead_entries where lead_id=a and kind='meet_call') = 'zoom', 'older entry untouched';
   perform log_activity(b, 'phone_call', 'no_answer', null, null, null, null, null, null, 'zoom');

@@ -12,9 +12,9 @@ do $$ declare a uuid := (select id from k where n=1); b uuid := (select id from 
   perform mark_interested(a);
   perform log_activity(a, 'phone_call', 'no_answer');
   assert (select strikes from leads where id=a)=1, 'reminder strike';
-  perform log_activity(a, 'phone_call', 'connected', 'Busy this month, call in two weeks', null, null, 'contact');
+  perform log_activity(a, 'phone_call', 'connected', 'Busy this month, call in two weeks', null, ist_today()+14, 'contact');
   assert (select bucket from leads where id=a)='active_contact' and (select strikes from leads where id=a)=0, 'contact -> active, no strike';
-  assert (select next_follow_up from leads where id=a)=ist_today()+2, 'default follow-up 2d';
+  assert (select next_follow_up from leads where id=a)=ist_today()+14, 'the RM''s follow-up date';
   assert (select count(*) from lead_entries where lead_id=a and outcome='connected' and notes like 'Busy%')=1, 'conversation logged';
   begin perform log_activity(a, 'phone_call', 'connected', 'x', null, null, 'contact'); exception when others then raise; end; -- in active contact: plain log
   -- manual stage changes
