@@ -19,7 +19,7 @@ const fmt = (day: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFor
 const fmtClock = (ts: string) => new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }).format(new Date(ts)).toLowerCase();
 
 type View = 'month' | 'week' | 'day';
-interface Ev { id: string; title: string; sub?: string; start: string; end: string; kind: 'meeting' | 'task'; link: string; join?: string | null; day: string }
+interface Ev { id: string; title: string; sub?: string; start: string; end: string; kind: 'meeting' | 'task' | 'follow'; link: string; join?: string | null; day: string; allDay?: boolean }
 
 const START_H = 7, END_H = 22, HOUR_PX = 48;
 
@@ -57,7 +57,11 @@ export default function CalendarPage() {
         ? supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team}),created_by.eq.${me!.id}`)
             .neq('status', 'done').gte('due_date', days[0]!).lte('due_date', days[days.length - 1]!)
         : Promise.resolve({ data: [] }),
-    ]).then(async ([ce, ld, tk]: any[]) => {
+      // follow-ups (leads someone has reached out to) due in this range
+      scoped(supabase.from('leads').select('id, name, product, rm_id, bucket, next_follow_up, next_follow_up_at'), sc.ids)
+        .in('bucket', ['active_contact', 'awaiting_meeting', 'holding', 'deferred'])
+        .gte('next_follow_up', days[0]!).lte('next_follow_up', days[days.length - 1]!),
+    ]).then(async ([ce, ld, tk, fu]: any[]) => {
       const out: Ev[] = [];
       const leadIds = [...new Set(((ce.data ?? []) as { lead_id: string | null }[]).map((e) => e.lead_id).filter(Boolean))] as string[];
       const names: Record<string, string> = {};
@@ -79,6 +83,13 @@ export default function CalendarPage() {
       }
       for (const t of (tk.data ?? []) as Task[]) {
         out.push({ id: 't' + t.id, title: t.title, sub: `Task · ${t.to_team}`, start: t.due_date!, end: t.due_date!, kind: 'task', link: `/tasks?task=${t.id}`, day: t.due_date! });
+      }
+      for (const l of (fu.data ?? []) as Pick<Lead, 'id' | 'name' | 'product' | 'rm_id' | 'bucket' | 'next_follow_up' | 'next_follow_up_at'>[]) {
+        if (out.some((e) => e.kind === 'meeting' && e.link === `/leads/${l.id}` && e.day === l.next_follow_up)) continue;   // meeting that day already
+        const at = l.next_follow_up_at;
+        out.push({ id: 'f' + l.id, title: who(l.rm_id) + 'Follow up: ' + l.name, sub: l.product, kind: 'follow', link: `/leads/${l.id}`,
+          start: at ?? l.next_follow_up!, end: at ? new Date(Date.parse(at) + 30 * 60_000).toISOString() : l.next_follow_up!,
+          day: at ? istDate(at) : l.next_follow_up!, allDay: !at });
       }
       out.sort((a, b) => a.start.localeCompare(b.start));
       setEvents(out);
@@ -105,7 +116,7 @@ export default function CalendarPage() {
   return (
     <div className="main-inner wide">
       <div className="page-head">
-        <div><h1>Calendar</h1><p>{isAdmin ? 'Your team\'s meetings with leads, labelled with the RM.' : `Your meetings with leads (Cal.com and booked by hand)${showTasks ? ' and tasks due' : ''}.`} Times in IST.</p></div>
+        <div><h1>Calendar</h1><p>{isAdmin ? 'Your team\'s meetings and follow-ups, labelled with the RM.' : `Your meetings, follow-ups${showTasks ? ' and tasks due' : ''}. Follow-ups with a time sit in the day; without a time, at the top.`} Times in IST.</p></div>
         {isAdmin ? <RmScopeSelect s={sc} /> : <button className="btn" onClick={() => setPicking(true)}>Schedule meeting</button>}
       </div>
       <div className="cal-bar">
@@ -135,7 +146,7 @@ export default function CalendarPage() {
                 <span className="cm-num">{Number(d.slice(8))}</span>
                 {list.slice(0, 3).map((e) => (
                   <button key={e.id} className={`cm-ev k-${e.kind}`} onClick={(x) => { x.stopPropagation(); nav(e.link); }} title={e.title}>
-                    {e.kind === 'meeting' ? <b>{fmtClock(e.start)}</b> : <b>Due</b>} {e.title}
+                    {e.allDay || e.kind === 'task' ? <b>Due</b> : <b>{fmtClock(e.start)}</b>} {e.title}
                   </button>
                 ))}
                 {list.length > 3 && <span className="cm-more">+{list.length - 3} more</span>}
@@ -163,8 +174,8 @@ function TimeGrid({ days, byDay, today, onOpen }: { days: string[]; byDay: Recor
           <div key={d} className={`cg-day ${d === today ? 'today' : ''}`}>
             <span>{fmt(d, { weekday: 'short' })}</span><b>{Number(d.slice(8))}</b>
             <div className="cg-allday">
-              {(byDay[d] ?? []).filter((e) => e.kind === 'task').map((e) => (
-                <button key={e.id} className="cm-ev k-task" onClick={() => onOpen(e)} title={e.title}>{e.title}</button>
+              {(byDay[d] ?? []).filter((e) => e.kind === 'task' || e.allDay).map((e) => (
+                <button key={e.id} className={`cm-ev k-${e.kind}`} onClick={() => onOpen(e)} title={e.title}>{e.title}</button>
               ))}
             </div>
           </div>
@@ -173,7 +184,7 @@ function TimeGrid({ days, byDay, today, onOpen }: { days: string[]; byDay: Recor
       <div className="cg-body">
         <div className="cg-hours">{hours.map((h) => <div key={h} style={{ height: HOUR_PX }}>{h === 12 ? '12 pm' : h > 12 ? `${h - 12} pm` : `${h} am`}</div>)}</div>
         {days.map((d) => {
-          const evs = (byDay[d] ?? []).filter((e) => e.kind === 'meeting');
+          const evs = (byDay[d] ?? []).filter((e) => e.kind === 'meeting' || (e.kind === 'follow' && !e.allDay));
           // place overlapping meetings side by side
           const lanes: Ev[][] = [];
           for (const e of evs) {
@@ -191,7 +202,7 @@ function TimeGrid({ days, byDay, today, onOpen }: { days: string[]; byDay: Recor
                 const en = Math.min(END_H * 60, Math.max(s + 20, istMinutes(e.end) || s + 30));
                 const lane = laneOf.get(e.id) ?? 0, n = lanes.length;
                 return (
-                  <div key={e.id} className="cg-ev" onClick={() => onOpen(e)}
+                  <div key={e.id} className={`cg-ev ${e.kind === 'follow' ? 'cg-follow' : ''}`} onClick={() => onOpen(e)}
                     style={{ top: ((s - START_H * 60) / 60) * HOUR_PX, height: ((en - s) / 60) * HOUR_PX - 2, left: `calc(${(lane / n) * 100}% + 2px)`, width: `calc(${100 / n}% - 4px)` }}>
                     <b>{e.title}</b>
                     <span>{fmtClock(e.start)}{e.sub ? ` · ${e.sub}` : ''}</span>

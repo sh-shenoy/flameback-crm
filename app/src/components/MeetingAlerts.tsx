@@ -37,11 +37,13 @@ export default function MeetingAlerts() {
     if (!me) return;
     const from = new Date(Date.now() - AFTER_MIN * 60e3).toISOString();
     const to = new Date(Date.now() + 6 * 3600e3).toISOString();
-    const [m, l] = await Promise.all([
+    const [m, l, fu] = await Promise.all([
       supabase.from('meetings').select('booking_uid, event_name, name, start_time, join_url, lead_id, leads(name)')
         .eq('rm_id', me.id).eq('status', 'active').gte('start_time', from).lt('start_time', to),
       supabase.from('leads').select('id, name, meeting_at, meeting_url')
         .eq('rm_id', me.id).eq('bucket', 'awaiting_meeting').gte('meeting_at', from).lt('meeting_at', to),
+      supabase.from('leads').select('id, name, next_follow_up_at')
+        .eq('rm_id', me.id).in('bucket', ['active_contact', 'awaiting_meeting', 'holding', 'deferred']).gte('next_follow_up_at', from).lt('next_follow_up_at', to),
     ]);
     type MRow = { booking_uid: string; event_name: string | null; name: string | null; start_time: string; join_url: string | null; lead_id: string | null; leads: { name: string } | { name: string }[] | null };
     const out: Upcoming[] = ((m.data ?? []) as MRow[]).map((r) => {
@@ -55,6 +57,10 @@ export default function MeetingAlerts() {
       const t = Date.parse(r.meeting_at);
       if (out.some((o) => o.leadId === r.id && Math.abs(Date.parse(o.start) - t) < 5 * 60e3)) continue;
       out.push({ key: `lead-${r.id}|${t}`, title: `Meeting — ${r.name}`, who: r.name, start: r.meeting_at, join: r.meeting_url, leadId: r.id });
+    }
+    // follow-ups scheduled at a time
+    for (const r of (fu.data ?? []) as { id: string; name: string; next_follow_up_at: string }[]) {
+      out.push({ key: `fu-${r.id}|${Date.parse(r.next_follow_up_at)}`, title: `Follow-up — ${r.name}`, who: r.name, start: r.next_follow_up_at, join: null, leadId: r.id });
     }
     setList(out);
   }, [me]);
@@ -91,7 +97,7 @@ export default function MeetingAlerts() {
         return (
           <div key={u.key} className="meet-alert" role="alertdialog" aria-label={`Upcoming meeting ${u.title}`}>
             <button className="ma-x" aria-label="Dismiss" onClick={() => update(u.key, { dismissed: true })}>×</button>
-            <div className="ma-head">Upcoming meeting</div>
+            <div className="ma-head">{u.key.startsWith('fu-') ? 'Follow-up due' : 'Upcoming meeting'}</div>
             <div className="ma-body"><b className="ma-when">{when}</b> · {u.title}</div>
             <div className="ma-time">{fmtTime(u.start)}</div>
             <div className="ma-actions">
