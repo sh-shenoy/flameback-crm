@@ -7,7 +7,7 @@ import {
 } from '../lib/format';
 import {
   BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, MESSAGE_PLATFORMS, PLATFORM_LABEL, VIDEO_PLATFORMS, entryLabel, type Platform, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
-  RESIDENCY_LABEL, bucketLabel, holdingGap, isNewLead, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
+  RESIDENCY_LABEL, bucketLabel, contactState, holdingGap, isNewLead, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
 import { Drawer, StagePill, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
 import { LanguagePicker, Select } from '../components/AddLead';
@@ -90,8 +90,11 @@ export default function LeadPage() {
 
   const open = lead.bucket !== 'out' && lead.bucket !== 'converting' && lead.bucket !== 'client';
   const countsStrikes = ['active_contact', 'awaiting_meeting'].includes(lead.bucket);
-  const bucketHelp = isNewLead(lead)
-    ? 'New lead: not in Follow-up yet. When you call or message, log it and pick the follow-up date; that moves it to Follow-up.'
+  const cstate = contactState(lead);
+  const bucketHelp = cstate === 'new'
+    ? 'New lead: nobody has reached out yet. Log your first call or message.'
+    : cstate === 'not_picked'
+    ? `Not picked up yet${lead.strikes ? ` (${lead.strikes} of 5 attempts)` : ''}. Keep trying; once they pick up or reply it moves to Follow-up. Five unanswered attempts send it to the Out List.`
     : BUCKETS.find((b) => b.key === lead.bucket)?.help;
 
   return (
@@ -102,7 +105,7 @@ export default function LeadPage() {
       <div className="panel lead-head">
         <div className="lh-top">
           <div>
-            <h1>{lead.name} {entries.length === 0 && open && <span className="new-badge">New</span>}</h1>
+            <h1>{lead.name} {isNewLead(lead) && <span className="new-badge">New</span>}</h1>
             <div className="lh-contact">
               {lead.phone && <a href={`tel:${lead.phone}`}>{fmtPhone(lead.phone)}</a>}
               {lead.alt_phone && <a href={`tel:${lead.alt_phone}`} title="Secondary number">{fmtPhone(lead.alt_phone)} <span className="muted small">(2nd)</span></a>}
@@ -143,7 +146,7 @@ export default function LeadPage() {
                   title={lead.next_follow_up ? 'Time (IST): puts the follow-up on your calendar' : 'Pick a date first'}
                   onChange={(e) => e.target.value && act('set_follow_up', { p_at: istAt(lead.next_follow_up!, e.target.value) }, `Follow-up set for ${fmtDate(lead.next_follow_up)}, ${e.target.value}`)} />
               </div>
-            ) : <span className={open ? '' : 'muted'}>{open ? <>{isNewLead(lead) ? 'Not contacted yet' : fmtDate(lead.next_follow_up)}{lead.next_follow_up_at && `, ${fmtTime(lead.next_follow_up_at)}`}</> : '—'}</span>}
+            ) : <span className={open ? '' : 'muted'}>{open ? <>{!lead.next_follow_up ? (isNewLead(lead) ? 'Not contacted yet' : 'Not set') : fmtDate(lead.next_follow_up)}{lead.next_follow_up_at && `, ${fmtTime(lead.next_follow_up_at)}`}</> : '—'}</span>}
           </div>
           {lead.bucket === 'awaiting_meeting' && (
             <div><div className="k">Meeting</div>{lead.meeting_at ? fmtDateTime(lead.meeting_at) : <span className="amber">Not booked yet</span>}
@@ -442,8 +445,12 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const asksResult = reached && ['active_contact', 'awaiting_meeting', 'holding', 'deferred'].includes(lead.bucket);
   const notesRequired = outcome === 'connected' || kind === 'in_person' || kind === 'note' || !!result;
   // only the RM puts a lead into Follow-up: if this leaves it in New / Follow-up, ask for the date
+  // after a real conversation that leaves the lead in Follow-up, the RM picks the follow-up date;
+  // after no answer / no reply yet (Not picked up) a "try again" date is optional
+  const spoke = kind === 'in_person' || outcome === 'connected' || outcome === 'replied' || outcome === 'call_back';
   const staysInFollowUp = (lead.bucket === 'active_contact' && !result) || (asksResult && result === 'contact');
-  const needsDate = staysInFollowUp && kind !== 'note' && outcome !== 'not_interested' && (kind === 'in_person' || !!outcome);
+  const needsDate = staysInFollowUp && spoke;
+  const tryAgain = lead.bucket === 'active_contact' && !spoke && (outcome === 'no_answer' || outcome === 'sent');
 
   const resultOptions: { key: Result; label: string; sub: string }[] = lead.bucket === 'deferred'
     ? [
@@ -590,10 +597,11 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         <textarea rows={7} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What was discussed, concerns, decisions, next steps" />
       </Field>
       {outcome !== 'not_interested' && result !== 'commits' && result !== 'later' && (
-        <Field label="Next follow-up (date and time)" required={needsDate}
+        <Field label={tryAgain ? 'Try again on (optional)' : 'Next follow-up (date and time)'} required={needsDate}
           hint={lead.bucket === 'holding' || result === 'met' ? 'Leave blank to space it out automatically'
             : next ? 'With a time it goes on your calendar, with a reminder 5 minutes before.'
-            : needsDate ? 'Required: the lead goes to Follow-up on this date.'
+            : needsDate ? 'Required: they spoke to you, so the lead is in Follow-up from here.'
+            : tryAgain ? 'The lead shows as Not picked up until they answer. Add a date to get a reminder.'
             : lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}. Leave blank to keep it.` : 'Optional.'}>
           <div className="row-gap">
             <input type="date" min={todayIST()} value={next} onChange={(e) => { setNext(e.target.value); if (e.target.value && !nextTime) setNextTime('11:00'); }} />

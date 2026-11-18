@@ -73,6 +73,8 @@ export interface Lead {
   strikes: number;
   holding_step?: number;
   next_follow_up_at?: string | null;
+  first_attempt_at?: string | null;   // first call, message, email or meeting
+  spoke_at?: string | null;           // first real conversation
   next_follow_up: string | null;
   meeting_at: string | null;
   meeting_url: string | null;
@@ -156,7 +158,7 @@ export interface ImportBatch {
 }
 
 export const BUCKETS: { key: Bucket; label: string; short: string; help: string }[] = [
-  { key: 'active_contact', label: 'Follow-up', short: 'Follow-up', help: 'You have reached out; follow up on the date and time set. Five unanswered attempts send it to the Out List.' },
+  { key: 'active_contact', label: 'Follow-up', short: 'Follow-up', help: 'You have spoken to them; follow up on the date and time set. Five unanswered attempts in a row send it to the Out List.' },
   { key: 'awaiting_meeting', label: 'Awaiting meeting', short: 'Meeting', help: 'Agreed to meet. Five reminders with no meeting sends it to the Out List.' },
   { key: 'holding', label: 'Holding period', short: 'Holding', help: 'Met, still thinking. No strikes: follow-ups are spaced out automatically (7, 14, 28, 56 days…, at most 90). Record a decision with Log activity.' },
   { key: 'deferred', label: 'Deferred', short: 'Deferred', help: 'Will commit later. Returns to Holding on the agreed date. If they get in touch early, use Log activity.' },
@@ -286,5 +288,18 @@ export interface OnboardingTemplate {
 }
 export const RESIDENCY_LABEL: Record<string, string> = { resident: 'Resident', nri: 'NRI' };
 
-/** A lead nobody has reached out to yet: shown as "New", not as a follow-up. */
-export const isNewLead = (l: Pick<Lead, 'bucket' | 'next_follow_up'>) => l.bucket === 'active_contact' && !l.next_follow_up;
+/** Where a lead in the first stage stands: New (never tried), Not picked up (tried, no answer yet), Follow-up (spoke). */
+export type ContactState = 'new' | 'not_picked' | 'follow_up';
+type ContactFields = Pick<Lead, 'bucket'> & { first_attempt_at?: string | null; spoke_at?: string | null };
+export const contactState = (l: ContactFields): ContactState | null =>
+  l.bucket !== 'active_contact' ? null : l.spoke_at ? 'follow_up' : l.first_attempt_at ? 'not_picked' : 'new';
+export const CONTACT_LABEL: Record<ContactState, string> = { new: 'New', not_picked: 'Not picked up', follow_up: 'Follow-up' };
+/** A lead nobody has reached out to yet. */
+export const isNewLead = (l: ContactFields) => contactState(l) === 'new';
+/** Supabase filters for each state (bucket = active_contact). */
+export function whereContact<Q extends { eq: (c: string, v: string) => Q; is: (c: string, v: null) => Q; not: (c: string, o: string, v: null) => Q }>(q: Q, st: ContactState): Q {
+  q = q.eq('bucket', 'active_contact');
+  return st === 'follow_up' ? q.not('spoke_at', 'is', null)
+    : st === 'not_picked' ? q.is('spoke_at', null).not('first_attempt_at', 'is', null)
+    : q.is('spoke_at', null).is('first_attempt_at', null);
+}
