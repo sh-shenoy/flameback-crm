@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../auth';
-import { rpc } from '../lib/supabase';
+import { rpc, supabase } from '../lib/supabase';
 import { fmtDateTime, initials, timeAgo } from '../lib/format';
 import type { Profile } from '../lib/types';
 import { Empty, useToast } from '../components/ui';
@@ -9,10 +9,15 @@ import Team from './Team';
 import { TeamOverview } from './AdminOverview';
 import MeetingTypes from './MeetingTypes';
 import OnboardingTemplates from './OnboardingTemplates';
+import Duplicates from './Duplicates';
 
 export default function Admin() {
   const { team, isAdmin } = useApp();
   const [sp, setSp] = useSearchParams();
+  const [dupCount, setDupCount] = useState(0);
+  useEffect(() => {
+    supabase.from('lead_conflicts').select('id', { count: 'exact', head: true }).eq('status', 'open').then(({ count }) => setDupCount(count ?? 0));
+  }, [sp]);
   const tab = sp.get('tab') ?? 'overview';
   if (!isAdmin) return <div className="main-inner"><p>Admins only.</p></div>;
   const pending = team.filter((t) => !t.is_active && !t.approved_at && !t.rejected_at);
@@ -25,9 +30,10 @@ export default function Admin() {
         <button className={`tab ${tab === 'requests' ? 'on' : ''}`} onClick={() => setSp({ tab: 'requests' })}>Access requests <span className="tab-n">{pending.length}</span></button>
         <button className={`tab ${tab === 'team' ? 'on' : ''}`} onClick={() => setSp({ tab: 'team' })}>Team &amp; rotation</button>
         <button className={`tab ${tab === 'meetings' ? 'on' : ''}`} onClick={() => setSp({ tab: 'meetings' })}>Meeting types</button>
+        <button className={`tab ${tab === 'duplicates' ? 'on' : ''}`} onClick={() => setSp({ tab: 'duplicates' })}>Duplicates {dupCount > 0 && <span className="tab-n">{dupCount}</span>}</button>
         <button className={`tab ${tab === 'checklists' ? 'on' : ''}`} onClick={() => setSp({ tab: 'checklists' })}>Onboarding checklists</button>
       </div>
-      {tab === 'overview' ? <TeamOverview /> : tab === 'team' ? <Team embedded /> : tab === 'meetings' ? <MeetingTypes /> : tab === 'checklists' ? <OnboardingTemplates /> : (
+      {tab === 'overview' ? <TeamOverview /> : tab === 'team' ? <Team embedded /> : tab === 'meetings' ? <MeetingTypes /> : tab === 'checklists' ? <OnboardingTemplates /> : tab === 'duplicates' ? <Duplicates /> : (
         <>
           <div className="panel">
             <div className="panel-head"><h2>Waiting for approval</h2><span className="muted small">Anyone with a @flamebackcapital.com Google account can ask; nobody gets in until approved.</span></div>
