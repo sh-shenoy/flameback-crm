@@ -37,7 +37,7 @@ const SECTIONS: { title: string; items: NavItem[]; admin?: boolean; soon?: boole
       { to: '/help', label: 'Help' },
     ],
   },
-  { title: 'Admin', admin: true, items: [{ to: '/admin', label: 'Admin', badge: 'requests' }] },
+  { title: 'Admin', admin: true, items: [{ to: '/admin', label: 'Admin', badge: 'requests' }, { to: '/analytics', label: 'Analytics' }] },
   {
     title: 'Coming soon',
     soon: true,

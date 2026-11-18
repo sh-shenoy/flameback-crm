@@ -3,8 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
 import { addDays, fmtDate, fmtDateTime, fmtPhone, initials, timeAgo, todayIST } from '../lib/format';
-import { ENTRY_KINDS, OUTCOME_LABEL, bucketLabel, type Lead, type LeadEntry } from '../lib/types';
+import { OUTCOME_LABEL, entryLabel, bucketLabel, type Lead, type LeadEntry } from '../lib/types';
 import { BucketPill, Empty, Field, FollowUp, Modal, ProductTag, Skeleton, useToast } from '../components/ui';
+import { Funnel, numRow, sumCounts, type Counts, type Row } from './Reports';
 
 export interface Stat {
   user_id: string; full_name: string; email: string; role: string; team: string; in_rotation: boolean; avatar_url: string | null;
@@ -167,6 +168,53 @@ export function NudgeModal({ s, onClose, onSent }: { s: Stat; onClose: () => voi
   );
 }
 
+/* ───────── one RM's funnel ───────── */
+const FUNNEL_PERIODS: { key: string; label: string; range: () => [string, string] }[] = [
+  { key: 'all', label: 'All time', range: () => ['2020-01-01', todayIST()] },
+  { key: 'month', label: 'This month', range: () => [monthStart(), todayIST()] },
+  { key: '30', label: 'Last 30 days', range: () => [addDays(todayIST(), -29), todayIST()] },
+  { key: '90', label: 'Last 90 days', range: () => [addDays(todayIST(), -89), todayIST()] },
+];
+
+/** Leads given to this RM (by when they came in) and how far each got, with the whole team as a marker. */
+export function RmFunnel({ rmId, name }: { rmId: string; name: string }) {
+  const [period, setPeriod] = useState('all');
+  const [mine, setMine] = useState<Counts | null>(null);
+  const [all, setAll] = useState<Counts | null>(null);
+  useEffect(() => {
+    setMine(null);
+    const [from, to] = FUNNEL_PERIODS.find((p) => p.key === period)!.range();
+    supabase.rpc('report_conversion', { p_from: from, p_to: to, p_group: 'rm', p_rm: null }).then(({ data }) => {
+      const rows = ((data as Row[]) ?? []).map(numRow);
+      setAll(sumCounts(rows));
+      setMine(sumCounts(rows.filter((r) => r.grp === name)));
+    });
+  }, [rmId, name, period]);
+  return (
+    <div className="panel" style={{ marginBottom: 16 }}>
+      <div className="panel-head">
+        <h2>Funnel <span className="muted">· leads given to {name.split(' ')[0]}</span></h2>
+        <select className="filter" value={period} onChange={(e) => setPeriod(e.target.value)} aria-label="Leads that came in">
+          {FUNNEL_PERIODS.map((p) => <option key={p.key} value={p.key}>{p.key === 'all' ? 'All time' : `Came in ${p.label.toLowerCase()}`}</option>)}
+        </select>
+      </div>
+      {mine === null ? <div className="pad"><Skeleton h={180} /></div>
+        : mine.leads === 0 ? <Empty>No leads came in for {name.split(' ')[0]} in this period.</Empty>
+        : <>
+            <div className="now-strip" aria-label="Where these leads are now">
+              <span><b>{mine.new_now}</b> New, not contacted yet</span>
+              <span><b>{mine.follow_up_now}</b> In follow-up</span>
+              <span><b>{mine.still_open - mine.new_now - mine.follow_up_now}</b> Meeting, holding or deferred</span>
+              <span><b>{mine.committed - mine.clients}</b> Prospect</span>
+              <span><b>{mine.clients}</b> Client</span>
+              <span><b>{mine.out_list}</b> Out List</span>
+            </div>
+            <Funnel c={mine} compare={all && all.leads > mine.leads ? all : null} compareLabel="whole team" showNow={false} />
+          </>}
+    </div>
+  );
+}
+
 /* ───────── one person ───────── */
 export function PersonPage() {
   const { id } = useParams();
@@ -225,12 +273,14 @@ export function PersonPage() {
 
       {stat && (
         <div className="cards">
-          <div className="card"><div className="k">Open leads</div><div className="v">{stat.open_leads}</div><div className="meta">{stat.active_contact} contact · {stat.awaiting_meeting} meeting · {stat.holding} holding · {stat.deferred} deferred</div></div>
+          <div className="card"><div className="k">Open leads</div><div className="v">{stat.open_leads}</div><div className="meta">{stat.active_contact} new or follow-up · {stat.awaiting_meeting} meeting · {stat.holding} holding · {stat.deferred} deferred</div></div>
           <div className="card"><div className="k">Overdue follow-ups</div><div className={`v ${stat.overdue ? 'red' : ''}`}>{stat.overdue}</div><div className="meta">{stat.due_today} due today</div></div>
           <div className="card"><div className="k">This week</div><div className="v">{stat.entries}</div><div className="meta">{stat.calls} calls · last {stat.last_activity_at ? timeAgo(stat.last_activity_at) : 'never'}</div></div>
           <div className="card"><div className="k">Needs attention</div><div className="v">{stat.meetings_unrecorded + stat.untouched_7d + stat.tasks_overdue}</div><div className="meta">{stat.meetings_unrecorded} no outcome · {stat.untouched_7d} untouched · {stat.tasks_overdue} task{stat.tasks_overdue === 1 ? '' : 's'} overdue</div></div>
         </div>
       )}
+
+      <RmFunnel rmId={person.id} name={person.full_name ?? 'This RM'} />
 
       <div className="panel">
         <div className="panel-head">
@@ -287,7 +337,7 @@ export function PersonPage() {
             <ul className="tl compact">
               {activity.map((e) => (
                 <li key={e.id}>
-                  <div><b>{ENTRY_KINDS.find((k) => k.key === e.kind)?.label ?? e.kind}</b>{e.outcome ? ` · ${OUTCOME_LABEL[e.outcome]}` : ''} with <Link to={`/leads/${e.lead_id}`}>{e.leads?.name ?? 'a lead'}</Link></div>
+                  <div><b>{entryLabel(e.kind, e.platform)}</b>{e.outcome ? ` · ${OUTCOME_LABEL[e.outcome]}` : ''} with <Link to={`/leads/${e.lead_id}`}>{e.leads?.name ?? 'a lead'}</Link></div>
                   <div className="when">{fmtDateTime(e.occurred_at)} · in {bucketLabel(e.bucket_at)}</div>
                 </li>
               ))}

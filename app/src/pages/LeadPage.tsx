@@ -6,7 +6,7 @@ import {
   addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, fromISTInput, istAt, istHHMM, toISTInput, todayIST,
 } from '../lib/format';
 import {
-  BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
+  BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, MESSAGE_PLATFORMS, PLATFORM_LABEL, VIDEO_PLATFORMS, entryLabel, type Platform, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
   RESIDENCY_LABEL, bucketLabel, holdingGap, isNewLead, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
 import { Drawer, StagePill, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
@@ -372,7 +372,7 @@ function Timeline({ entries, events, teamName, onChanged, readOnly }: {
           {items.map(({ e, ev, at }) => e ? (
             <li key={e.id} className="tl-entry">
               <div className="tl-row">
-                <b>{ENTRY_KINDS.find((k) => k.key === e.kind)?.label}</b>
+                <b>{entryLabel(e.kind, e.platform)}</b>
                 {e.outcome && <span className={`outcome o-${e.outcome}`}>{OUTCOME_LABEL[e.outcome]}</span>}
                 {e.strike_state === 'counted' && <span className="strike-tag">Strike</span>}
                 {e.strike_state === 'pending' && <>
@@ -421,6 +421,8 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const [kind, setKind] = useState<EntryKind>('phone_call');
   const [when, setWhen] = useState(toISTInput(new Date().toISOString()));
   const [outcome, setOutcome] = useState<Outcome | ''>('');
+  const videoDefault: Platform = lead.meeting_pref === 'zoom' ? 'zoom' : 'google-meet';
+  const [platform, setPlatform] = useState<Platform | ''>('');
   const [result, setResult] = useState<Result>('');
   const [later, setLater] = useState('');
   const [product, setProduct] = useState(lead.product);
@@ -496,6 +498,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   })();
 
   async function save() {
+    if (kind === 'message' && !platform) { setErr('Pick where you messaged them'); return; }
     if ((isCall || isMsg) && !outcome) { setErr('Pick an outcome'); return; }
     if (notesRequired && !notes.trim()) { setErr('Notes are required for this entry'); return; }
     if (asksResult && result === 'later' && !later) { setErr('Pick the date they will come back'); return; }
@@ -507,6 +510,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         p_result: asksResult && result ? result : null,
         p_deferred_until: asksResult && result === 'later' ? later : null,
         p_product: asksResult && result === 'commits' ? product : null,
+        p_platform: kind === 'meet_call' || kind === 'message' ? platform || null : null,
       });
       // a follow-up time puts it on the calendar
       if (next && nextTime && outcome !== 'not_interested' && result !== 'commits' && result !== 'later') {
@@ -528,12 +532,21 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
       <Field label="What happened" required>
         <div className="chips">
           {ENTRY_KINDS.map((k) => (
-            <button key={k.key} className={`chip ${kind === k.key ? 'on' : ''}`} onClick={() => { setKind(k.key); setOutcome(''); setResult(''); }}>
+            <button key={k.key} className={`chip ${kind === k.key ? 'on' : ''}`} onClick={() => { setKind(k.key); setOutcome(''); setResult(''); setPlatform(k.key === 'meet_call' ? videoDefault : k.key === 'message' ? 'whatsapp' : ''); }}>
               {k.label}
             </button>
           ))}
         </div>
       </Field>
+      {(kind === 'meet_call' || kind === 'message') && (
+        <Field label={kind === 'meet_call' ? 'Video call on' : 'Message on'} required>
+          <div className="chips">
+            {(kind === 'meet_call' ? VIDEO_PLATFORMS : MESSAGE_PLATFORMS).map((p) => (
+              <button key={p} className={`chip ${platform === p ? 'on' : ''}`} onClick={() => setPlatform(p)}>{PLATFORM_LABEL[p]}</button>
+            ))}
+          </div>
+        </Field>
+      )}
       <Field label="Date and time (IST)" required><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></Field>
       {outcomes.length > 0 && (
         <Field label="Outcome" required>
@@ -567,7 +580,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
       )}
       {effect && <div className={`effect ${effect.tone}`}>{effect.text}</div>}
       <Field label="Notes" required={notesRequired}
-        hint={kind === 'meet_call' ? 'Paste the Google Meet transcript here, or write what was discussed.' : undefined}>
+        hint={kind === 'meet_call' ? `Paste the ${platform === 'zoom' ? 'Zoom' : 'Google Meet'} transcript here, or write what was discussed.` : undefined}>
         <textarea rows={7} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What was discussed, concerns, decisions, next steps" />
       </Field>
       {outcome !== 'not_interested' && result !== 'commits' && result !== 'later' && (

@@ -4,20 +4,19 @@ import Papa from 'papaparse';
 import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
 import { addDays, fmtDate, fmtTime, todayIST } from '../lib/format';
-import { ENTRY_KINDS, OUTCOME_LABEL, bucketLabel, type Bucket, type Outcome } from '../lib/types';
+import { OUTCOME_LABEL, entryLabel, bucketLabel, type Bucket, type Outcome } from '../lib/types';
 import { Empty, ProductTag, Skeleton } from '../components/ui';
 import { RmScopeSelect, scoped, useRmScope } from '../components/RmScope';
 
 /* Daily log: everything done with clients on one day — calls, messages, meetings, notes and stage moves. */
 
 type LeadMini = { id: string; name: string; product: string; bucket: Bucket; next_follow_up: string | null; next_follow_up_at: string | null; created_at: string };
-interface Entry { id: string; lead_id: string; kind: string; outcome: Outcome | null; notes: string | null; occurred_at: string; bucket_at: Bucket; created_by: string | null; leads: LeadMini | null }
+interface Entry { id: string; lead_id: string; kind: string; outcome: Outcome | null; notes: string | null; occurred_at: string; bucket_at: Bucket; created_by: string | null; platform: string | null; leads: LeadMini | null }
 interface Ev { id: number; lead_id: string; kind: string; from_value: string | null; to_value: string | null; actor: string | null; at: string; detail: { reason?: string } | null; leads: LeadMini | null }
 type Row =
   | { type: 'entry'; at: string; who: string | null; lead: LeadMini | null; e: Entry }
   | { type: 'move'; at: string; who: string | null; lead: LeadMini | null; v: Ev };
 
-const KIND = Object.fromEntries(ENTRY_KINDS.map((k) => [k.key, k.label])) as Record<string, string>;
 const OUTREACH = ['phone_call', 'meet_call', 'message', 'email', 'in_person'];
 
 export default function DailyLog() {
@@ -70,7 +69,7 @@ export default function DailyLog() {
   }, [rows, touchedBefore]);
 
   const describe = (r: Row) => r.type === 'entry'
-    ? `${KIND[r.e.kind] ?? r.e.kind}${r.e.outcome ? ` · ${OUTCOME_LABEL[r.e.outcome] ?? r.e.outcome}` : ''}`
+    ? `${entryLabel(r.e.kind, r.e.platform)}${r.e.outcome ? ` · ${OUTCOME_LABEL[r.e.outcome] ?? r.e.outcome}` : ''}`
     : `Moved to ${bucketLabel(r.v.to_value as Bucket)}${r.v.detail?.reason ? ` · ${r.v.detail.reason}` : ''}`;
 
   function exportCsv() {
