@@ -241,7 +241,7 @@ export default function Leads() {
                     <td className="small nowrap">{fmtDate(l.created_at)}<div className="lead-sub">{fmtTime(l.created_at)}</div></td>
                     <td>{n}</td>
                     <td><Strikes n={l.strikes} show={strikeBucket(l.bucket)} /></td>
-                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : l.bucket === 'active_contact' && !l.next_follow_up ? <span className="tag-new">To contact</span> : <><FollowUp date={l.next_follow_up} />{l.next_follow_up_at && <div className="lead-sub">{fmtTime(l.next_follow_up_at)}</div>}</>}</td>
+                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : l.bucket === 'active_contact' && !l.next_follow_up ? ((l as { lead_entries?: { count: number }[] }).lead_entries?.[0]?.count ? <span className="muted small" title="Contacted, but no follow-up date set">No date set</span> : <span className="tag-new">To contact</span>) : <><FollowUp date={l.next_follow_up} />{l.next_follow_up_at && <div className="lead-sub">{fmtTime(l.next_follow_up_at)}</div>}</>}</td>
                   </tr>
                 );
               })}

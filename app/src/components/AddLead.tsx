@@ -11,7 +11,7 @@ interface Dup { lead_id: string; name: string; rm_name: string; bucket: Bucket; 
 const blank = {
   name: '', phone: '', alt_phone: '', email: '', product: '', source: '', campaign: '', referred_by: '',
   city: '', age: '', marital_status: '', income_band: '', language: '', residency: '', requirement: '', budget: '',
-  next_follow_up: '', rm_id: '',
+  rm_id: '',
 };
 
 export default function AddLead({ onClose }: { onClose: () => void }) {
@@ -137,7 +137,6 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
           : <Field label="City"><input value={f.city} onChange={set('city')} /></Field>}
       </div>
       <div className="grid2">
-        <Field label="Follow-up date (optional)" hint="Leave empty: it's a new lead until the first call or message."><input type="date" value={f.next_follow_up} onChange={set('next_follow_up')} /></Field>
         <Field label="Who gets this lead">
           <select value={f.rm_id} onChange={set('rm_id')}>
             <option value="">Round-robin (automatic)</option>
