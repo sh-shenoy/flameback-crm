@@ -57,6 +57,13 @@ do $$ declare res jsonb; begin
   begin perform hand_over_leads('00000000-0000-0000-0000-00000000000d', 'person', '00000000-0000-0000-0000-0000000000ff'); raise exception 'FAIL to admin';
   exception when others then if sqlerrm like 'FAIL%' then raise; end if; end;
 end $$;
+-- an admin's upload can merge into an existing lead (housekeeping), but still can't log activity
+do $$ declare b uuid; res jsonb; begin
+  b := start_import('fix.csv','Meta',null,'RIA','merge',1);
+  res := import_rows(b, '[{"row":2,"name":"G","phone":"9811000001","city":"Surat"}]');
+  assert res->0->>'status' = 'merged', format('admin merge %s', res);
+  assert (select city from leads where phone='9811000001')='Surat', 'merged field';
+end $$;
 -- nobody in rotation: an admin's new lead is refused, not kept
 reset role;
 update profiles set in_rotation = false;

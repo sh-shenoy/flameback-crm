@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
+import { RmScopeSelect, scoped, useRmScope } from '../components/RmScope';
 import { supabase } from '../lib/supabase';
 import { fmtDate } from '../lib/format';
 import { RESIDENCY_LABEL, type Lead } from '../lib/types';
@@ -9,23 +10,24 @@ import { fmtINR } from '../components/OnboardingCard';
 
 /** Funded clients. Holdings, returns and reviews come later. */
 export default function Clients() {
-  const { me, isAdmin, teamName } = useApp();
+  const { isAdmin, teamName } = useApp();
   const nav = useNavigate();
   const [rows, setRows] = useState<Lead[] | null>(null);
-  const [mine, setMine] = useState(!isAdmin);
+  const sc = useRmScope();
+  const key = sc.ids === null ? 'all' : sc.ids.join(',');
 
   useEffect(() => {
     let q = supabase.from('leads').select('*').eq('bucket', 'client').order('funded_at', { ascending: false });
-    if (mine) q = q.eq('rm_id', me!.id);
+    q = scoped(q, sc.ids);
     q.then(({ data }) => setRows((data as Lead[]) ?? []));
-  }, [mine, me]);
+  }, [key]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const total = (rows ?? []).reduce((s, r) => s + (r.funded_amount ?? 0), 0);
   return (
     <div className="main-inner">
       <div className="page-head">
         <div><h1>Clients</h1><p>Funded clients. Holdings, returns and reviews are coming later.</p></div>
-        {isAdmin && <div className="seg"><button className={mine ? '' : 'on'} onClick={() => setMine(false)}>Everyone</button><button className={mine ? 'on' : ''} onClick={() => setMine(true)}>Mine</button></div>}
+        <RmScopeSelect s={sc} />
       </div>
       {rows && rows.length > 0 && (
         <div className="cards" style={{ marginBottom: 14 }}>
@@ -36,7 +38,7 @@ export default function Clients() {
       <div className="panel">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Product</th><th>Funded on</th><th>Amount</th><th>Source</th>{isAdmin && !mine && <th>RM</th>}</tr></thead>
+            <thead><tr><th>Client</th><th>Product</th><th>Funded on</th><th>Amount</th><th>Source</th>{isAdmin && sc.ids?.length !== 1 && <th>RM</th>}</tr></thead>
             <tbody>
               {rows === null && [0, 1].map((i) => <tr key={i}><td colSpan={6}><Skeleton /></td></tr>)}
               {rows?.map((r) => (
@@ -46,7 +48,7 @@ export default function Clients() {
                   <td>{fmtDate(r.funded_at ?? null)}</td>
                   <td>{r.funded_amount != null ? fmtINR(r.funded_amount) : <span className="muted">—</span>}</td>
                   <td className="small">{r.source}{r.referred_by ? ` · ${r.referred_by}` : ''}</td>
-                  {isAdmin && !mine && <td className="small">{teamName(r.rm_id)}</td>}
+                  {isAdmin && sc.ids?.length !== 1 && <td className="small">{teamName(r.rm_id)}</td>}
                 </tr>
               ))}
             </tbody>
