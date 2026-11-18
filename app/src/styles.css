@@ -787,3 +787,4 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
   .an-grid, .an-cards { grid-template-columns: 1fr; }
   .an-bar-row { grid-template-columns: 100px 1fr 110px; }
 }
+.b-not_picked { background: #fdf1e3; color: #9a5a14; }

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
 import { addDays, fmtTime, relativeDay, timeAgo, todayIST } from '../lib/format';
-import { BUCKETS, type Bucket, type Lead, type Task } from '../lib/types';
+import { BUCKETS, whereContact, type Bucket, type Lead, type Task } from '../lib/types';
 import { Empty, ProductTag, Skeleton } from '../components/ui';
 import { PriorityTag, TaskDrawer } from '../components/TaskParts';
 
@@ -89,8 +89,8 @@ export default function Dashboard() {
         ? supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`).neq('status', 'done').lte('due_date', today).limit(100)
         : supabase.from('tasks').select('*').or(`assignee_id.eq.${me!.id},and(assignee_id.is.null,to_team.eq.${me!.team})`).neq('status', 'done').eq('due_date', tmr).limit(100),
       // new leads nobody has reached out to yet (oldest first) — today's list only
-      scoped(supabase.from('leads').select('*', { count: 'exact' }).eq('bucket', 'active_contact').is('next_follow_up', null)
-        .order('created_at', { ascending: true }).limit(isToday ? 100 : 1)),
+      whereContact(scoped(supabase.from('leads').select('*', { count: 'exact' })), 'new')
+        .order('created_at', { ascending: true }).limit(isToday ? 100 : 1),
     ]).then(([f, m, tk, nw]: any[]) => {
       setStats((s) => (s ? { ...s, fresh: nw.count ?? (nw.data ?? []).length } : s));
       const out: Action[] = [];

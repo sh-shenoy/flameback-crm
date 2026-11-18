@@ -4,7 +4,7 @@ import { useApp } from '../auth';
 import { RmScopeSelect, scoped, useRmScope } from '../components/RmScope';
 import { rpc, supabase } from '../lib/supabase';
 import { addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, todayIST } from '../lib/format';
-import { BUCKETS, PRODUCTS, type Bucket, type Lead } from '../lib/types';
+import { BUCKETS, PRODUCTS, isNewLead, whereContact, type Bucket, type Lead } from '../lib/types';
 import { Empty, Field, FollowUp, Modal, ProductTag, Skeleton, StagePill, Strikes, useToast } from '../components/ui';
 
 type Row = Lead & { lead_entries: { count: number }[] };
@@ -15,7 +15,7 @@ export default function Leads() {
   const { me, sources, isAdmin, team } = useApp();
   const [sp, setSp] = useSearchParams();
   const nav = useNavigate();
-  const tab = (sp.get('bucket') as Bucket | 'open' | 'new' | null) ?? 'open';
+  const tab = (sp.get('bucket') as Bucket | 'open' | 'new' | 'not_picked' | null) ?? 'open';
   const product = sp.get('product') ?? '';
   const source = sp.get('source') ?? '';
   const due = sp.get('due') ?? '';
@@ -68,7 +68,7 @@ export default function Leads() {
     if (range) x = x.gte('created_at', ist(range[0])).lt('created_at', ist(addDays(range[1], 1)));
     if (batch) x = x.eq('import_batch_id', batch);
     const today = todayIST();
-    if (due === 'new') x = x.eq('bucket', 'active_contact').is('next_follow_up', null);
+    if (due === 'new') x = whereContact(x, 'new');
     if (due === 'overdue') x = x.lt('next_follow_up', today);
     if (due === 'today') x = x.eq('next_follow_up', today);
     if (due === 'week') x = x.lte('next_follow_up', addDays(today, 7));
@@ -87,8 +87,9 @@ export default function Leads() {
     setRows(null);
     let query = supabase.from('leads').select('*, lead_entries(count)', { count: 'exact' });
     query = tab === 'open' ? query.in('bucket', WORKING)
-      : tab === 'new' ? query.eq('bucket', 'active_contact').is('next_follow_up', null)
-      : tab === 'active_contact' ? query.eq('bucket', 'active_contact').not('next_follow_up', 'is', null)
+      : tab === 'new' ? whereContact(query, 'new')
+      : tab === 'not_picked' ? whereContact(query, 'not_picked')
+      : tab === 'active_contact' ? whereContact(query, 'follow_up')
       : query.eq('bucket', tab);
     query = applyFilters(query);
     query = (sort === 'new' ? query.order('created_at', { ascending: false })
@@ -102,16 +103,16 @@ export default function Leads() {
       setSel(new Set());
     });
     // tab counts
-    Promise.all([...WORKING, 'converting' as Bucket, 'client' as Bucket, 'new'].map(async (b) => {
+    Promise.all([...WORKING, 'converting' as Bucket, 'client' as Bucket, 'new', 'not_picked'].map(async (b) => {
       let cq = supabase.from('leads').select('id', { count: 'exact', head: true });
-      cq = b === 'new' ? cq.eq('bucket', 'active_contact').is('next_follow_up', null)
-        : b === 'active_contact' ? cq.eq('bucket', 'active_contact').not('next_follow_up', 'is', null) : cq.eq('bucket', b);
+      cq = b === 'new' || b === 'not_picked' ? whereContact(cq, b)
+        : b === 'active_contact' ? whereContact(cq, 'follow_up') : cq.eq('bucket', b);
       const { count } = await applyFilters(cq);
       return [b, count ?? 0] as const;
     })).then((pairs) => {
       if (cancelled) return;
       const c: Record<string, number> = Object.fromEntries(pairs);
-      c.open = WORKING.reduce((s, b) => s + (c[b] ?? 0), 0) + (c.new ?? 0);
+      c.open = WORKING.reduce((s, b) => s + (c[b] ?? 0), 0) + (c.new ?? 0) + (c.not_picked ?? 0);
       setCounts(c);
     });
     return () => { cancelled = true; };
@@ -120,6 +121,7 @@ export default function Leads() {
   const tabs: { key: string; label: string }[] = [
     { key: 'open', label: 'All open' },
     { key: 'new', label: 'New' },
+    { key: 'not_picked', label: 'Not picked up' },
     ...BUCKETS.filter((b) => b.key !== 'out').map((b) => ({ key: b.key, label: b.label })),
   ];
   const strikeBucket = (b: Bucket) => ['active_contact', 'awaiting_meeting'].includes(b);
@@ -228,7 +230,7 @@ export default function Leads() {
                         onChange={() => { const n = new Set(sel); n.has(l.id) ? n.delete(l.id) : n.add(l.id); setSel(n); }} />
                     </td>}
                     <td>
-                      <div className="lead-name">{l.name} {n === 0 && <span className="new-badge">New</span>}</div>
+                      <div className="lead-name">{l.name} {isNewLead(l) && <span className="new-badge">New</span>}</div>
                       <div className="lead-sub">{fmtPhone(l.phone) || l.email}</div>
                     </td>
                     <td><span className="src">{l.source}</span>{l.campaign && <div className="lead-sub">{l.campaign}</div>}</td>
@@ -241,7 +243,8 @@ export default function Leads() {
                     <td className="small nowrap">{fmtDate(l.created_at)}<div className="lead-sub">{fmtTime(l.created_at)}</div></td>
                     <td>{n}</td>
                     <td><Strikes n={l.strikes} show={strikeBucket(l.bucket)} /></td>
-                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : l.bucket === 'active_contact' && !l.next_follow_up ? ((l as { lead_entries?: { count: number }[] }).lead_entries?.[0]?.count ? <span className="muted small" title="Contacted, but no follow-up date set">No date set</span> : <span className="tag-new">To contact</span>) : <><FollowUp date={l.next_follow_up} />{l.next_follow_up_at && <div className="lead-sub">{fmtTime(l.next_follow_up_at)}</div>}</>}</td>
+                    <td>{l.bucket === 'client' ? <span className="muted small">Funded {fmtDate(l.funded_at ?? null)}</span> : l.bucket === 'converting' ? <span className="muted small">Prospect since {fmtDate(l.converted_at)}</span> : isNewLead(l) ? <span className="tag-new">To contact</span> : l.bucket === 'active_contact' && !l.next_follow_up ? <span className="muted small" title="No follow-up date set">—</span>
+                      : <><FollowUp date={l.next_follow_up} />{l.next_follow_up_at && <div className="lead-sub">{fmtTime(l.next_follow_up_at)}</div>}</>}</td>
                   </tr>
                 );
               })}

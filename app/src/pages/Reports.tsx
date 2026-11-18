@@ -7,7 +7,7 @@ import { Empty, Skeleton } from '../components/ui';
 import { fmtINR } from '../components/OnboardingCard';
 
 type Group = 'source' | 'campaign' | 'referrer' | 'product' | 'rm';
-export interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; spoke: number; interested: number; met: number; committed: number; clients: number; funded_amount: number; out_list: number; still_open: number; new_now: number; follow_up_now: number }
+export interface Row { grp: string; source_kind: string | null; leads: number; contacted: number; spoke: number; interested: number; met: number; committed: number; clients: number; funded_amount: number; out_list: number; still_open: number; new_now: number; not_picked_now: number; follow_up_now: number }
 export type Counts = Omit<Row, 'grp' | 'source_kind'>;
 
 const GROUPS: { key: Group; label: string; admin?: boolean }[] = [
@@ -35,7 +35,7 @@ export const numRow = (r: Row): Row => {
   for (const k of Object.keys(o)) if (k !== 'grp' && k !== 'source_kind') o[k] = +(o[k] as number) || 0;
   return o as unknown as Row;
 };
-export const EMPTY_COUNTS: Counts = { leads: 0, contacted: 0, spoke: 0, interested: 0, met: 0, committed: 0, clients: 0, funded_amount: 0, out_list: 0, still_open: 0, new_now: 0, follow_up_now: 0 };
+export const EMPTY_COUNTS: Counts = { leads: 0, contacted: 0, spoke: 0, interested: 0, met: 0, committed: 0, clients: 0, funded_amount: 0, out_list: 0, still_open: 0, new_now: 0, not_picked_now: 0, follow_up_now: 0 };
 export const sumCounts = (rows: Counts[]): Counts => rows.reduce<Counts>((t, r) => {
   const o = { ...t };
   for (const k of Object.keys(EMPTY_COUNTS) as (keyof Counts)[]) o[k] = t[k] + (r[k] ?? 0);
@@ -247,6 +247,7 @@ export function Funnel({ c, compare, compareLabel = 'all leads in this report', 
         <span><b>{c.out_list.toLocaleString('en-IN')}</b> on the Out List</span>
         <span><b>{c.still_open.toLocaleString('en-IN')}</b> still open</span>
         {showNow && <span><b>{c.new_now.toLocaleString('en-IN')}</b> new, not contacted yet</span>}
+        {showNow && <span><b>{c.not_picked_now.toLocaleString('en-IN')}</b> not picked up</span>}
         {showNow && <span><b>{c.follow_up_now.toLocaleString('en-IN')}</b> in follow-up</span>}
         {compare && <span className="fn-key"><i className="fn-mark-key" /> {compareLabel}</span>}
         {c.leads > 0 && c.leads < 5 && <span className="muted">Fewer than 5 leads, so percentages are rough</span>}

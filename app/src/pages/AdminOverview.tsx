@@ -203,8 +203,9 @@ export function RmFunnel({ rmId, name }: { rmId: string; name: string }) {
         : <>
             <div className="now-strip" aria-label="Where these leads are now">
               <span><b>{mine.new_now}</b> New, not contacted yet</span>
-              <span><b>{mine.follow_up_now}</b> In follow-up</span>
-              <span><b>{mine.still_open - mine.new_now - mine.follow_up_now}</b> Meeting, holding or deferred</span>
+              <span><b>{mine.not_picked_now}</b> Not picked up</span>
+              <span><b>{mine.follow_up_now}</b> Follow-up</span>
+              <span><b>{mine.still_open - mine.new_now - mine.not_picked_now - mine.follow_up_now}</b> Meeting, holding or deferred</span>
               <span><b>{mine.committed - mine.clients}</b> Prospect</span>
               <span><b>{mine.clients}</b> Client</span>
               <span><b>{mine.out_list}</b> Out List</span>

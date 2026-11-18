@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Bucket, Lead } from '../lib/types';
-import { bucketLabel, isNewLead } from '../lib/types';
+import { CONTACT_LABEL, bucketLabel, contactState } from '../lib/types';
 import { relativeDay, fmtDate } from '../lib/format';
 
 /* ── toasts ── */
@@ -46,9 +46,10 @@ export function BucketPill({ bucket }: { bucket: Bucket }) {
   return <span className={`bucket b-${bucket}`}>{bucketLabel(bucket)}</span>;
 }
 
-/** Stage of a lead, with "New" for leads nobody has contacted yet. */
-export function StagePill({ lead }: { lead: Pick<Lead, 'bucket' | 'next_follow_up'> }) {
-  return isNewLead(lead) ? <span className="bucket b-new">New</span> : <BucketPill bucket={lead.bucket} />;
+/** Stage of a lead; the first stage shows New / Not picked up / Follow-up. */
+export function StagePill({ lead }: { lead: Pick<Lead, 'bucket'> & { first_attempt_at?: string | null; spoke_at?: string | null } }) {
+  const st = contactState(lead);
+  return st && st !== 'follow_up' ? <span className={`bucket b-${st}`}>{CONTACT_LABEL[st]}</span> : <BucketPill bucket={lead.bucket} />;
 }
 
 export function ProductTag({ product }: { product: string }) {
