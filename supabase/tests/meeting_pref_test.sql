@@ -1,4 +1,5 @@
 \set ON_ERROR_STOP 1
+insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000ff','boss@flamebackcapital.com','{"full_name":"Boss"}');  -- first sign-in = admin (admins don't own leads)
 insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000b','priya@flamebackcapital.com','{"full_name":"Priya"}');
 insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000c','ravi@flamebackcapital.com','{"full_name":"Ravi"}');
 update profiles set is_active = true, approved_at = now(), in_rotation = (email like 'priya%');

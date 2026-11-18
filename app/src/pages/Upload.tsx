@@ -13,7 +13,7 @@ const CHUNK = 200;
 
 type FieldKey =
   | 'name' | 'first_name' | 'last_name' | 'phone' | 'email' | 'product' | 'source' | 'campaign'
-  | 'city' | 'age' | 'marital_status' | 'income_band' | 'language' | 'requirement' | 'budget' | 'referred_by' | 'rm_email';
+  | 'city' | 'age' | 'marital_status' | 'income_band' | 'language' | 'residency' | 'requirement' | 'budget' | 'referred_by' | 'rm_email';
 
 const FIELDS: { key: FieldKey; label: string; syn: string[]; admin?: boolean }[] = [
   { key: 'name', label: 'Full name', syn: ['name', 'full name', 'fullname', 'lead name', 'client name', 'contact name', 'customer name'] },
@@ -28,7 +28,8 @@ const FIELDS: { key: FieldKey; label: string; syn: string[]; admin?: boolean }[]
   { key: 'age', label: 'Age', syn: ['age'] },
   { key: 'marital_status', label: 'Marital status', syn: ['marital status', 'marital'] },
   { key: 'income_band', label: 'Income level', syn: ['income', 'income level', 'annual income', 'income band'] },
-  { key: 'language', label: 'Language', syn: ['language', 'language preference', 'preferred language'] },
+  { key: 'language', label: 'Language', syn: ['language', 'language preference', 'preferred language', 'languages'] },
+  { key: 'residency', label: 'Residency (Resident / NRI)', syn: ['residency', 'residential status', 'resident status', 'nri', 'is nri', 'resident'] },
   { key: 'requirement', label: 'What they want / notes', syn: ['notes', 'note', 'requirement', 'comments', 'comment', 'remarks', 'message'] },
   { key: 'budget', label: 'Budget', syn: ['budget', 'investment amount', 'amount', 'ticket size'] },
   { key: 'referred_by', label: 'Referred by', syn: ['referred by', 'referrer', 'referral'] },
@@ -126,6 +127,10 @@ export default function Upload() {
       if (!d.name && (d.first_name || d.last_name)) d.name = [d.first_name, d.last_name].filter(Boolean).join(' ');
       delete d.first_name; delete d.last_name;
       if (d.product) d.product = normalizeProduct(d.product) ?? d.product;
+      if (d.residency !== undefined) {
+        const v = d.residency.toLowerCase();
+        d.residency = /nri|non[- ]?resident|^y(es)?$|overseas|abroad/.test(v) ? 'nri' : /resident|^n(o)?$|india/.test(v) ? 'resident' : '';
+      }
       if (d.source) d.source = sources.find((s) => s.name.toLowerCase() === d.source!.toLowerCase())?.name ?? d.source;
       const phone = normalizePhone(d.phone);
       const email = normalizeEmail(d.email);

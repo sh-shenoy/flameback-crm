@@ -32,10 +32,13 @@ reset role;
 do $$ begin assert (select count(*) from notifications where user_id='00000000-0000-0000-0000-00000000000b' and kind='access_approved')=1, 'priya told'; end $$;
 
 -- ── leads: US RIA + assignment notifications ──
+-- Dev: an approved RM outside the rotation (admins don't own leads)
+insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000d','dev@flamebackcapital.com','{"full_name":"Dev"}');
+update profiles set is_active = true, approved_at = now(), role = 'rm', in_rotation = false where email = 'dev@flamebackcapital.com';
 set role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
 create temp table k(n text, id uuid);
-insert into k select 'us', create_lead('{"name":"Rohan Desai","email":"rohan@x.com","product":"US RIA","source":"Referral","referred_by":"Asha","rm_id":"00000000-0000-0000-0000-00000000000a"}');
+insert into k select 'us', create_lead('{"name":"Rohan Desai","email":"rohan@x.com","product":"US RIA","source":"Referral","referred_by":"Asha","rm_id":"00000000-0000-0000-0000-00000000000d"}');
 do $$ begin
   assert (select product from leads where id=(select id from k where n='us'))='US RIA', 'US RIA product';
   begin perform create_lead('{"name":"Bad","phone":"9811100009","product":"AIF","source":"Meta"}'); raise exception 'FAIL AIF accepted';
@@ -115,7 +118,7 @@ select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b'
 do $$ declare r record; begin
   select * into r from report_conversion(ist_today()-30, ist_today(), 'source') where grp='Alumni list';
   assert r.leads=3 and r.committed=1 and r.met=1 and r.source_kind='cold', 'source report: ' || row_to_json(r)::text;
-  assert (select count(*) from report_conversion(ist_today()-30, ist_today(), 'referrer') where grp='Asha')=0, 'RM sees only own leads (Asha referral is admin''s)';
+  assert (select count(*) from report_conversion(ist_today()-30, ist_today(), 'referrer') where grp='Asha')=0, 'RM sees only own leads (Asha referral is Dev''s)';
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
 do $$ begin

@@ -10,6 +10,7 @@ select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a'
 -- give Priya 6 leads in different stages
 create temp table k(n int, id uuid);
 insert into k select g, create_lead(jsonb_build_object('name','R'||g,'phone','98444000'||(10+g),'product','RIA','source','Meta','rm_id','00000000-0000-0000-0000-00000000000b')) from generate_series(1,6) g;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false);   -- Priya works her leads
 do $$ begin
   perform set_bucket((select id from k where n=5), 'out', 'gone cold');
   perform set_bucket((select id from k where n=6), 'converting');

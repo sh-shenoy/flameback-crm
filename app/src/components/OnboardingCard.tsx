@@ -13,15 +13,15 @@ export const fmtINR = (n: number) =>
  * Onboarding for a prospect (agreed to join): checklist per person, joint holders, Ask Ops,
  * and Mark as funded, which makes them a client. The RM drives it; Ops items follow their task.
  */
-export default function OnboardingCard({ lead, onChanged }: { lead: Lead; onChanged: () => void }) {
+export default function OnboardingCard({ lead, onChanged, readOnly }: { lead: Lead; onChanged: () => void; readOnly?: boolean }) {
   const toast = useToast();
   const [items, setItems] = useState<OnboardingItem[] | null>(null);
   const [holders, setHolders] = useState<Holder[]>([]);
-  const [open, setOpen] = useState(lead.bucket === 'converting');
+  const [open, setOpen] = useState(lead.bucket === 'converting' || !!readOnly);
   const [askFor, setAskFor] = useState<OnboardingItem | null>(null);
   const [funding, setFunding] = useState(false);
   const [notesFor, setNotesFor] = useState<string | null>(null);
-  const isProspect = lead.bucket === 'converting';
+  const isProspect = lead.bucket === 'converting' && !readOnly;   // can edit
 
   const load = useCallback(async () => {
     const [i, h] = await Promise.all([
@@ -73,8 +73,8 @@ export default function OnboardingCard({ lead, onChanged }: { lead: Lead; onChan
         <div className="pad">
           <div className="ob-meta">
             <span>{lead.product} · {lead.residency ? RESIDENCY_LABEL[lead.residency] : <span className="amber">Resident / NRI not set</span>}</span>
-            <HolderChips holders={holders} onRemove={(h) => confirm(`Remove ${h.name} and their checklist items?`) && run('remove_holder', { p_holder: h.id }, `${h.name} removed`)}
-              onAdd={(name, rel) => run('add_holder', { p_lead: lead.id, p_name: name, p_relation: rel || null }, `${name} added`)} />
+            {isProspect ? <HolderChips holders={holders} onRemove={(h) => confirm(`Remove ${h.name} and their checklist items?`) && run('remove_holder', { p_holder: h.id }, `${h.name} removed`)}
+              onAdd={(name, rel) => run('add_holder', { p_lead: lead.id, p_name: name, p_relation: rel || null }, `${name} added`)} /> : holders.length > 0 && <span className="ob-holders">{holders.map((h) => <span key={h.id} className="ob-chip">{h.name}{h.relation && <span className="muted"> · {h.relation}</span>}</span>)}</span>}
           </div>
 
           {items === null ? <p className="muted">Loading…</p> : total === 0 ? (

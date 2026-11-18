@@ -241,7 +241,7 @@ export function PersonPage() {
               <span className="small"><b>{sel.size}</b> selected →</span>
               <select className="filter" value={to} onChange={(e) => setTo(e.target.value)}>
                 <option value="">Reassign to…</option>
-                {team.filter((t) => t.is_active && t.id !== id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                {team.filter((t) => t.is_active && t.role !== 'admin' && t.id !== id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
               </select>
               <button className="btn sm" disabled={!to} onClick={reassign}>Reassign</button>
               <button className="btn danger sm" onClick={async () => {

@@ -141,7 +141,7 @@ export default function Leads() {
               {isAdmin && <>
                 <select className="filter" value={moveTo} onChange={(e) => setMoveTo(e.target.value)}>
                   <option value="">Reassign to…</option>
-                  {team.filter((t) => t.is_active && t.id !== me!.id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                  {team.filter((t) => t.is_active && t.role !== 'admin' && t.id !== me!.id).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
                 </select>
                 <button className="btn ghost sm" disabled={!moveTo} onClick={async () => {
                   try { const n = await rpc<number>('reassign_leads', { p_leads: [...sel], p_rm: moveTo }); toast(`${n} lead${n === 1 ? '' : 's'} reassigned`); setMoveTo(''); setReload((x) => x + 1); }

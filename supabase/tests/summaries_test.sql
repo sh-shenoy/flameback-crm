@@ -1,11 +1,13 @@
 \set ON_ERROR_STOP 1
+insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000ff','boss@flamebackcapital.com','{"full_name":"Boss"}');  -- first sign-in = admin (admins don't own leads)
 insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000a','shashank@flamebackcapital.com','{"full_name":"Shashank"}');
 insert into auth.users (id,email,raw_user_meta_data) values ('00000000-0000-0000-0000-00000000000b','priya@flamebackcapital.com','{"full_name":"Priya"}');
 update profiles set is_active = true, approved_at = now(), in_rotation = false;
 set role authenticated;
-select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000ff',false);  -- admin adds the lead for Shashank
 create temp table k(id uuid);
 insert into k select create_lead('{"name":"Asha","phone":"9811100001","product":"RIA","source":"Meta","rm_id":"00000000-0000-0000-0000-00000000000a"}');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false);
 reset role;
 do $$ declare l uuid := (select id from k); begin
   assert lead_last_activity(l) is not null, 'activity time';

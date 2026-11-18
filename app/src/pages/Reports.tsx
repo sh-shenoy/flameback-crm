@@ -110,7 +110,7 @@ export default function Reports() {
         {isAdmin && (
           <select className="filter" value={rm} onChange={(e) => setRm(e.target.value)}>
             <option value="">All RMs</option>
-            {team.filter((t) => t.is_active).map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+            {team.filter((t) => t.is_active && t.role !== 'admin').map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
           </select>
         )}
         <span className="muted small">Leads created {fmtDate(from)} – {fmtDate(to)}</span>
