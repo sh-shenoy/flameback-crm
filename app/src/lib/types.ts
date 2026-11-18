@@ -243,6 +243,7 @@ export const NOTIFICATION_KINDS: { key: string; label: string }[] = [
   { key: 'task', label: 'Tasks' },
   { key: 'email_reply', label: 'Email replies' },
   { key: 'nudge', label: 'Nudges' },
+  { key: 'duplicate', label: 'Duplicate leads' },
   { key: 'access_request', label: 'Access requests' },
   { key: 'access_approved', label: 'Access' },
 ];

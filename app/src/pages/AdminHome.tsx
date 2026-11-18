@@ -78,6 +78,8 @@ export default function AdminHome() {
     r.tasks_overdue > 0 && { r, w: 1, text: `${r.tasks_overdue} task${r.tasks_overdue === 1 ? '' : 's'} overdue` },
   ]).filter(Boolean) as { r: Rm; w: number; text: string }[];
   attention.sort((a, b) => b.w - a.w);
+  const [dups, setDups] = useState(0);
+  useEffect(() => { supabase.from('lead_conflicts').select('id', { count: 'exact', head: true }).eq('status', 'open').then(({ count }) => setDups(count ?? 0)); }, []);
 
   const quality = (rows ?? []).flatMap((r) => [
     r.thin_notes_7d > 0 && { r, text: `${r.thin_notes_7d} conversation${r.thin_notes_7d === 1 ? '' : 's'} logged with almost no notes this week` },
@@ -99,6 +101,7 @@ export default function AdminHome() {
       </div>
       {!managesAnyone && <div className="banner">No RMs report to you yet, so this shows every RM. Set managers in <Link to="/admin?tab=team">Admin → Team &amp; rotation</Link>.</div>}
       {err && <div className="banner warn">Couldn't load the team: {err}</div>}
+      {dups > 0 && <div className="banner warn"><b>{dups} duplicate lead{dups === 1 ? '' : 's'}</b> from uploads {dups === 1 ? 'is' : 'are'} waiting for you to decide who keeps {dups === 1 ? 'it' : 'them'}. <Link to="/admin?tab=duplicates">Resolve →</Link></div>}
 
       <div className="cards ah-cards">
         <Tile k="RMs" v={rows ? rows.length : null} sub={rows ? `${activeToday} active today` : ''} />
