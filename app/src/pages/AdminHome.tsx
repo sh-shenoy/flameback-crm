@@ -64,9 +64,7 @@ export default function AdminHome() {
 
   // what to chase, most urgent first
   const attention = (rows ?? []).flatMap((r) => [
-    r.untouched_24h > 0 && { r, w: 5, text: `${r.untouched_24h} new lead${r.untouched_24h === 1 ? '' : 's'} (added one by one, not uploaded) not contacted in 24h+` },
-    // an upload is worked over days: only a problem if nobody has started on it for a week
-    r.upload_backlog > 0 && r.first_contacts_7d === 0 && { r, w: 4, text: `${r.upload_backlog} uploaded lead${r.upload_backlog === 1 ? '' : 's'} waiting, and no first calls in the last 7 days` },
+    // no reminders about new / untouched leads for now: follow-ups, meetings, prospects and tasks only
     r.meetings_unrecorded > 0 && { r, w: 4, text: `${r.meetings_unrecorded} meeting${r.meetings_unrecorded === 1 ? '' : 's'} with no outcome logged` },
     r.overdue > 0 && { r, w: 3, text: `${r.overdue} follow-up${r.overdue === 1 ? '' : 's'} overdue` },
     r.stuck_prospects > 0 && { r, w: 3, text: `${r.stuck_prospects} prospect${r.stuck_prospects === 1 ? '' : 's'} stuck in onboarding (blocked or no progress in 7 days)` },
@@ -79,7 +77,6 @@ export default function AdminHome() {
 
   const quality = (rows ?? []).flatMap((r) => [
     r.thin_notes_7d > 0 && { r, text: `${r.thin_notes_7d} conversation${r.thin_notes_7d === 1 ? '' : 's'} logged with almost no notes this week` },
-    r.untouched_7d > 0 && { r, text: `${r.untouched_7d} lead${r.untouched_7d === 1 ? '' : 's'} nobody has touched in 7 days` },
     dropped(r) && { r, text: `Activity down: ${r.activity_7d} this week vs about ${Math.round(r.activity_prev_weekly)} a week before` },
   ]).filter(Boolean) as { r: Rm; text: string }[];
 
