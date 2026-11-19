@@ -38,7 +38,7 @@ const PERIODS: { key: string; label: string; days: number }[] = [
 ];
 const METRICS: { key: keyof Day; label: string; total: string; prev: string }[] = [
   { key: 'activities', label: 'Activities', total: 'activities', prev: 'activities_prev' },
-  { key: 'clients', label: 'Clients reached', total: 'clients', prev: 'clients_prev' },
+  { key: 'clients', label: 'Leads tried', total: 'clients', prev: 'clients_prev' },
   { key: 'calls', label: 'Calls', total: 'calls', prev: 'calls_prev' },
   { key: 'connected', label: 'Calls connected', total: 'connected', prev: 'connected_prev' },
   { key: 'meetings', label: 'Meetings held', total: 'meetings', prev: 'meetings_prev' },
@@ -175,7 +175,7 @@ export default function Analytics() {
         {!data ? <div className="pad"><Skeleton h={80} /></div> : data.by_source.length === 0 ? <Empty>Nothing logged in this period.</Empty> : (
           <div className="table-wrap">
             <table className="an-rm">
-              <thead><tr><th>Source</th><th className="num">Activities</th><th className="num">Clients reached</th><th className="num">Spoke / replied</th><th className="num">Rate</th></tr></thead>
+              <thead><tr><th>Source</th><th className="num">Activities</th><th className="num" title="Different leads called, messaged or met">Leads tried</th><th className="num">Spoke / replied</th><th className="num">Rate</th></tr></thead>
               <tbody>{data.by_source.map((s) => (
                 <tr key={s.source}><td><b>{s.source}</b></td><td className="num">{fmt(s.activities)}</td><td className="num">{fmt(s.clients)}</td><td className="num">{fmt(s.connected)}</td><td className="num">{fmtPct(s.connected, s.activities)}</td></tr>
               ))}</tbody>
@@ -280,7 +280,7 @@ function RmTable({ rows, days, onOpen }: { rows: RmRow[]; days: number; onOpen: 
       <table className="an-rm">
         <thead><tr>
           <th className={`sortable ${sort === 'name' ? 'sorted' : ''}`} onClick={() => setSort('name')}>RM</th>
-          <Th k="activities">Activities</Th><Th k="clients">Clients reached</Th><Th k="calls">Calls</Th><Th k="connected" title="Calls picked up">Connected</Th>
+          <Th k="activities">Activities</Th><Th k="clients" title="Different leads called, messaged or met">Leads tried</Th><Th k="calls">Calls</Th><Th k="connected" title="Calls picked up">Connected</Th>
           <Th k="meetings">Meetings</Th><Th k="messages">Messages</Th><Th k="emails">Emails</Th><Th k="moved_forward" title="Moved to meeting, holding, prospect or client">Moved forward</Th>
           <Th k="new_reached" title="New leads given to them in this period that they have contacted">New leads reached</Th>
           <Th k="median_first_hours" title="Median time from a lead being added to the first call or message">First contact</Th>
