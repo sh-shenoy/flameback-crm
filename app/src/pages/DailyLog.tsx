@@ -4,13 +4,13 @@ import Papa from 'papaparse';
 import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
 import { addDays, fmtDate, fmtTime, todayIST } from '../lib/format';
-import { OUTCOME_LABEL, entryLabel, bucketLabel, type Bucket, type Outcome } from '../lib/types';
+import { OUTCOME_LABEL, entryLabel, bucketLabel, stageLabel, type Bucket, type Outcome } from '../lib/types';
 import { Empty, ProductTag, Skeleton } from '../components/ui';
 import { RmScopeSelect, scoped, useRmScope } from '../components/RmScope';
 
 /* Daily log: everything done with clients on one day — calls, messages, meetings, notes and stage moves. */
 
-type LeadMini = { id: string; name: string; product: string; bucket: Bucket; next_follow_up: string | null; next_follow_up_at: string | null; created_at: string };
+type LeadMini = { id: string; name: string; product: string; bucket: Bucket; next_follow_up: string | null; next_follow_up_at: string | null; created_at: string; first_attempt_at: string | null; spoke_at: string | null };
 interface Entry { id: string; lead_id: string; kind: string; outcome: Outcome | null; notes: string | null; occurred_at: string; bucket_at: Bucket; created_by: string | null; platform: string | null; leads: LeadMini | null }
 interface Ev { id: number; lead_id: string; kind: string; from_value: string | null; to_value: string | null; actor: string | null; at: string; detail: { reason?: string } | null; leads: LeadMini | null }
 type Row =
@@ -31,7 +31,7 @@ export default function DailyLog() {
     setRows(null);
     const from = new Date(`${day}T00:00:00+05:30`).toISOString();
     const to = new Date(`${addDays(day, 1)}T00:00:00+05:30`).toISOString();
-    const lead = 'leads(id, name, product, bucket, next_follow_up, next_follow_up_at, created_at)';
+    const lead = 'leads(id, name, product, bucket, next_follow_up, next_follow_up_at, created_at, first_attempt_at, spoke_at)';
     Promise.all([
       scoped(supabase.from('lead_entries').select(`*, ${lead}`), sc.ids, 'created_by').gte('occurred_at', from).lt('occurred_at', to).order('occurred_at').limit(2000),
       scoped(supabase.from('lead_events').select(`*, ${lead}`), sc.ids, 'actor').eq('kind', 'bucket').gte('at', from).lt('at', to).order('at').limit(2000),
@@ -76,7 +76,7 @@ export default function DailyLog() {
     const csv = Papa.unparse([
       ['Time (IST)', ...(isAdmin ? ['RM'] : []), 'Client', 'Product', 'What happened', 'Notes', 'Stage now', 'Next follow-up'],
       ...(rows ?? []).map((r) => [fmtTime(r.at), ...(isAdmin ? [teamName(r.who)] : []), r.lead?.name ?? '', r.lead?.product ?? '', describe(r),
-        r.type === 'entry' ? (r.e.notes ?? '') : '', r.lead ? bucketLabel(r.lead.bucket) : '',
+        r.type === 'entry' ? (r.e.notes ?? '') : '', r.lead ? stageLabel(r.lead) : '',
         r.lead?.next_follow_up ? `${r.lead.next_follow_up}${r.lead.next_follow_up_at ? ' ' + fmtTime(r.lead.next_follow_up_at) : ''}` : '']),
     ]);
     const a = document.createElement('a');
@@ -127,7 +127,7 @@ export default function DailyLog() {
                       {r.lead && <div className="lead-sub"><ProductTag product={r.lead.product} /></div>}</td>
                     <td className={r.type === 'move' ? 'dl-move' : ''}>{describe(r)}</td>
                     <td className="dl-notes">{r.type === 'entry' && r.e.notes ? r.e.notes : <span className="muted">—</span>}</td>
-                    <td className="small">{r.lead ? bucketLabel(r.lead.bucket) : ''}</td>
+                    <td className="small">{r.lead ? stageLabel(r.lead) : ''}</td>
                     <td className="small nowrap">{r.lead?.next_follow_up ? `${fmtDate(r.lead.next_follow_up)}${r.lead.next_follow_up_at ? `, ${fmtTime(r.lead.next_follow_up_at)}` : ''}` : <span className="muted">—</span>}</td>
                   </tr>
                 ))}

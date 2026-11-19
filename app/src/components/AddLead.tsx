@@ -80,7 +80,7 @@ export default function AddLead({ onClose }: { onClose: () => void }) {
         {dups.map((d) => (
           <div key={d.lead_id} className="dup-card">
             <div>
-              <b>{d.name}</b> <BucketPill bucket={d.bucket} />
+              <b>{d.name}</b> {d.bucket === 'active_contact' ? <span className="bucket b-new">Open lead</span> : <BucketPill bucket={d.bucket} />}
               <div className="muted small">Matched on {d.matched_on} · with {d.rm_name}</div>
             </div>
             {d.can_open ? (

@@ -6,7 +6,7 @@ import {
   addDays, fmtDate, fmtDateTime, fmtPhone, fmtTime, fromISTInput, istAt, istHHMM, toISTInput, todayIST,
 } from '../lib/format';
 import {
-  BUCKETS, CALL_OUTCOMES, CONTACT_LABEL, ENTRY_KINDS, STATUS_GROUPS, MESSAGE_PLATFORMS, PLATFORM_LABEL, VIDEO_PLATFORMS, entryLabel, type Platform, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
+  BUCKETS, CALL_OUTCOMES, ENTRY_KINDS, stageLabel, STATUS_GROUPS, MESSAGE_PLATFORMS, PLATFORM_LABEL, VIDEO_PLATFORMS, entryLabel, type Platform, INCOME_BANDS, MARITAL, MESSAGE_OUTCOMES, OUTCOME_LABEL, PRODUCTS,
   RESIDENCY_LABEL, bucketLabel, contactState, holdingGap, isNewLead, type Bucket, type EntryKind, type Lead, type LeadEntry, type LeadEvent, type Outcome,
 } from '../lib/types';
 import { Drawer, StagePill, Empty, Field, Modal, Skeleton, Strikes, useToast } from '../components/ui';
@@ -391,7 +391,7 @@ function Timeline({ entries, events, teamName, onChanged, readOnly }: {
                 </>}
               </div>
               {e.notes && <div className="tl-notes">{e.notes}</div>}
-              <div className="when">{fmtDateTime(at)} · {teamName(e.created_by)} · in {bucketLabel(e.bucket_at)}</div>
+              <div className="when">{fmtDateTime(at)} · {teamName(e.created_by)}{e.bucket_at !== 'active_contact' && ` · in ${bucketLabel(e.bucket_at)}`}</div>
             </li>
           ) : ev && (
             <li key={`ev${ev.id}`} className="tl-event">
@@ -560,7 +560,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   }
 
   return (
-    <Drawer title="Log activity" sub={`${lead.name} · ${contactState(lead) ? CONTACT_LABEL[contactState(lead)!] : bucketLabel(lead.bucket)}`} onClose={onClose}
+    <Drawer title="Log activity" sub={`${lead.name} · ${stageLabel(lead)}`} onClose={onClose}
       footer={<><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button></>}>
       <Field label="What happened" required>
         <div className="chips">
@@ -721,7 +721,7 @@ function ChangeStageDialog({ lead, onClose, act }: { lead: Lead; onClose: () => 
           p_deferred_until: to === 'deferred' ? until : null,
           p_product: to === 'converting' ? product : null,
         }, `Moved to ${bucketLabel(to as Bucket)}`))}>{to ? `Move to ${bucketLabel(to)}` : 'Move'}</button></>}>
-      <p className="muted" style={{ marginBottom: 12 }}>Now in <b>{bucketLabel(lead.bucket)}</b>. To record a conversation, use Log activity instead; this only moves the lead.</p>
+      <p className="muted" style={{ marginBottom: 12 }}>Now <b>{stageLabel(lead)}</b>. To record a conversation, use Log activity instead; this only moves the lead.</p>
       <Field label="Move to" required>
         <div className="result-list">
           {choices.map((b) => (

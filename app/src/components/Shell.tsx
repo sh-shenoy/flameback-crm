@@ -4,7 +4,7 @@ import { useApp } from '../auth';
 import { supabase } from '../lib/supabase';
 import { initials, fmtPhone, todayIST, timeAgo } from '../lib/format';
 import type { AppNotification, Lead } from '../lib/types';
-import { BucketPill, useToast } from './ui';
+import { StagePill, useToast } from './ui';
 import AddLead from './AddLead';
 import { ArgusSidebar } from './Brand';
 import { TAGLINE } from '../lib/brand';
@@ -273,7 +273,7 @@ function GlobalSearch() {
           {res.map((l) => (
             <button key={l.id} onMouseDown={() => go(l.id)}>
               <span><b>{l.name}</b> <span className="muted small">{fmtPhone(l.phone) || l.email}</span></span>
-              <BucketPill bucket={l.bucket} />
+              <StagePill lead={l} />
             </button>
           ))}
           <div className="gs-h">Clients <span className="soon-chip">Coming soon</span></div>
