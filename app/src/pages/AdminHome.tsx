@@ -115,13 +115,14 @@ export default function AdminHome() {
       )}
 
       <div className="cards ah-cards">
-        <Tile k="RMs" v={rows ? rows.length : null} sub={rows ? `${activeToday} active today` : ''} />
-        <Tile k="Open leads" v={rows ? sum('open_leads') : null} sub={rows ? `${sum('due_today')} due today` : ''} />
-        <Tile k="Overdue follow-ups" v={rows ? sum('overdue') : null} tone={sum('overdue') > 0 ? 'red' : ''}
+        <Tile k="RMs" v={rows ? rows.length : null} sub={rows ? `${activeToday} active today` : ''} to="/admin?tab=team" />
+        <Tile k="Open leads" v={rows ? sum('open_leads') : null} sub="every stage before prospect" to="/leads" />
+        <Tile k="Due today" v={rows ? sum('due_today') : null} sub="follow-ups set for today" to="/leads?due=today" />
+        <Tile k="Overdue" v={rows ? sum('overdue') : null} tone={sum('overdue') > 0 ? 'red' : ''} to="/leads?due=overdue"
           sub={overdueRms.filter((r) => r.overdue > 0).slice(0, 3).map((r) => `${r.full_name?.split(' ')[0]} ${r.overdue}`).join(' · ') + (overdueRms.filter((r) => r.overdue > 0).length > 3 ? ' …' : '')} />
-        <Tile k="Meetings next 7 days" v={rows ? sum('meetings_week') : null} />
-        <Tile k="New prospects" v={rows ? sum('prospects') : null} sub={rows ? `${sum('new_leads')} new leads` : ''} />
-        <Tile k="New clients" v={rows ? sum('clients') : null} sub={rows && sum('funded') > 0 ? `${fmtINR(sum('funded'))} funded` : ''} />
+        <Tile k="Meetings, 7 days" v={rows ? sum('meetings_week') : null} to="/calendar" />
+        <Tile k="New prospects" v={rows ? sum('prospects') : null} sub={rows ? `${sum('new_leads')} new leads` : ''} to="/prospects" />
+        <Tile k="New clients" v={rows ? sum('clients') : null} sub={rows && sum('funded') > 0 ? `${fmtINR(sum('funded'))} funded` : ''} to="/clients" />
       </div>
 
       <div className="ah-cols">
@@ -210,8 +211,13 @@ export default function AdminHome() {
   );
 }
 
-function Tile({ k, v, sub, tone }: { k: string; v: number | null; sub?: string; tone?: string }) {
-  return <div className="card"><div className="k">{k}</div><div className={`v ${tone ?? ''}`}>{v === null ? '·' : v.toLocaleString('en-IN')}</div>{sub && <div className="meta">{sub}</div>}</div>;
+/** A number; with `to` it opens the list behind it. */
+function Tile({ k, v, sub, tone, to }: { k: string; v: number | null; sub?: string; tone?: string; to?: string }) {
+  const nav = useNavigate();
+  const body = <><div className="k">{k}</div><div className={`v ${tone ?? ''}`}>{v === null ? '·' : v.toLocaleString('en-IN')}</div>{sub && <div className="meta">{sub}</div>}</>;
+  return to
+    ? <button type="button" className="card clickable dash-tile" onClick={() => nav(to)}>{body}</button>
+    : <div className="card">{body}</div>;
 }
 
 /** Share bar with a tick at the team rate. */
