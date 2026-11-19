@@ -32,6 +32,20 @@ do $$ declare r record; begin
   assert r.thin_notes_7d=1, 'thin notes flagged';
   assert r.first_response_hours between 2 and 4, format('first response %s', r.first_response_hours);
   assert r.activity_7d=1, 'activity';
+  assert r.upload_backlog=0 and r.first_contacts_7d=1, format('backlog %s', row_to_json(r));
+end $$;
+-- an uploaded batch waiting 2 days is a backlog, not "untouched in 24h"
+reset role;
+insert into import_batches (id, file_name, source, product, uploaded_by) values ('00000000-0000-0000-0000-0000000000b1', 'x.csv', 'Meta', 'RIA', '00000000-0000-0000-0000-0000000000ff');
+insert into leads (name, phone, product, source, rm_id, bucket, unit, created_at, import_batch_id)
+select 'U'||g, '98112100'||lpad(g::text,2,'0'), 'RIA', 'Meta', '00000000-0000-0000-0000-00000000000b', 'active_contact', 'IQWM', now() - interval '2 days', '00000000-0000-0000-0000-0000000000b1'
+  from generate_series(1,30) g;
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000ff',false);
+do $$ declare r record; begin
+  select * into r from manager_dashboard(ist_today()-7, ist_today(), 'team');
+  assert r.untouched_24h=1, format('uploads are not untouched-24h %s', r.untouched_24h);
+  assert r.upload_backlog=30, format('backlog %s', r.upload_backlog);
 end $$;
 -- RMs can't see it
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false);
