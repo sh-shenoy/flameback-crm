@@ -463,11 +463,10 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
   const asksResult = reached && ['active_contact', 'awaiting_meeting', 'holding', 'deferred'].includes(lead.bucket);
   const notesRequired = outcome === 'connected' || kind === 'in_person' || kind === 'note' || !!result;
   // only the RM puts a lead into Follow-up: if this leaves it in New / Follow-up, ask for the date
-  // after a real conversation that leaves the lead in Follow-up, the RM picks the follow-up date;
-  // after no answer / no reply yet (Not picked up) a "try again" date is optional
+  // a follow-up date is required only for the Follow-Up status; for every other status
+  // (Warm-Up, Just Exploring…) and after no answer it's optional ("try again on")
   const spoke = kind === 'in_person' || outcome === 'connected' || outcome === 'replied' || outcome === 'call_back';
-  const staysInFollowUp = (lead.bucket === 'active_contact' && !result) || (asksResult && result === 'contact');
-  const needsDate = staysInFollowUp && spoke;
+  const needsDate = status === 'Follow-Up' && outcome !== 'not_interested' && result !== 'commits' && result !== 'later';
   const tryAgain = lead.bucket === 'active_contact' && !spoke && (outcome === 'no_answer' || outcome === 'sent');
 
   const resultOptions: { key: Result; label: string; sub: string }[] = lead.bucket === 'deferred'
@@ -534,7 +533,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
     if ((isCall || isMsg) && !outcome) { setErr('Pick an outcome'); return; }
     if (notesRequired && !notes.trim()) { setErr('Notes are required for this entry'); return; }
     if (asksResult && result === 'later' && !later) { setErr('Pick the date they will come back'); return; }
-    if (needsDate && !next) { setErr('Pick the next follow-up date'); return; }
+    if (needsDate && !next) { setErr('Follow-Up needs a follow-up date'); return; }
     setBusy(true); setErr(null);
     try {
       await rpc('log_activity', {
@@ -645,7 +644,7 @@ function AddEntry({ lead, onClose, onSaved }: { lead: Lead; onClose: () => void;
         <Field label={tryAgain ? 'Try again on (optional)' : 'Next follow-up (date and time)'} required={needsDate}
           hint={lead.bucket === 'holding' || result === 'met' ? 'Leave blank to space it out automatically'
             : next ? 'With a time it goes on your calendar, with a reminder 5 minutes before.'
-            : needsDate ? 'Required: they spoke to you, so the lead is in Follow-up from here.'
+            : needsDate ? 'Required for the Follow-Up status: when should you call next?'
             : tryAgain ? 'The lead shows as Not picked up until they answer. Add a date to get a reminder.'
             : lead.next_follow_up ? `Currently ${fmtDate(lead.next_follow_up)}. Leave blank to keep it.` : 'Optional.'}>
           <div className="row-gap">
