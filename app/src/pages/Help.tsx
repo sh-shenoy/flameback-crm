@@ -26,7 +26,7 @@ const SECTIONS: Section[] = [
       { q: 'What do I do on my first day?', a: <ol>
         <li>Sign in with your <b>@flamebackcapital.com</b> Google account. If you see "waiting for approval", an admin has to approve you first.</li>
         <li>Go to <Link to="/connections">Connections</Link> and connect <b>Cal.com</b> (meetings) and <b>Gmail</b> (email from the CRM).</li>
-        <li>Open the <Link to="/">Dashboard</Link>. <b>Today's actions</b> is your to-do list: follow-ups due, meetings, overdue tasks.</li>
+        <li>Open the <Link to="/">Dashboard</Link>: your numbers for today (follow-ups, overdue, meetings, tasks), your business (AUM, funded this month, payments pending) and your pipeline. Click any number to open the list behind it.</li>
         <li>Open a lead, read its <b>AI summary</b> and <b>Notes</b>, make the call, then press <b>Log activity</b>.</li>
       </ol> },
       { q: 'Which leads can I see?', a: <p>RMs see only their own leads. Admins see everyone's. If you can't find a lead, it probably belongs to someone else: ask an admin.</p> },
@@ -90,7 +90,7 @@ const SECTIONS: Section[] = [
       { q: 'What is on the Analytics page? (admins)', a: <p><Link to="/analytics">Analytics</Link> shows everything the team did with clients over a period: activities, clients reached, calls and connect rate, meetings held, compared with the period before. Below that: how clients were reached (phone, Google Meet, Zoom, in person, WhatsApp, SMS, LinkedIn, email, Gmail), call outcomes, meetings by platform, messages by app, email replies, stage moves, the busiest hours and days, each RM's numbers (click one for their funnel), and activity by lead source. Use the team picker for My team, All RMs or one RM.</p> },
       { q: "Where is each RM's funnel?", a: <p>Open the RM from <b>Admin</b> or the Analytics table. Their page shows the leads given to them and how far those got: Reached out → Spoke → Wants to meet → Met → Prospect → Client, with the whole team as a marker. Above it you can see where those leads are now: new (not contacted yet), in follow-up, meeting/holding/deferred, prospect, client and Out List. Pick a period to see only leads that came in then.</p> },
       { q: 'Where do I see what I did today?', a: <p><Link to="/log">Daily log</Link> lists every client you dealt with on a day, in time order: calls (and whether they picked up), messages, emails, meetings, your notes, stage moves and the next follow-up you set. The top shows clients reached, calls connected and not answered, meetings held and leads moved forward. Use ‹ › or the date to look at another day, and <b>Download CSV</b> to share it. Managers see the team's log.</p> },
-      { q: 'Where do I see what is due?', a: <p>Dashboard → <b>Today's actions</b>, the red number next to Leads in the sidebar, the 9 am digest notification, and the Leads list filters <b>Due today</b> and <b>Overdue</b>.</p> },
+      { q: 'Where do I see what is due?', a: <p>Dashboard → <b>Follow-ups today</b> and <b>Overdue follow-ups</b> (click to open the list; switch to Tomorrow to plan ahead), the red number next to Leads in the sidebar, the 9 am digest notification, and the Leads list filters <b>Due today</b> and <b>Overdue</b>.</p> },
     ],
   },
   {

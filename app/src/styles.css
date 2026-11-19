@@ -793,3 +793,17 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
 .lead-status { color: #9a5a14 !important; font-weight: 500; }
 .cg-body { max-height: min(72vh, 820px); overflow-y: auto; }
 .cg-body, .cg-head { scrollbar-gutter: stable; } .cg-head { overflow-y: hidden; }
+/* dashboard: numbers only */
+.dash-sec { margin-bottom: 8px; }
+.dash-sec-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.dash-sec-title .seg { text-transform: none; letter-spacing: 0; }
+.dash-tiles { margin-bottom: 22px; }
+.dash-tile { font: inherit; text-align: left; color: inherit; width: 100%; }
+.dash-tile:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.dash-tile .meta { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.dash-go { color: #b3bdc9; margin-left: auto; transition: color .15s, transform .15s; }
+.dash-tile:hover .dash-go { color: var(--teal); transform: translateX(2px); }
+.card .v.red { color: var(--hot); } .card .v.amber { color: var(--warm); }
+.dash-tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.dash-tiles.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .dash-tiles, .dash-tiles.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -73,6 +73,7 @@ export default function Leads() {
     if (due === 'new') x = whereContact(x, 'new');
     if (due === 'overdue') x = x.lt('next_follow_up', today);
     if (due === 'today') x = x.eq('next_follow_up', today);
+    if (due === 'tomorrow') x = x.eq('next_follow_up', addDays(today, 1));
     if (due === 'week') x = x.lte('next_follow_up', addDays(today, 7));
     if (q.trim()) {
       const like = `%${q.trim().replace(/[%,()]/g, '')}%`;
@@ -168,6 +169,7 @@ export default function Leads() {
               <option value="new">New (not contacted yet)</option>
               <option value="overdue">Overdue</option>
               <option value="today">Due today</option>
+              <option value="tomorrow">Due tomorrow</option>
               <option value="week">Due this week</option>
             </select>
             <select className="filter" value={sort} onChange={(e) => setParam('sort', e.target.value)} aria-label="Sort">
