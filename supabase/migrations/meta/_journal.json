@@ -260,6 +260,13 @@
       "when": 1794991198389,
       "tag": "0037_overdue_by_rm",
       "breakpoints": false
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794991199389,
+      "tag": "0038_call_clears_due_follow_up",
+      "breakpoints": false
     }
   ]
 }

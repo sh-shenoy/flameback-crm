@@ -713,7 +713,7 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
 .fu-inline input[type=time] { width: 110px; }
 
 /* ── daily log ── */
-.dl-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 18px; }
+.dl-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 18px; }
 .dl-day { font-size: 15px; margin-left: 6px; }
 .dl-table td { vertical-align: top; }
 .dl-notes { max-width: 420px; white-space: pre-wrap; font-size: 13px; color: #344054; }

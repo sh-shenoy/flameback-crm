@@ -61,6 +61,9 @@ export default function DailyLog() {
       calls: calls.length,
       connected: calls.filter((e) => e.outcome === 'connected').length,
       noAnswer: calls.filter((e) => e.outcome === 'no_answer').length,
+      otherCalls: calls.filter((e) => e.outcome !== 'connected' && e.outcome !== 'no_answer').length,
+      // leads actually spoken to: picked up, asked to call back, replied or met
+      spoke: new Set(entries.filter((e) => e.kind === 'in_person' || e.outcome === 'connected' || e.outcome === 'replied' || e.outcome === 'call_back').map((e) => e.lead_id)).size,
       messages: entries.filter((e) => e.kind === 'message' || e.kind === 'email').length,
       meetings: entries.filter((e) => e.kind === 'in_person' || (e.kind === 'meet_call' && e.outcome === 'connected')).length,
       forward: moves.filter((m) => ['awaiting_meeting', 'holding', 'converting', 'client'].includes(m.v.to_value ?? '')).length,
@@ -105,8 +108,9 @@ export default function DailyLog() {
       </div>
 
       <div className="cards dl-cards">
-        <Tile k="Clients reached" v={rows ? s.clients : null} sub={rows ? `${s.firstTouch} contacted for the first time` : ''} />
-        <Tile k="Calls" v={rows ? s.calls : null} sub={rows ? `${s.connected} connected · ${s.noAnswer} no answer` : ''} />
+        <Tile k="Leads tried" v={rows ? s.clients : null} sub={rows ? `called, messaged or met · ${s.firstTouch} for the first time` : ''} />
+        <Tile k="Spoke to" v={rows ? s.spoke : null} sub={rows ? `of ${s.clients} lead${s.clients === 1 ? '' : 's'} tried` : ''} />
+        <Tile k="Calls" v={rows ? s.calls : null} sub={rows ? `${s.connected} connected · ${s.noAnswer} no answer${s.otherCalls ? ` · ${s.otherCalls} call back / other` : ''}` : ''} />
         <Tile k="Messages & emails" v={rows ? s.messages : null} />
         <Tile k="Meetings held" v={rows ? s.meetings : null} />
         <Tile k="Moved forward" v={rows ? s.forward : null} sub="to meeting, holding, prospect or client" />
