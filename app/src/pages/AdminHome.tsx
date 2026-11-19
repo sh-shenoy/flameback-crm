@@ -15,6 +15,7 @@ interface Rm {
   new_leads: number; first_response_hours: number | null; prospects: number; clients: number; funded: number;
   untouched_24h: number; untouched_7d: number; on_4_strikes: number; stuck_prospects: number;
   thin_notes_7d: number; activity_7d: number; activity_prev_weekly: number; last_activity_at: string | null; tasks_overdue: number;
+  upload_backlog: number; first_contacts_7d: number;
 }
 type ReportRow = Counts & { grp: string };
 
@@ -63,7 +64,9 @@ export default function AdminHome() {
 
   // what to chase, most urgent first
   const attention = (rows ?? []).flatMap((r) => [
-    r.untouched_24h > 0 && { r, w: 5, text: `${r.untouched_24h} new lead${r.untouched_24h === 1 ? '' : 's'} not contacted in 24h+` },
+    r.untouched_24h > 0 && { r, w: 5, text: `${r.untouched_24h} new lead${r.untouched_24h === 1 ? '' : 's'} (added one by one, not uploaded) not contacted in 24h+` },
+    // an upload is worked over days: only a problem if nobody has started on it for a week
+    r.upload_backlog > 0 && r.first_contacts_7d === 0 && { r, w: 4, text: `${r.upload_backlog} uploaded lead${r.upload_backlog === 1 ? '' : 's'} waiting, and no first calls in the last 7 days` },
     r.meetings_unrecorded > 0 && { r, w: 4, text: `${r.meetings_unrecorded} meeting${r.meetings_unrecorded === 1 ? '' : 's'} with no outcome logged` },
     r.overdue > 0 && { r, w: 3, text: `${r.overdue} follow-up${r.overdue === 1 ? '' : 's'} overdue` },
     r.stuck_prospects > 0 && { r, w: 3, text: `${r.stuck_prospects} prospect${r.stuck_prospects === 1 ? '' : 's'} stuck in onboarding (blocked or no progress in 7 days)` },
@@ -128,9 +131,9 @@ export default function AdminHome() {
         <div className="panel-head"><h2>RMs</h2><span className="muted small">Click a person for their pipeline</span></div>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>RM</th><th>Open</th><th>Due today</th><th>Overdue</th><th>Meetings (7d)</th><th title="Median time from a lead arriving to the first logged activity, for leads that arrived in this period">First response</th><th>New leads</th><th>Prospects</th><th>Clients</th><th>Last active</th></tr></thead>
+            <thead><tr><th>RM</th><th>Open</th><th>Due today</th><th>Overdue</th><th>Meetings (7d)</th><th title="Uploaded leads not called yet · leads called for the first time in the last 7 days">Upload backlog</th><th title="Median time from a lead arriving to the first logged activity, for leads added one at a time (not uploads) in this period">First response</th><th>New leads</th><th>Prospects</th><th>Clients</th><th>Last active</th></tr></thead>
             <tbody>
-              {rows === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={10}><Skeleton /></td></tr>)}
+              {rows === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={11}><Skeleton /></td></tr>)}
               {rows?.map((r) => (
                 <tr key={r.user_id} className="lead-row" onClick={() => nav(`/admin/people/${r.user_id}`)}>
                   <td><div className="person">{r.avatar_url ? <img src={r.avatar_url} alt="" referrerPolicy="no-referrer" /> : <span className="av">{initials(r.full_name)}</span>}
@@ -139,6 +142,7 @@ export default function AdminHome() {
                   <td>{r.due_today}</td>
                   <td className={r.overdue ? 'red' : ''}>{r.overdue}</td>
                   <td>{r.meetings_week}</td>
+                  <td>{r.upload_backlog ? <>{r.upload_backlog.toLocaleString('en-IN')}<div className="muted small">{r.first_contacts_7d} first calls this week</div></> : <span className="muted">—</span>}</td>
                   <td className={r.first_response_hours != null && r.first_response_hours > 24 ? 'amber' : ''}>{hours(r.first_response_hours)}</td>
                   <td>{r.new_leads}</td>
                   <td>{r.prospects}</td>
@@ -146,7 +150,7 @@ export default function AdminHome() {
                   <td className="small">{r.last_activity_at ? timeAgo(r.last_activity_at) : <span className="muted">Never</span>}</td>
                 </tr>
               ))}
-              {rows?.length === 0 && <tr><td colSpan={10} className="muted">No RMs {scope === 'team' ? 'report to you' : 'yet'}.</td></tr>}
+              {rows?.length === 0 && <tr><td colSpan={11} className="muted">No RMs {scope === 'team' ? 'report to you' : 'yet'}.</td></tr>}
             </tbody>
           </table>
         </div>
