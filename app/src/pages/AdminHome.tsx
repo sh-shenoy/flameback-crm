@@ -62,14 +62,16 @@ export default function AdminHome() {
   const sum = (k: keyof Rm) => (rows ?? []).reduce((s, r) => s + num(r[k]), 0);
   const activeToday = (rows ?? []).filter((r) => r.last_activity_at && Date.parse(r.last_activity_at) > Date.now() - 86400e3).length;
 
+  // who is behind: overdue follow-ups or tasks, worst first
+  const overdueRms = (rows ?? []).filter((r) => r.overdue > 0 || r.tasks_overdue > 0)
+    .sort((a, b) => b.overdue - a.overdue || b.tasks_overdue - a.tasks_overdue);
+
   // what to chase, most urgent first
   const attention = (rows ?? []).flatMap((r) => [
     // no reminders about new / untouched leads for now: follow-ups, meetings, prospects and tasks only
     r.meetings_unrecorded > 0 && { r, w: 4, text: `${r.meetings_unrecorded} meeting${r.meetings_unrecorded === 1 ? '' : 's'} with no outcome logged` },
-    r.overdue > 0 && { r, w: 3, text: `${r.overdue} follow-up${r.overdue === 1 ? '' : 's'} overdue` },
     r.stuck_prospects > 0 && { r, w: 3, text: `${r.stuck_prospects} prospect${r.stuck_prospects === 1 ? '' : 's'} stuck in onboarding (blocked or no progress in 7 days)` },
     r.on_4_strikes > 0 && { r, w: 2, text: `${r.on_4_strikes} lead${r.on_4_strikes === 1 ? '' : 's'} one strike from the Out List` },
-    r.tasks_overdue > 0 && { r, w: 1, text: `${r.tasks_overdue} task${r.tasks_overdue === 1 ? '' : 's'} overdue` },
   ]).filter(Boolean) as { r: Rm; w: number; text: string }[];
   attention.sort((a, b) => b.w - a.w);
   const [dups, setDups] = useState(0);
@@ -96,10 +98,27 @@ export default function AdminHome() {
       {err && <div className="banner warn">Couldn't load the team: {err}</div>}
       {dups > 0 && <div className="banner warn"><b>{dups} duplicate lead{dups === 1 ? '' : 's'}</b> from uploads {dups === 1 ? 'is' : 'are'} waiting for you to decide who keeps {dups === 1 ? 'it' : 'them'}. <Link to="/admin?tab=duplicates">Resolve →</Link></div>}
 
+      {overdueRms.length > 0 && (
+        <div className="panel ah-overdue">
+          <div className="panel-head"><h2>Overdue</h2><span className="muted small">{overdueRms.length} RM{overdueRms.length === 1 ? '' : 's'} behind · click to see their overdue leads</span></div>
+          <ul className="ah-list">{overdueRms.map((r) => (
+            <li key={r.user_id} onClick={() => nav(`/admin/people/${r.user_id}?overdue=1`)}>
+              <b>{r.full_name}</b>
+              <span>
+                {r.overdue > 0 && <span className="red">{r.overdue} follow-up{r.overdue === 1 ? '' : 's'} overdue</span>}
+                {r.overdue > 0 && r.tasks_overdue > 0 && ' · '}
+                {r.tasks_overdue > 0 && <span className="red">{r.tasks_overdue} task{r.tasks_overdue === 1 ? '' : 's'} overdue</span>}
+              </span>
+            </li>
+          ))}</ul>
+        </div>
+      )}
+
       <div className="cards ah-cards">
         <Tile k="RMs" v={rows ? rows.length : null} sub={rows ? `${activeToday} active today` : ''} />
         <Tile k="Open leads" v={rows ? sum('open_leads') : null} sub={rows ? `${sum('due_today')} due today` : ''} />
-        <Tile k="Overdue follow-ups" v={rows ? sum('overdue') : null} tone={sum('overdue') > 0 ? 'red' : ''} />
+        <Tile k="Overdue follow-ups" v={rows ? sum('overdue') : null} tone={sum('overdue') > 0 ? 'red' : ''}
+          sub={overdueRms.filter((r) => r.overdue > 0).slice(0, 3).map((r) => `${r.full_name?.split(' ')[0]} ${r.overdue}`).join(' · ') + (overdueRms.filter((r) => r.overdue > 0).length > 3 ? ' …' : '')} />
         <Tile k="Meetings next 7 days" v={rows ? sum('meetings_week') : null} />
         <Tile k="New prospects" v={rows ? sum('prospects') : null} sub={rows ? `${sum('new_leads')} new leads` : ''} />
         <Tile k="New clients" v={rows ? sum('clients') : null} sub={rows && sum('funded') > 0 ? `${fmtINR(sum('funded'))} funded` : ''} />

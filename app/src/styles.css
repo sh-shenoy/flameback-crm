@@ -807,3 +807,5 @@ table.report tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--teal);
 .dash-tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .dash-tiles.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 900px) { .dash-tiles, .dash-tiles.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ah-overdue { border-left: 3px solid var(--hot); margin-bottom: 16px; }
+.ah-overdue .red { color: var(--hot); font-weight: 600; }

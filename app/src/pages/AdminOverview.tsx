@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
 import { addDays, fmtDate, fmtDateTime, fmtPhone, initials, timeAgo, todayIST } from '../lib/format';
@@ -227,12 +227,15 @@ export function PersonPage() {
   const [to, setTo] = useState('');
   const [nudging, setNudging] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
+  const [sp, setSp] = useSearchParams();
+  const overdueOnly = sp.get('overdue') === '1';
 
   async function load() {
     const [from, until] = PERIODS[0]!.range();
     loadStats(from, until).then((r) => setStat(r.find((x) => x.user_id === id) ?? null)).catch(() => undefined);
     let q = supabase.from('leads').select('*, lead_entries(count)').eq('rm_id', id!).order('next_follow_up', { ascending: true, nullsFirst: false }).limit(500);
-    if (!showClosed) q = q.in('bucket', ['active_contact', 'awaiting_meeting', 'holding', 'deferred']);
+    if (!showClosed || overdueOnly) q = q.in('bucket', ['active_contact', 'awaiting_meeting', 'holding', 'deferred']);
+    if (overdueOnly) q = q.lt('next_follow_up', todayIST());
     const [l, a, n] = await Promise.all([
       q,
       supabase.from('lead_entries').select('*, leads(name)').eq('created_by', id!).order('occurred_at', { ascending: false }).limit(25),
@@ -243,7 +246,7 @@ export function PersonPage() {
     setNudges((n.data as never) ?? []);
     setSel(new Set());
   }
-  useEffect(() => { load(); }, [id, showClosed]);
+  useEffect(() => { load(); }, [id, showClosed, overdueOnly]);
 
   if (!isAdmin) return <div className="main-inner"><p>Admins only.</p></div>;
   if (!person) return <div className="main-inner"><Empty>Person not found. <Link to="/admin">Back to Admin</Link></Empty></div>;
@@ -281,9 +284,10 @@ export function PersonPage() {
 
       <div className="panel">
         <div className="panel-head">
-          <h2>{showClosed ? 'All leads' : 'Open leads'} {leads && <span className="muted">· {leads.length}</span>}</h2>
+          <h2>{overdueOnly ? 'Overdue follow-ups' : showClosed ? 'All leads' : 'Open leads'} {leads && <span className="muted">· {leads.length}</span>}</h2>
           <div className="row-gap">
-            <label className="check"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Include prospects, clients and Out List</label>
+            <label className="check"><input type="checkbox" checked={overdueOnly} onChange={(e) => setSp(e.target.checked ? { overdue: '1' } : {}, { replace: true })} /> Overdue only</label>
+            {!overdueOnly && <label className="check"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Include prospects, clients and Out List</label>}
             {sel.size > 0 && <>
               <span className="small"><b>{sel.size}</b> selected →</span>
               <select className="filter" value={to} onChange={(e) => setTo(e.target.value)}>
