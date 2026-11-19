@@ -125,7 +125,7 @@ export default function Dashboard() {
 
       <Section title="Pipeline" cols={4}>
         <Tile label="Open leads" v={pipe?.open} onClick={() => nav('/leads')} />
-        <Tile label="New, to contact" v={pipe?.fresh} tone="amber" onClick={() => nav('/leads?bucket=new')} />
+        <Tile label="New, to contact" v={pipe?.fresh} onClick={() => nav('/leads?bucket=new')} />
         <Tile label="Not picked up" v={pipe?.notPicked} onClick={() => nav('/leads?bucket=not_picked')} />
         <Tile label="Follow-up" v={pipe?.followUp} onClick={() => nav('/leads?bucket=active_contact')} />
         <Tile label="Awaiting meeting" v={pipe?.awaiting} onClick={() => nav('/leads?bucket=awaiting_meeting')} />

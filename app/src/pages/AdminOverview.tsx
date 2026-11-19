@@ -40,7 +40,6 @@ export function suggestions(s: Stat): { text: string; link: string }[] {
   const pl = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   if (s.overdue > 0) out.push({ text: `You have ${pl(s.overdue, 'overdue follow-up')}. Please clear them today.`, link: '/leads?due=overdue' });
   if (s.meetings_unrecorded > 0) out.push({ text: `${pl(s.meetings_unrecorded, 'meeting')} still need an outcome recorded.`, link: '/leads?bucket=awaiting_meeting' });
-  if (s.untouched_7d > 0) out.push({ text: `${pl(s.untouched_7d, 'lead')} haven't been contacted in over a week.`, link: '/leads' });
   const idle = daysSince(s.last_activity_at);
   if (s.open_leads > 0 && (idle === null || idle >= 3)) out.push({ text: idle === null ? 'No calls or notes logged yet. Start working your leads.' : `Nothing logged in ${idle} days. Please update your leads.`, link: '/leads' });
   if (s.tasks_overdue > 0) out.push({ text: `${pl(s.tasks_overdue, 'task')} overdue.`, link: '/tasks?due=overdue' });
@@ -104,10 +103,7 @@ export function TeamOverview() {
                     <td><div>{r.due_today} today</div>{r.overdue > 0 ? <div className="red small">{r.overdue} overdue</div> : <div className="muted small">none overdue</div>}</td>
                     <td>{r.meetings_week || <span className="muted">0</span>}</td>
                     <td>
-                      {r.meetings_unrecorded + r.untouched_7d === 0 ? <span className="muted">—</span> : <>
-                        {r.meetings_unrecorded > 0 && <div className="amber small">{r.meetings_unrecorded} without outcome</div>}
-                        {r.untouched_7d > 0 && <div className="amber small">{r.untouched_7d} untouched 7d+</div>}
-                      </>}
+                      {r.meetings_unrecorded === 0 ? <span className="muted">—</span> : <div className="amber small">{r.meetings_unrecorded} without outcome</div>}
                     </td>
                     <td><div>{r.entries} logged <span className="muted small">· {r.calls} calls</span></div>
                       <div className={`small ${idle !== null && idle >= 3 && r.open_leads ? 'amber' : 'muted'}`}>{r.last_activity_at ? `last ${timeAgo(r.last_activity_at)}` : 'nothing logged yet'}</div></td>
@@ -277,7 +273,7 @@ export function PersonPage() {
           <div className="card"><div className="k">Open leads</div><div className="v">{stat.open_leads}</div><div className="meta">{stat.active_contact} new or follow-up · {stat.awaiting_meeting} meeting · {stat.holding} holding · {stat.deferred} deferred</div></div>
           <div className="card"><div className="k">Overdue follow-ups</div><div className={`v ${stat.overdue ? 'red' : ''}`}>{stat.overdue}</div><div className="meta">{stat.due_today} due today</div></div>
           <div className="card"><div className="k">This week</div><div className="v">{stat.entries}</div><div className="meta">{stat.calls} calls · last {stat.last_activity_at ? timeAgo(stat.last_activity_at) : 'never'}</div></div>
-          <div className="card"><div className="k">Needs attention</div><div className="v">{stat.meetings_unrecorded + stat.untouched_7d + stat.tasks_overdue}</div><div className="meta">{stat.meetings_unrecorded} no outcome · {stat.untouched_7d} untouched · {stat.tasks_overdue} task{stat.tasks_overdue === 1 ? '' : 's'} overdue</div></div>
+          <div className="card"><div className="k">Needs attention</div><div className="v">{stat.meetings_unrecorded + stat.tasks_overdue}</div><div className="meta">{stat.meetings_unrecorded} no outcome · {stat.tasks_overdue} task{stat.tasks_overdue === 1 ? '' : 's'} overdue</div></div>
         </div>
       )}
 
