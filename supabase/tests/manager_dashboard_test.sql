@@ -54,11 +54,12 @@ do $$ begin
   exception when others then if sqlerrm like 'FAIL%' then raise; end if; end;
 end $$;
 reset role;
--- team digest goes to admins, not as an RM digest
+-- team digest goes to admins, not as an RM digest, and names who is behind
+update leads set next_follow_up = ist_today() - 2 where id = (select id from k where n='p2');
 select run_notification_sweeps();
 do $$ begin
   if extract(hour from now() at time zone 'Asia/Kolkata') >= 9 then
-    assert (select title from notifications where user_id='00000000-0000-0000-0000-0000000000ff' and kind='digest') like 'Team today:%', 'admin team digest';
+    assert (select title from notifications where user_id='00000000-0000-0000-0000-0000000000ff' and kind='digest') like 'Team today:%(Priya 1)%', 'admin team digest names the RM';
     assert (select body from notifications where user_id='00000000-0000-0000-0000-0000000000ff' and kind='digest') like 'Yesterday:%', 'digest body';
   end if;
 end $$;
