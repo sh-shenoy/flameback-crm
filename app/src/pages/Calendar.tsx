@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../auth';
 import { RmScopeSelect, scoped, useRmScope } from '../components/RmScope';
@@ -21,7 +21,7 @@ const fmtClock = (ts: string) => new Intl.DateTimeFormat('en-IN', { hour: 'numer
 type View = 'month' | 'week' | 'day';
 interface Ev { id: string; title: string; sub?: string; start: string; end: string; kind: 'meeting' | 'task' | 'follow'; link: string; join?: string | null; day: string; allDay?: boolean }
 
-const START_H = 7, END_H = 22, HOUR_PX = 48;
+const START_H = 0, END_H = 24, HOUR_PX = 48;   // the full day; the grid opens scrolled to the morning
 
 export default function CalendarPage() {
   const { me, isAdmin, teamName } = useApp();
@@ -166,6 +166,13 @@ export default function CalendarPage() {
 function TimeGrid({ days, byDay, today, onOpen }: { days: string[]; byDay: Record<string, Ev[]>; today: string; onOpen: (e: Ev) => void }) {
   const hours = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
   const nowMin = istMinutes(new Date());
+  // open at 7 am, or an hour before now when today is on screen and it's later than that
+  const body = useRef<HTMLDivElement>(null);
+  const showsToday = days.includes(today);
+  useEffect(() => {
+    const startMin = showsToday ? Math.max(7 * 60, nowMin - 60) : 7 * 60;
+    if (body.current) body.current.scrollTop = Math.min(startMin, 17 * 60) / 60 * HOUR_PX;
+  }, [days.join(), showsToday]);   // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="panel cal-grid" style={{ ['--cols' as string]: days.length }}>
       <div className="cg-head">
@@ -181,8 +188,8 @@ function TimeGrid({ days, byDay, today, onOpen }: { days: string[]; byDay: Recor
           </div>
         ))}
       </div>
-      <div className="cg-body">
-        <div className="cg-hours">{hours.map((h) => <div key={h} style={{ height: HOUR_PX }}>{h === 12 ? '12 pm' : h > 12 ? `${h - 12} pm` : `${h} am`}</div>)}</div>
+      <div className="cg-body" ref={body}>
+        <div className="cg-hours">{hours.map((h) => <div key={h} style={{ height: HOUR_PX }}>{h === 0 ? '12 am' : h === 12 ? '12 pm' : h > 12 ? `${h - 12} pm` : `${h} am`}</div>)}</div>
         {days.map((d) => {
           const evs = (byDay[d] ?? []).filter((e) => e.kind === 'meeting' || (e.kind === 'follow' && !e.allDay));
           // place overlapping meetings side by side
