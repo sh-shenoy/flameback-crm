@@ -303,7 +303,14 @@ export const RESIDENCY_LABEL: Record<string, string> = { resident: 'Resident', n
 export type ContactState = 'new' | 'not_picked' | 'follow_up';
 type ContactFields = Pick<Lead, 'bucket'> & { first_attempt_at?: string | null; spoke_at?: string | null };
 export const contactState = (l: ContactFields): ContactState | null =>
-  l.bucket !== 'active_contact' ? null : l.spoke_at ? 'follow_up' : l.first_attempt_at ? 'not_picked' : 'new';
+  l.bucket !== 'active_contact' ? null
+  : l.spoke_at === undefined && l.first_attempt_at === undefined ? null      // not loaded: don't guess
+  : l.spoke_at ? 'follow_up' : l.first_attempt_at ? 'not_picked' : 'new';
+/** The stage to show for one lead: New / Not picked up / Follow-up in the first stage, else the stage name. */
+export const stageLabel = (l: ContactFields): string => {
+  const st = contactState(l);
+  return st ? CONTACT_LABEL[st] : l.bucket === 'active_contact' ? 'Open lead' : bucketLabel(l.bucket);
+};
 export const CONTACT_LABEL: Record<ContactState, string> = { new: 'New', not_picked: 'Not picked up', follow_up: 'Follow-up' };
 /** A lead nobody has reached out to yet. */
 export const isNewLead = (l: ContactFields) => contactState(l) === 'new';

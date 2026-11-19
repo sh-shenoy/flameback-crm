@@ -4,7 +4,7 @@ import { useApp } from '../auth';
 import { rpc, supabase } from '../lib/supabase';
 import { addDays, fmtDate, fmtDateTime, fmtPhone, initials, timeAgo, todayIST } from '../lib/format';
 import { OUTCOME_LABEL, entryLabel, bucketLabel, type Lead, type LeadEntry } from '../lib/types';
-import { BucketPill, Empty, Field, FollowUp, Modal, ProductTag, Skeleton, useToast } from '../components/ui';
+import { StagePill, Empty, Field, FollowUp, Modal, ProductTag, Skeleton, useToast } from '../components/ui';
 import { Funnel, numRow, sumCounts, type Counts, type Row } from './Reports';
 
 export interface Stat {
@@ -307,7 +307,7 @@ export function PersonPage() {
           <table>
             <thead><tr>
               <th><input type="checkbox" checked={allSel} onChange={() => setSel(allSel ? new Set() : new Set(leads?.map((l) => l.id)))} aria-label="Select all" /></th>
-              <th>Lead</th><th>Source</th><th>Product</th><th>Bucket</th><th>Interactions</th><th>Next follow-up</th>
+              <th>Lead</th><th>Source</th><th>Product</th><th>Stage</th><th>Interactions</th><th>Next follow-up</th>
             </tr></thead>
             <tbody>
               {leads === null && [0, 1, 2].map((i) => <tr key={i}><td colSpan={7}><Skeleton /></td></tr>)}
@@ -319,7 +319,7 @@ export function PersonPage() {
                   <td><div className="lead-name">{l.name}</div><div className="lead-sub">{fmtPhone(l.phone) || l.email}</div></td>
                   <td><span className="src">{l.source}</span></td>
                   <td><ProductTag product={l.product} /></td>
-                  <td><BucketPill bucket={l.bucket} /></td>
+                  <td><StagePill lead={l} /></td>
                   <td>{l.lead_entries?.[0]?.count ?? 0}</td>
                   <td><FollowUp date={l.next_follow_up} /></td>
                 </tr>
@@ -339,7 +339,7 @@ export function PersonPage() {
               {activity.map((e) => (
                 <li key={e.id}>
                   <div><b>{entryLabel(e.kind, e.platform)}</b>{e.outcome ? ` · ${OUTCOME_LABEL[e.outcome]}` : ''} with <Link to={`/leads/${e.lead_id}`}>{e.leads?.name ?? 'a lead'}</Link></div>
-                  <div className="when">{fmtDateTime(e.occurred_at)} · in {bucketLabel(e.bucket_at)}</div>
+                  <div className="when">{fmtDateTime(e.occurred_at)} {e.bucket_at !== 'active_contact' && ` · in ${bucketLabel(e.bucket_at)}`}</div>
                 </li>
               ))}
             </ul>

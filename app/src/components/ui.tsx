@@ -49,6 +49,7 @@ export function BucketPill({ bucket }: { bucket: Bucket }) {
 /** Stage of a lead; the first stage shows New / Not picked up / Follow-up. */
 export function StagePill({ lead }: { lead: Pick<Lead, 'bucket'> & { first_attempt_at?: string | null; spoke_at?: string | null } }) {
   const st = contactState(lead);
+  if (!st && lead.bucket === 'active_contact') return <span className="bucket b-new">Open lead</span>;
   return st && st !== 'follow_up' ? <span className={`bucket b-${st}`}>{CONTACT_LABEL[st]}</span> : <BucketPill bucket={lead.bucket} />;
 }
 
